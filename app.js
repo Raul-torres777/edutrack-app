@@ -1556,6 +1556,7 @@ async function loadInstructorDashboard() {
     }
   } catch (error) {
     console.error(error);
+    alert('Error al cargar el panel de administrador: ' + error.message);
   }
 }
 
@@ -1955,3 +1956,39 @@ window.sendRecoveryCode = sendRecoveryCode;
 window.verifyRecoveryCode = verifyRecoveryCode;
 window.saveNewPassword = saveNewPassword;
 window.openAssignCoursesModal = openAssignCoursesModal;
+
+// --- CONTROLADOR GLOBAL DE ERRORES (DIAGNÓSTICO) ---
+window.addEventListener('unhandledrejection', event => {
+  console.error('Unhandled promise rejection:', event.reason);
+  showGlobalError('Error en la base de datos o aplicación: ' + (event.reason ? event.reason.message || event.reason : 'Error desconocido'));
+});
+
+window.addEventListener('error', event => {
+  console.error('Unhandled runtime error:', event.error);
+  showGlobalError('Error de ejecución: ' + (event.error ? event.error.message || event.error : event.message));
+});
+
+function showGlobalError(message) {
+  let container = document.getElementById('global-error-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'global-error-container';
+    container.style.position = 'fixed';
+    container.style.top = '10px';
+    container.style.left = '50%';
+    container.style.transform = 'translateX(-50%)';
+    container.style.background = 'rgba(220, 53, 69, 0.95)';
+    container.style.color = '#fff';
+    container.style.padding = '12px 24px';
+    container.style.borderRadius = '8px';
+    container.style.boxShadow = '0 4px 15px rgba(0,0,0,0.3)';
+    container.style.zIndex = '10000';
+    container.style.fontSize = '14px';
+    container.style.fontFamily = 'sans-serif';
+    container.style.display = 'flex';
+    container.style.alignItems = 'center';
+    container.style.gap = '10px';
+    document.body.appendChild(container);
+  }
+  container.innerHTML = `<i class="fas fa-exclamation-triangle"></i> <span>${message}</span> <button onclick="this.parentElement.remove()" style="background:none;border:none;color:#fff;cursor:pointer;font-weight:bold;margin-left:10px;">&times;</button>`;
+}
