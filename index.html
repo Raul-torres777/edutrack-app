@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EduTrack LMS - Plataforma de Cursos Premium</title>
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Custom Styling -->
+  <link rel="stylesheet" href="style.css?v=4">
+</head>
+<body>
+
+  <div class="app-shell">
+    
+    <!-- HEADER NAVBAR -->
+    <header class="header-nav">
+      <div class="logo-area" id="logo-btn">
+        <i class="fas fa-graduation-cap"></i>
+        <span>EduTrack</span>
+      </div>
+      
+      <!-- Role Toggle Tabs -->
+      <nav class="navigation-tabs">
+        <button class="nav-tab active" id="tab-student" data-role="student">
+          <i class="fas fa-user-graduate"></i> Estudiante
+        </button>
+        <button class="nav-tab" id="tab-instructor" data-role="instructor">
+          <i class="fas fa-chalkboard-teacher"></i> Instructor
+        </button>
+      </nav>
+      
+      <!-- Header Right Actions -->
+      <div class="header-actions">
+        <button class="btn-icon" id="theme-toggle" title="Cambiar Tema">
+          <i class="fas fa-moon"></i>
+        </button>
+        <button class="btn-icon" id="btn-reset-db" title="Restablecer Datos" style="color: var(--danger-color);">
+          <i class="fas fa-rotate-left"></i>
+        </button>
+        <div class="user-profile" id="user-profile-badge" style="display: none;">
+          <div class="avatar-circle" id="user-avatar-char">U</div>
+          <span id="user-display-name">Usuario Demo</span>
+        </div>
+        <button class="btn-icon" id="btn-logout" title="Cerrar Sesión" style="color: var(--danger-color); display: none;">
+          <i class="fas fa-sign-out-alt"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- MAIN WORKSPACE -->
+    <main class="main-content">
+
+      <!-- ==================== PORTAL ESTUDIANTE ==================== -->
+      
+      <!-- VISTA: DASHBOARD ESTUDIANTE -->
+      <section class="view-panel active" id="view-student-dashboard">
+        <div class="welcome-banner">
+          <div class="welcome-text">
+            <h1>¡Bienvenido a tu panel de estudio!</h1>
+            <p>Sigue aprendiendo y obtén tus certificados profesionales.</p>
+          </div>
+          <div class="welcome-stats">
+            <!-- Espacio para un gráfico simple o detalle -->
+          </div>
+        </div>
+
+        <div class="section-header">
+          <h2>Tus Cursos</h2>
+        </div>
+
+        <div class="courses-grid" id="student-courses-grid">
+          <!-- Dinámico: Cursos cargados desde base de datos -->
+        </div>
+      </section>
+
+      <!-- VISTA: REPRODUCTOR DE CLASES (PLAYER) -->
+      <section class="view-panel" id="view-course-player">
+        <div style="margin-bottom: 20px;">
+          <button class="btn btn-secondary btn-back-dashboard" id="btn-player-back">
+            <i class="fas fa-arrow-left"></i> Volver a Cursos
+          </button>
+        </div>
+
+        <div class="player-container">
+          <!-- Columna Izquierda: Reproductor + Detalles -->
+          <div class="player-main">
+            <div class="video-wrapper">
+              <!-- Reproductor nativo. Cargará URLs externas o blobs locales -->
+              <video id="course-video-player" controls controlsList="nodownload" poster="">
+                Tu navegador no soporta reproducción de video.
+              </video>
+            </div>
+            
+            <div class="class-title-info">
+              <h2 id="player-lesson-title">Cargando título de clase...</h2>
+              <div class="player-tabs-header">
+                <button class="player-tab-btn active" data-tab="tab-notes">Apuntes de Clase</button>
+                <button class="player-tab-btn" data-tab="tab-resources">Material de Apoyo</button>
+              </div>
+              
+              <div class="player-tabs-content">
+                <!-- Pestaña Apuntes -->
+                <div class="tab-pane active" id="tab-notes">
+                  <p id="player-lesson-notes" style="white-space: pre-line;">
+                    No hay apuntes adicionales para esta clase.
+                  </p>
+                </div>
+                <!-- Pestaña Recursos/Documentos -->
+                <div class="tab-pane" id="tab-resources">
+                  <div class="resources-list" id="player-resources-list">
+                    <!-- Dinámico: Listado de archivos adjuntos (PDFs, guías, etc.) -->
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Columna Derecha: Temario & Progreso -->
+          <div class="syllabus-sidebar">
+            <div class="syllabus-header">
+              <h3 id="player-course-title">Cargando Curso...</h3>
+              <div class="course-progress-container" style="margin-top: 10px; margin-bottom: 0;">
+                <div class="progress-label">
+                  <span>Progreso de estudio</span>
+                  <span id="player-progress-text">0%</span>
+                </div>
+                <div class="progress-track">
+                  <div class="progress-fill" id="player-progress-fill" style="width: 0%;"></div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="syllabus-list" id="player-syllabus-list">
+              <!-- Dinámico: Lista de módulos y lecciones -->
+            </div>
+
+            <!-- Botón para Quiz final (bloqueado/desbloqueado según progreso) -->
+            <div class="syllabus-footer" style="padding: 20px; border-top: 1px solid var(--border-color); background: rgba(0,0,0,0.05);">
+              <button class="btn btn-primary btn-block" id="btn-start-quiz" disabled>
+                <i class="fas fa-award"></i> Realizar Cuestionario Final
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VISTA: CUESTIONARIO (QUIZ) -->
+      <section class="view-panel" id="view-quiz">
+        <div class="quiz-container">
+          <div class="quiz-header">
+            <h2 id="quiz-course-title">Evaluación de Curso</h2>
+            <div class="quiz-progress">
+              <span id="quiz-question-number">Pregunta 1 de 5</span>
+              <span id="quiz-progress-percent">20% Completado</span>
+            </div>
+          </div>
+          
+          <div class="quiz-body">
+            <div class="quiz-question-box">
+              <h3 id="quiz-question-text">¿Pregunta de prueba?</h3>
+              <div class="options-group" id="quiz-options-group">
+                <!-- Dinámico: Opciones de respuesta -->
+              </div>
+            </div>
+          </div>
+          
+          <div class="quiz-footer">
+            <button class="btn btn-secondary" id="btn-quiz-exit">Salir del Cuestionario</button>
+            <button class="btn btn-primary" id="btn-quiz-next">Siguiente Pregunta <i class="fas fa-arrow-right"></i></button>
+          </div>
+        </div>
+      </section>
+
+      <!-- VISTA: RESULTADO DEL QUIZ -->
+      <section class="view-panel" id="view-quiz-result">
+        <div class="quiz-container">
+          <div class="quiz-result-card" id="quiz-result-card">
+            <!-- Dinámico: Éxito o Fallido -->
+          </div>
+        </div>
+      </section>
+
+      <!-- VISTA: CERTIFICADO -->
+      <section class="view-panel" id="view-certificate">
+        <div class="certificate-view-container">
+          <div style="margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center;">
+            <button class="btn btn-secondary btn-back-dashboard">
+              <i class="fas fa-arrow-left"></i> Volver a Cursos
+            </button>
+            <div style="display: flex; gap: 10px;">
+              <button class="btn btn-secondary" id="btn-print-certificate">
+                <i class="fas fa-print"></i> Imprimir / Guardar PDF
+              </button>
+              <button class="btn btn-primary" id="btn-download-certificate">
+                <i class="fas fa-download"></i> Descargar Imagen (PNG)
+              </button>
+            </div>
+          </div>
+
+          <!-- Contenedor del Certificado Imprimible -->
+          <div class="certificate-frame-container">
+            <div class="certificate-layout" id="certificate-print-area">
+              <div class="cert-header">
+                <div class="cert-logo">
+                  <i class="fas fa-graduation-cap"></i> EduTrack
+                </div>
+                <div class="cert-title">Certificado de Finalización</div>
+              </div>
+              
+              <div class="cert-body">
+                <p class="cert-presented-to">Otorgado con orgullo a</p>
+                <div class="cert-student-name" id="cert-display-student">Juan Pérez</div>
+                <p class="cert-description">
+                  Por haber completado y aprobado con éxito la currícula total del curso formativo:
+                  <br>
+                  <strong class="cert-course-name" id="cert-display-course">Introducción a Desarrollo Web Moderno</strong>
+                </p>
+              </div>
+              
+              <div class="cert-footer">
+                <div class="cert-signature">
+                  <div class="signature-img" id="cert-display-signature">Carlos Mendoza</div>
+                  <div class="signature-name" id="cert-display-instructor">Carlos Mendoza</div>
+                  <div class="signature-title">Instructor del Curso</div>
+                </div>
+                
+                <div class="cert-badge">
+                  <i class="fas fa-certificate"></i>
+                </div>
+                
+                <div class="cert-meta-info">
+                  <div class="cert-date" id="cert-display-date">1 de Julio, 2026</div>
+                  <div class="cert-code" id="cert-display-code">EDUT-987654</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== PORTAL INSTRUCTOR ==================== -->
+      
+      <!-- VISTA: DASHBOARD INSTRUCTOR -->
+      <section class="view-panel" id="view-instructor-dashboard">
+        <div class="section-header">
+          <h2>Panel del Instructor</h2>
+          <button class="btn btn-primary" id="btn-new-course">
+            <i class="fas fa-plus"></i> Crear Nuevo Curso
+          </button>
+        </div>
+
+        <!-- Pestañas de Navegación del Panel de Instructor -->
+        <div class="instructor-tabs">
+          <button class="instructor-tab active" id="btn-ins-courses-tab">
+            <i class="fas fa-book"></i> Mis Cursos
+          </button>
+          <button class="instructor-tab" id="btn-ins-students-tab">
+            <i class="fas fa-users"></i> Control de Estudiantes
+          </button>
+        </div>
+
+        <!-- Sección 1: Cursos Administrados y Estadísticas -->
+        <div id="ins-courses-section" class="instructor-section active">
+          <!-- Estadísticas -->
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon"><i class="fas fa-book"></i></div>
+              <div class="stat-details">
+                <h3 id="stat-total-courses">0</h3>
+                <p>Cursos Creados</p>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon" style="color: var(--success-color); background: rgba(16,185,129,0.1);"><i class="fas fa-graduation-cap"></i></div>
+              <div class="stat-details">
+                <h3 id="stat-total-certificates">0</h3>
+                <p>Certificados Emitidos</p>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon" style="color: var(--warning-color); background: rgba(245,158,11,0.1);"><i class="fas fa-clipboard-list"></i></div>
+              <div class="stat-details">
+                <h3 id="stat-active-students">0</h3>
+                <p>Estudiantes Evaluados</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-header" style="margin-top: 40px;">
+            <h3>Tus Cursos Administrados</h3>
+          </div>
+
+          <div class="courses-grid" id="instructor-courses-grid">
+            <!-- Cursos para editar -->
+          </div>
+
+          <div class="section-header" style="margin-top: 50px;">
+            <h3>Registro de Alumnos Aprobados</h3>
+          </div>
+          <div class="table-container">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Código Certificado</th>
+                  <th>Nombre del Alumno</th>
+                  <th>Curso Aprobado</th>
+                  <th>Fecha de Emisión</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody id="student-registry-rows">
+                <!-- Dinámico: Tabla de certificados emitidos -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Sección 2: Control de Estudiantes -->
+        <div id="ins-students-section" class="instructor-section">
+          <div class="section-header">
+            <h3>Alumnos Registrados</h3>
+            <div class="search-bar-container">
+              <i class="fas fa-search search-icon"></i>
+              <input type="text" id="student-search-input" placeholder="Buscar alumno por nombre, correo...">
+            </div>
+          </div>
+          
+          <div class="table-container">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Estudiante</th>
+                  <th>Correo Electrónico</th>
+                  <th>Teléfono</th>
+                  <th>Fecha Registro</th>
+                  <th>Cursos Asignados</th>
+                  <th style="text-align: center;">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="students-table-body">
+                <!-- Se poblará dinámicamente con JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- VISTA: EDITOR DE CURSO (EDIT/BUILDER) -->
+      <section class="view-panel" id="view-course-editor">
+        <div style="margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center;">
+          <button class="btn btn-secondary" id="btn-editor-back">
+            <i class="fas fa-arrow-left"></i> Volver a Instructor
+          </button>
+          <div style="display: flex; gap: 10px;">
+            <button class="btn btn-success" id="btn-editor-save-course">
+              <i class="fas fa-check"></i> Guardar Cambios
+            </button>
+          </div>
+        </div>
+
+        <div class="course-details-editor">
+          <!-- Sidebar: Configuración General -->
+          <div class="editor-sidebar">
+            <h3 style="margin-bottom: 20px;">Detalles Generales</h3>
+            <form id="form-course-general">
+              <div class="form-group">
+                <label for="edit-course-title">Título del Curso</label>
+                <input type="text" class="form-control" id="edit-course-title" placeholder="Ej: Figma para principiantes" required>
+              </div>
+              <div class="form-group">
+                <label for="edit-course-description">Descripción</label>
+                <textarea class="form-control" id="edit-course-description" placeholder="De qué trata el curso..." required></textarea>
+              </div>
+              <div class="form-group">
+                <label for="edit-course-instructor">Instructor</label>
+                <input type="text" class="form-control" id="edit-course-instructor" placeholder="Nombre completo" required>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="edit-course-category">Categoría</label>
+                  <select class="form-control" id="edit-course-category">
+                    <option value="Programación">Programación</option>
+                    <option value="Diseño">Diseño</option>
+                    <option value="Negocios">Negocios</option>
+                    <option value="Fotografía">Fotografía</option>
+                    <option value="Otros">Otros</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="edit-course-difficulty">Dificultad</label>
+                  <select class="form-control" id="edit-course-difficulty">
+                    <option value="Principiante">Principiante</option>
+                    <option value="Intermedio">Intermedio</option>
+                    <option value="Avanzado">Avanzado</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Portada del Curso (Color Gradient)</label>
+                <select class="form-control" id="edit-course-theme">
+                  <option value="linear-gradient(135deg, #667eea 0%, #764ba2 100%)">Púrpura Profundo</option>
+                  <option value="linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)">Rosa Suave</option>
+                  <option value="linear-gradient(135deg, #130cb7 0%, #52e5e7 100%)">Azul Eléctrico</option>
+                  <option value="linear-gradient(135deg, #11998e 0%, #38ef7d 100%)">Verde Esmeralda</option>
+                  <option value="linear-gradient(135deg, #f857a6 0%, #ff5858 100%)">Rojo Fuego</option>
+                </select>
+              </div>
+            </form>
+          </div>
+
+          <!-- Main: Temario y Clases (Curriculum) -->
+          <div class="editor-main">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+              <h3>Currículum del Curso</h3>
+              <button class="btn btn-secondary" id="btn-editor-add-module" style="padding: 8px 16px; font-size: 0.85rem;">
+                <i class="fas fa-plus"></i> Agregar Módulo
+              </button>
+            </div>
+            
+            <div class="curriculum-builder-container" id="curriculum-builder-list">
+              <!-- Dinámico: Módulos y sus lecciones para editar -->
+            </div>
+
+            <!-- Configuración del Quiz -->
+            <div class="section-header" style="margin-top: 40px; margin-bottom: 20px; border-top: 1px solid var(--border-color); padding-top: 30px;">
+              <h3>Configurar Cuestionario Evaluativo</h3>
+              <button class="btn btn-secondary" id="btn-editor-add-question" style="padding: 8px 16px; font-size: 0.85rem;">
+                <i class="fas fa-plus"></i> Agregar Pregunta
+              </button>
+            </div>
+            <div id="quiz-builder-questions-list" style="display: flex; flex-direction: column; gap: 15px;">
+              <!-- Dinámico: Preguntas del examen para configurar -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ==================== MODALES MODULARES ==================== -->
+  
+  <!-- MODAL: AGREGAR MÓDULO -->
+  <div class="modal-overlay" id="modal-add-module">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>Agregar Nuevo Módulo</h3>
+        <button class="btn-icon modal-close-btn"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="new-module-title">Título del Módulo</label>
+          <input type="text" class="form-control" id="new-module-title" placeholder="Ej: Módulo 1: Introducción a la materia" required>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary modal-close-btn">Cancelar</button>
+        <button class="btn btn-primary" id="btn-submit-add-module">Agregar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: AGREGAR LECCIÓN / CLASE (Vídeo o Documento) -->
+  <div class="modal-overlay" id="modal-add-lesson">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>Agregar Nueva Clase</h3>
+        <button class="btn-icon modal-close-btn"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label for="new-lesson-title">Título de la Clase</label>
+          <input type="text" class="form-control" id="new-lesson-title" placeholder="Ej: 1.1 Conceptos Básicos" required>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="new-lesson-type">Tipo de Contenido</label>
+            <select class="form-control" id="new-lesson-type">
+              <option value="video">Lección en Video</option>
+              <option value="document">Documento PDF / Recurso</option>
+            </select>
+          </div>
+          <div class="form-group" id="lesson-duration-group">
+            <label for="new-lesson-duration">Duración / Estimado</label>
+            <input type="text" class="form-control" id="new-lesson-duration" placeholder="Ej: 12:45 o 15 min" value="10:00">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Origen del Archivo</label>
+          <select class="form-control" id="new-lesson-source-type">
+            <option value="file">Subir Archivo Local (Video/PDF)</option>
+            <option value="url">Enlace Web Externo (URL)</option>
+          </select>
+        </div>
+
+        <!-- Grupo Entrada URL -->
+        <div class="form-group" id="group-lesson-url" style="display: none;">
+          <label for="new-lesson-url">URL del Recurso</label>
+          <input type="url" class="form-control" id="new-lesson-url" placeholder="https://example.com/mi-video.mp4">
+        </div>
+
+        <!-- Grupo Subida de Archivos Local -->
+        <div class="form-group" id="group-lesson-file">
+          <label>Selecciona tu archivo</label>
+          <div class="file-upload-wrapper">
+            <input type="file" class="file-upload-input" id="new-lesson-file-input" accept="video/*,application/pdf">
+            <div class="file-upload-btn">
+              <i class="fas fa-cloud-upload-alt"></i>
+              <span id="file-upload-status">Arrastra o selecciona un video o PDF de tu computadora</span>
+              <span class="filename-preview" id="filename-preview" style="display: none;">archivo.mp4</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="new-lesson-notes">Apuntes / Notas de la Clase</label>
+          <textarea class="form-control" id="new-lesson-notes" placeholder="Agrega notas clave, enlaces de interés o instrucciones para tus alumnos..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary modal-close-btn">Cancelar</button>
+        <button class="btn btn-primary" id="btn-submit-add-lesson">Agregar Clase</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: ASIGNACIÓN DE CURSOS -->
+  <div class="modal-overlay" id="modal-assign-courses">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3>Asignar Cursos</h3>
+        <button class="btn-icon modal-close-btn"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc" style="margin-bottom: 15px; color: var(--text-secondary); font-size: 0.9rem;">
+          Selecciona los cursos a los que este estudiante tendrá acceso. Los cursos no seleccionados se ocultarán de su portal de estudio.
+        </p>
+        
+        <div class="student-info-summary" style="background: rgba(255, 255, 255, 0.05); padding: 12px 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--border-color);">
+          <div class="summary-item" style="margin-bottom: 5px; display: flex; justify-content: space-between;">
+            <span class="label" style="font-weight: 600; color: var(--text-secondary);">Estudiante:</span>
+            <span class="value" id="assign-student-name" style="color: var(--text-primary); font-weight: 500;">-</span>
+          </div>
+          <div class="summary-item" style="display: flex; justify-content: space-between;">
+            <span class="label" style="font-weight: 600; color: var(--text-secondary);">Correo:</span>
+            <span class="value" id="assign-student-email" style="color: var(--text-primary); font-weight: 500;">-</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label style="font-weight: 600; display: block; margin-bottom: 10px;">Selección de Cursos</label>
+          <div class="courses-checkbox-list" id="assign-courses-list" style="display: flex; flex-direction: column; gap: 10px; max-height: 250px; overflow-y: auto; padding: 5px; background: rgba(0,0,0,0.2); border-radius: 8px; border: 1px solid var(--border-color);">
+            <!-- Se poblará dinámicamente -->
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary modal-close-btn">Cancelar</button>
+        <button class="btn btn-primary" id="btn-submit-assign-courses">Guardar Asignación</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== PANTALLA DE BIENVENIDA / AUTENTICACIÓN ==================== -->
+  <div class="auth-page-container view-panel active" id="view-auth">
+    <div class="auth-card-wrapper">
+      <div class="auth-card">
+        <div class="auth-header">
+          <div class="auth-logo">
+            <i class="fas fa-graduation-cap"></i>
+            <span>EduTrack</span>
+          </div>
+          <p class="auth-subtitle">Tu portal de aprendizaje interactivo premium</p>
+        </div>
+
+        <!-- Pestañas de Acceso (Login / Registro) -->
+        <div class="auth-tabs" id="auth-tab-bar">
+          <button class="auth-tab-btn active" id="btn-tab-login" onclick="switchAuthTab('login')">Ingresar</button>
+          <button class="auth-tab-btn" id="btn-tab-register" onclick="switchAuthTab('register')">Registrarse</button>
+        </div>
+
+        <!-- Mensajes de Error o Éxito -->
+        <div class="auth-message error" id="auth-error-msg" style="display: none;">
+          <i class="fas fa-exclamation-circle"></i>
+          <span id="auth-error-text">Credenciales incorrectas.</span>
+        </div>
+        <div class="auth-message success" id="auth-success-msg" style="display: none;">
+          <i class="fas fa-check-circle"></i>
+          <span id="auth-success-text">Registro exitoso. ¡Inicia sesión!</span>
+        </div>
+
+        <!-- FORMULARIO 1: INICIAR SESIÓN -->
+        <form id="auth-login-form" class="auth-form-panel active" onsubmit="event.preventDefault(); submitLogin();">
+          <div class="form-group">
+            <label for="login-identifier">Usuario, Correo o Celular</label>
+            <input type="text" class="form-control" id="login-identifier" placeholder="usuario, email o celular" required autocomplete="username">
+          </div>
+          <div class="form-group">
+            <label for="login-password">Contraseña</label>
+            <input type="password" class="form-control" id="login-password" placeholder="••••••••" required autocomplete="current-password">
+          </div>
+          <button type="submit" class="btn btn-primary btn-block" style="margin-top: 25px;">
+            Iniciar Sesión <i class="fas fa-sign-in-alt"></i>
+          </button>
+          <div class="auth-footer-links">
+            <span class="auth-link" onclick="startRecoveryFlow()">¿Olvidaste tu contraseña?</span>
+          </div>
+        </form>
+
+        <!-- FORMULARIO 2: REGISTRO DE ESTUDIANTE -->
+        <form id="auth-register-form" class="auth-form-panel" onsubmit="event.preventDefault(); submitRegister();">
+          <div class="form-group">
+            <label for="register-username">Nombre de Usuario</label>
+            <input type="text" class="form-control" id="register-username" placeholder="Ej: juanito123" required autocomplete="username">
+          </div>
+          <div class="form-group">
+            <label for="register-email">Correo Electrónico</label>
+            <input type="email" class="form-control" id="register-email" placeholder="correo@ejemplo.com" required autocomplete="email">
+          </div>
+          <div class="form-group">
+            <label for="register-phone">Teléfono Celular</label>
+            <input type="tel" class="form-control" id="register-phone" placeholder="Ej: +525512345678" required autocomplete="tel">
+          </div>
+          <div class="form-group">
+            <label for="register-password">Contraseña</label>
+            <input type="password" class="form-control" id="register-password" placeholder="Crea tu contraseña" required autocomplete="new-password">
+          </div>
+          <button type="submit" class="btn btn-success btn-block" style="margin-top: 25px;">
+            Crear Cuenta de Estudiante <i class="fas fa-user-plus"></i>
+          </button>
+        </form>
+
+        <!-- FORMULARIO 3: RECUPERACIÓN DE CONTRASEÑA -->
+        <div id="auth-recovery-panel" class="auth-form-panel">
+          <h3 style="margin-bottom: 15px; text-align: center;">Recuperar Contraseña</h3>
+          
+          <!-- Paso A: Identificar -->
+          <div id="recovery-step-1">
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 20px; line-height: 1.5; text-align: center;">
+              Ingresa tu nombre de usuario, correo o teléfono registrado. Te enviaremos un código de validación.
+            </p>
+            <div class="form-group">
+              <label for="recovery-identifier">Identificador de Usuario</label>
+              <input type="text" class="form-control" id="recovery-identifier" placeholder="usuario, correo o celular">
+            </div>
+            <button type="button" class="btn btn-primary btn-block" id="btn-recovery-send" onclick="sendRecoveryCode()" style="margin-top: 20px;">
+              Enviar Código de Validación <i class="fas fa-paper-plane"></i>
+            </button>
+          </div>
+
+          <!-- Paso B: Validar Código -->
+          <div id="recovery-step-2" style="display: none;">
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 15px; line-height: 1.5; text-align: center;">
+              Se ha enviado tu código de seguridad. Para testing, cópialo del siguiente recuadro:
+            </p>
+            <div class="recovery-code-box" id="simulated-code-display">123456</div>
+            <div class="form-group">
+              <label for="recovery-code-input">Ingresa el código de 6 dígitos</label>
+              <input type="text" class="form-control" id="recovery-code-input" placeholder="000000" maxlength="6" style="text-align: center; font-size: 1.2rem; letter-spacing: 0.3em;">
+            </div>
+            <button type="button" class="btn btn-primary btn-block" onclick="verifyRecoveryCode()" style="margin-top: 20px;">
+              Validar Código <i class="fas fa-check"></i>
+            </button>
+          </div>
+
+          <!-- Paso C: Establecer Contraseña -->
+          <div id="recovery-step-3" style="display: none;">
+            <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 20px; text-align: center;">
+              Código validado con éxito. Ingresa tu nueva contraseña para el acceso.
+            </p>
+            <div class="form-group">
+              <label for="recovery-new-password">Nueva Contraseña</label>
+              <input type="password" class="form-control" id="recovery-new-password" placeholder="Nueva contraseña" required>
+            </div>
+            <div class="form-group">
+              <label for="recovery-confirm-password">Confirmar Contraseña</label>
+              <input type="password" class="form-control" id="recovery-confirm-password" placeholder="Confirma tu contraseña" required>
+            </div>
+            <button type="button" class="btn btn-success btn-block" onclick="saveNewPassword()" style="margin-top: 25px;">
+              Actualizar Contraseña y Acceder <i class="fas fa-save"></i>
+            </button>
+          </div>
+
+          <div style="text-align: center; margin-top: 25px; border-top: 1px solid var(--border-color); padding-top: 15px;">
+            <span class="auth-link" onclick="cancelRecoveryFlow()"><i class="fas fa-arrow-left"></i> Volver a Iniciar Sesión</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- HTML5 Canvas Oculto para exportación del certificado en alta definición -->
+  <canvas id="cert-canvas" style="display: none;" width="2000" height="1414"></canvas>
+
+  <!-- Custom App Logic -->
+  <script type="module" src="app.js?v=6"></script>
+</body>
+</html>
