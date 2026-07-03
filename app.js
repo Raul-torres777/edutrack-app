@@ -1544,11 +1544,27 @@ function downloadCertificatePNG() {
   link.click();
 }
 
+// Poblar dinámicamente el datalist de categorías de cursos
+async function populateCategoriesDatalist() {
+  const datalist = document.getElementById('categories-list');
+  if (!datalist) return;
+  try {
+    const courses = await db.getCourses();
+    const defaultCategories = ['Programación', 'Diseño', 'Negocios', 'Fotografía', 'Idiomas', 'Música'];
+    const dbCategories = courses.map(c => c.category).filter(Boolean);
+    const allCategories = [...new Set([...defaultCategories, ...dbCategories])];
+    datalist.innerHTML = allCategories.map(cat => `<option value="${cat}">`).join('');
+  } catch (err) {
+    console.error('Error al poblar datalist de categorías:', err);
+  }
+}
+
 // ==================== PANEL INSTRUCTOR / ADMINISTRADOR ====================
 
 async function loadInstructorDashboard() {
   switchInstructorTab('courses');
   try {
+    await populateCategoriesDatalist();
     const courses = await db.getCourses();
     const certificates = await db.getCertificates();
     
@@ -1630,7 +1646,8 @@ async function loadInstructorDashboard() {
   }
 }
 
-function startNewCourseEditor() {
+async function startNewCourseEditor() {
+  await populateCategoriesDatalist();
   editingCourse = {
     id: null,
     title: '',
@@ -1663,6 +1680,7 @@ function startNewCourseEditor() {
 
 async function loadCourseEditor(courseId) {
   try {
+    await populateCategoriesDatalist();
     const course = await db.getCourseById(courseId);
     if (!course) return;
     
