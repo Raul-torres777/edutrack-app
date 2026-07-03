@@ -227,6 +227,7 @@ export const db = {
   async getCourseById(id) {
     const { data, error } = await supabase
       .from('courses')
+      .select('*')
       .eq('id', id)
       .maybeSingle();
     if (error) throw error;
@@ -337,8 +338,8 @@ export const db = {
     if (!userId) return {};
     const { data, error } = await supabase
       .from('progress')
-      .eq('user_id', userId)
-      .select('*');
+      .select('*')
+      .eq('user_id', userId);
     if (error) throw error;
 
     const result = {};
@@ -356,6 +357,7 @@ export const db = {
     
     const { data, error } = await supabase
       .from('progress')
+      .select('*')
       .eq('user_id', userId)
       .eq('course_id', courseId)
       .maybeSingle();
@@ -388,6 +390,7 @@ export const db = {
     
     const { data, error } = await supabase
       .from('progress')
+      .select('*')
       .eq('user_id', userId)
       .eq('course_id', courseId)
       .maybeSingle();
@@ -430,8 +433,8 @@ export const db = {
     if (!userId) return {};
     const { data, error } = await supabase
       .from('quiz_results')
-      .eq('user_id', userId)
-      .select('*');
+      .select('*')
+      .eq('user_id', userId);
     if (error) throw error;
 
     const result = {};
@@ -450,6 +453,7 @@ export const db = {
     
     const { data: existing, error: findError } = await supabase
       .from('quiz_results')
+      .select('*')
       .eq('user_id', userId)
       .eq('course_id', courseId)
       .maybeSingle();
@@ -508,6 +512,7 @@ export const db = {
     if (!userId) return null;
     const { data, error } = await supabase
       .from('certificates')
+      .select('*')
       .eq('user_id', userId)
       .eq('course_id', courseId)
       .maybeSingle();
@@ -558,6 +563,7 @@ export const db = {
     // Actualizar progreso a completado
     const { data: progressData, error: progressError } = await supabase
       .from('progress')
+      .select('*')
       .eq('user_id', userId)
       .eq('course_id', courseId)
       .maybeSingle();
