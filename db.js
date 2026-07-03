@@ -150,7 +150,7 @@ export const db = {
     // 1. Validar Credenciales del Instructor (Admin)
     if (
       (idClean.toLowerCase() === 'administrador' || idClean.toLowerCase() === 'raul20centavos@gmail.com') && 
-      password === 'admin123'
+      password === 'Robin798&'
     ) {
       return {
         id: 'admin',
