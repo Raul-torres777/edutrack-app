@@ -856,6 +856,7 @@ async function loadStudentDashboard() {
     DOM.studentCoursesGrid.innerHTML = html;
   } catch (error) {
     console.error(error);
+    alert('Error en loadStudentDashboard: ' + error.message);
     DOM.studentCoursesGrid.innerHTML = '<p style="color: var(--danger-color); text-align: center; grid-column: 1/-1;">Error al cargar los cursos.</p>';
   }
 }
