@@ -7,6 +7,8 @@ let activeCourse = null;
 let activeLesson = null;
 let activeModuleIndex = 0;
 let activeLessonIndex = 0;
+let activeStudentCategory = 'Todos';
+let activeInstructorCategory = 'Todos';
 
 let quizState = {
   courseId: null,
@@ -782,14 +784,33 @@ async function loadStudentDashboard() {
     const assignedIds = currentUser.assignedCourses || [];
     
     // Filtrar para mostrar sólo los asignados
-    const courses = allCourses.filter(c => assignedIds.includes(c.id));
+    const studentCourses = allCourses.filter(c => assignedIds.includes(c.id));
     
-    if (courses.length === 0) {
+    // Renderizar los filtros de categorías
+    renderCategoryFilters('student-category-filters', studentCourses, activeStudentCategory, 'filterStudentCategory');
+    
+    // Filtrar por categoría activa
+    const courses = activeStudentCategory === 'Todos' 
+      ? studentCourses 
+      : studentCourses.filter(c => c.category === activeStudentCategory);
+    
+    if (studentCourses.length === 0) {
       DOM.studentCoursesGrid.innerHTML = `
         <div class="empty-state" style="grid-column: 1/-1;">
           <i class="fas fa-graduation-cap"></i>
           <h3>No tienes cursos asignados</h3>
           <p>Actualmente no tienes cursos asignados. Ponte en contacto con tu instructor para que te asigne a tus cursos correspondientes.</p>
+        </div>
+      `;
+      return;
+    }
+    
+    if (courses.length === 0) {
+      DOM.studentCoursesGrid.innerHTML = `
+        <div class="empty-state" style="grid-column: 1/-1; padding: 30px;">
+          <i class="fas fa-search"></i>
+          <h3>Sin cursos</h3>
+          <p>No tienes cursos asignados en la categoría <strong>"${activeStudentCategory}"</strong>.</p>
         </div>
       `;
       return;
@@ -1559,6 +1580,34 @@ async function populateCategoriesDatalist() {
   }
 }
 
+// Renderizar filtros de categorías dinámicos
+function renderCategoryFilters(containerId, courses, activeCategory, onClickCallbackName) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  
+  const categories = ['Todos', ...new Set(courses.map(c => c.category).filter(Boolean))];
+  
+  container.innerHTML = categories.map(cat => {
+    const isActive = cat === activeCategory;
+    return `
+      <button class="category-filter-btn ${isActive ? 'active' : ''}" onclick="${onClickCallbackName}('${cat}')">
+        ${cat}
+      </button>
+    `;
+  }).join('');
+}
+
+// Controladores globales para clics en los filtros de categorías
+window.filterStudentCategory = function(category) {
+  activeStudentCategory = category;
+  loadStudentDashboard();
+};
+
+window.filterInstructorCategory = function(category) {
+  activeInstructorCategory = category;
+  loadInstructorDashboard();
+};
+
 // ==================== PANEL INSTRUCTOR / ADMINISTRADOR ====================
 
 async function loadInstructorDashboard() {
@@ -1581,6 +1630,13 @@ async function loadInstructorDashboard() {
     }
     DOM.statActiveStudents.textContent = quizTakers;
     
+    // Renderizar los filtros de categorías
+    renderCategoryFilters('instructor-category-filters', courses, activeInstructorCategory, 'filterInstructorCategory');
+    
+    const coursesToRender = activeInstructorCategory === 'Todos'
+      ? courses
+      : courses.filter(c => c.category === activeInstructorCategory);
+      
     if (courses.length === 0) {
       DOM.instructorCoursesGrid.innerHTML = `
         <div class="empty-state" style="grid-column: 1/-1;">
@@ -1589,9 +1645,17 @@ async function loadInstructorDashboard() {
           <p>Comienza a compartir tus conocimientos creando un curso y subiendo tu plan de estudios.</p>
         </div>
       `;
+    } else if (coursesToRender.length === 0) {
+      DOM.instructorCoursesGrid.innerHTML = `
+        <div class="empty-state" style="grid-column: 1/-1; padding: 30px;">
+          <i class="fas fa-search"></i>
+          <h3>Sin cursos</h3>
+          <p>No tienes cursos administrados en la categoría <strong>"${activeInstructorCategory}"</strong>.</p>
+        </div>
+      `;
     } else {
       let coursesHtml = '';
-      courses.forEach(course => {
+      coursesToRender.forEach(course => {
         let lessonCount = 0;
         course.modules.forEach(m => lessonCount += m.lessons.length);
         
