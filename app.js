@@ -75,6 +75,7 @@ const DOM = {
   // Elementos del Estudiante
   studentCoursesGrid: document.getElementById('student-courses-grid'),
   videoPlayer: document.getElementById('course-video-player'),
+  iframePlayer: document.getElementById('course-iframe-player'),
   playerLessonTitle: document.getElementById('player-lesson-title'),
   playerLessonNotes: document.getElementById('player-lesson-notes'),
   playerResourcesList: document.getElementById('player-resources-list'),
@@ -376,8 +377,9 @@ function showView(viewId) {
   }
   
   // Pausar video si cambiamos de vista
-  if (viewId !== 'view-course-player' && DOM.videoPlayer) {
-    DOM.videoPlayer.pause();
+  if (viewId !== 'view-course-player') {
+    if (DOM.videoPlayer) DOM.videoPlayer.pause();
+    if (DOM.iframePlayer) DOM.iframePlayer.src = '';
   }
   
   document.querySelectorAll('.view-panel').forEach(panel => {
@@ -992,6 +994,47 @@ window.toggleLessonCheckbox = async function(lessonId) {
   renderPlayerSyllabus();
 };
 
+// Convertir URL de video compartida (YouTube, Vimeo, Google Drive) a formato embed para Iframe
+function getEmbedUrl(url) {
+  if (!url) return '';
+  
+  // YouTube
+  if (url.includes('youtube.com') || url.includes('youtu.be')) {
+    let videoId = '';
+    if (url.includes('youtu.be/')) {
+      videoId = url.split('youtu.be/')[1].split(/[?#]/)[0];
+    } else if (url.includes('v=')) {
+      videoId = url.split('v=')[1].split(/[&#]/)[0];
+    } else if (url.includes('embed/')) {
+      videoId = url.split('embed/')[1].split(/[?#]/)[0];
+    }
+    return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
+  }
+  
+  // Vimeo
+  if (url.includes('vimeo.com')) {
+    if (url.includes('player.vimeo.com/video/')) {
+      return url;
+    }
+    const parts = url.split('/');
+    const videoId = parts[parts.length - 1].split(/[?#]/)[0];
+    return `https://player.vimeo.com/video/${videoId}`;
+  }
+  
+  // Google Drive
+  if (url.includes('drive.google.com')) {
+    let fileId = '';
+    if (url.includes('/file/d/')) {
+      fileId = url.split('/file/d/')[1].split('/')[0];
+    } else if (url.includes('id=')) {
+      fileId = url.split('id=')[1].split(/[&#]/)[0];
+    }
+    return fileId ? `https://drive.google.com/file/d/${fileId}/preview` : url;
+  }
+  
+  return ''; // Si no coincide con ninguno, asumimos archivo de video directo (mp4, etc.)
+}
+
 // Cargar y reproducir lección en el reproductor de clases
 function selectPlayerLesson(lesson, mIdx, lIdx) {
   activeLesson = lesson;
@@ -1050,19 +1093,45 @@ function selectPlayerLesson(lesson, mIdx, lIdx) {
     DOM.playerResourcesList.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 20px;">No se han adjuntado archivos o lecturas para esta clase en específico.</p>';
   }
   
-  // Cargar video en reproductor HTML5
+  // Cargar video en reproductor HTML5 o Iframe
   if (lesson.type === 'video') {
-    DOM.videoPlayer.style.display = 'block';
-    DOM.videoPlayer.src = lesson.url;
-    DOM.videoPlayer.load();
-    
-    DOM.videoPlayer.play().catch(e => {
-      console.log("Auto-reproducción bloqueada por políticas del navegador.");
-    });
+    const embedUrl = getEmbedUrl(lesson.url);
+    if (embedUrl) {
+      // Usar Iframe (YouTube, Vimeo, Google Drive)
+      if (DOM.videoPlayer) {
+        DOM.videoPlayer.style.display = 'none';
+        DOM.videoPlayer.src = '';
+      }
+      if (DOM.iframePlayer) {
+        DOM.iframePlayer.style.display = 'block';
+        DOM.iframePlayer.src = embedUrl;
+      }
+    } else {
+      // Usar Reproductor de Video Nativo (Directo MP4, Blob local)
+      if (DOM.iframePlayer) {
+        DOM.iframePlayer.style.display = 'none';
+        DOM.iframePlayer.src = '';
+      }
+      if (DOM.videoPlayer) {
+        DOM.videoPlayer.style.display = 'block';
+        DOM.videoPlayer.src = lesson.url;
+        DOM.videoPlayer.load();
+        DOM.videoPlayer.play().catch(e => {
+          console.log("Auto-reproducción bloqueada por políticas del navegador.");
+        });
+      }
+    }
   } else {
-    DOM.videoPlayer.style.display = 'block';
-    DOM.videoPlayer.src = '';
-    DOM.videoPlayer.poster = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450"><rect width="800" height="450" fill="%23131b2e"/><text x="50%" y="45%" font-family="sans-serif" font-size="28" fill="%2394a3b8" text-anchor="middle">Esta lección es de tipo Documento</text><text x="50%" y="55%" font-family="sans-serif" font-size="16" fill="%2364748b" text-anchor="middle">Puedes descargar y leer el archivo en la pestaña "Material de Apoyo"</text></svg>';
+    // Si es documento, ocultar ambos y mostrar poster de documento
+    if (DOM.iframePlayer) {
+      DOM.iframePlayer.style.display = 'none';
+      DOM.iframePlayer.src = '';
+    }
+    if (DOM.videoPlayer) {
+      DOM.videoPlayer.style.display = 'block';
+      DOM.videoPlayer.src = '';
+      DOM.videoPlayer.poster = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450"><rect width="800" height="450" fill="%23131b2e"/><text x="50%" y="45%" font-family="sans-serif" font-size="28" fill="%2394a3b8" text-anchor="middle">Esta lección es de tipo Documento</text><text x="50%" y="55%" font-family="sans-serif" font-size="16" fill="%2364748b" text-anchor="middle">Puedes descargar y leer el archivo en la pestaña "Material de Apoyo"</text></svg>';
+    }
     
     if (!isLessonCompletedLocal(lesson.id)) {
       toggleLessonCheckbox(lesson.id);

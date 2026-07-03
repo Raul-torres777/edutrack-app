@@ -537,6 +537,12 @@ body.light-theme .nav-tab.active {
   object-fit: contain;
 }
 
+.video-wrapper iframe {
+  width: 100%;
+  height: 100%;
+  display: none;
+}
+
 .class-title-info {
   background: var(--bg-secondary);
   padding: 25px;
