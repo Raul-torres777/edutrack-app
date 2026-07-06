@@ -126,6 +126,7 @@ const DOM = {
   editCourseDescription: document.getElementById('edit-course-description'),
   editCourseInstructor: document.getElementById('edit-course-instructor'),
   editCourseCategory: document.getElementById('edit-course-category'),
+  editCourseCategorySelect: document.getElementById('edit-course-category-select'),
   editCourseDifficulty: document.getElementById('edit-course-difficulty'),
   editCourseTheme: document.getElementById('edit-course-theme'),
   
@@ -213,6 +214,17 @@ function initApp() {
   DOM.btnEditorAddModule.addEventListener('click', openAddModuleModal);
   DOM.btnEditorAddQuestion.addEventListener('click', () => addQuestionField());
   DOM.btnEditorSaveCourse.addEventListener('click', saveCourseFromEditor);
+  
+  DOM.editCourseCategorySelect.addEventListener('change', (e) => {
+    const val = e.target.value;
+    if (val === '__new__') {
+      DOM.editCourseCategory.value = '';
+      DOM.editCourseCategory.placeholder = 'Escribe el nombre de la nueva categoría';
+      DOM.editCourseCategory.focus();
+    } else {
+      DOM.editCourseCategory.value = val;
+    }
+  });
   
   DOM.btnSubmitAddModule.addEventListener('click', submitAddModule);
   DOM.btnSubmitAddLesson.addEventListener('click', submitAddLesson);
@@ -1565,18 +1577,22 @@ function downloadCertificatePNG() {
   link.click();
 }
 
-// Poblar dinámicamente el datalist de categorías de cursos
+// Poblar dinámicamente el selector de categorías de cursos
 async function populateCategoriesDatalist() {
-  const datalist = document.getElementById('categories-list');
-  if (!datalist) return;
+  const select = document.getElementById('edit-course-category-select');
+  if (!select) return;
   try {
     const courses = await db.getCourses();
     const defaultCategories = ['Programación', 'Diseño', 'Negocios', 'Fotografía', 'Idiomas', 'Música'];
     const dbCategories = courses.map(c => c.category).filter(Boolean);
     const allCategories = [...new Set([...defaultCategories, ...dbCategories])];
-    datalist.innerHTML = allCategories.map(cat => `<option value="${cat}">`).join('');
+    
+    let optionsHtml = allCategories.map(cat => `<option value="${cat}">${cat}</option>`).join('');
+    optionsHtml += `<option value="__new__">+ Crear Nueva Categoría...</option>`;
+    
+    select.innerHTML = optionsHtml;
   } catch (err) {
-    console.error('Error al poblar datalist de categorías:', err);
+    console.error('Error al poblar selector de categorías:', err);
   }
 }
 
@@ -1727,6 +1743,7 @@ async function startNewCourseEditor() {
   DOM.editCourseTitle.value = '';
   DOM.editCourseDescription.value = '';
   DOM.editCourseInstructor.value = editingCourse.instructor;
+  DOM.editCourseCategorySelect.value = 'Programación';
   DOM.editCourseCategory.value = 'Programación';
   DOM.editCourseDifficulty.value = 'Principiante';
   DOM.editCourseTheme.value = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
@@ -1753,7 +1770,17 @@ async function loadCourseEditor(courseId) {
     DOM.editCourseTitle.value = editingCourse.title;
     DOM.editCourseDescription.value = editingCourse.description;
     DOM.editCourseInstructor.value = editingCourse.instructor;
-    DOM.editCourseCategory.value = editingCourse.category;
+    
+    DOM.editCourseCategory.value = editingCourse.category || '';
+    DOM.editCourseCategorySelect.value = editingCourse.category || 'Programación';
+    if (!DOM.editCourseCategorySelect.value && editingCourse.category) {
+      const opt = document.createElement('option');
+      opt.value = editingCourse.category;
+      opt.textContent = editingCourse.category;
+      DOM.editCourseCategorySelect.insertBefore(opt, DOM.editCourseCategorySelect.firstChild);
+      DOM.editCourseCategorySelect.value = editingCourse.category;
+    }
+    
     DOM.editCourseDifficulty.value = editingCourse.difficulty;
     DOM.editCourseTheme.value = editingCourse.thumbnail;
     
