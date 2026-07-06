@@ -1890,3 +1890,109 @@ body.light-theme .assigned-course-badge {
   border-color: var(--primary-color);
   box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
 }
+
+/* --- DROPDOWN DE CATEGORÍAS PERSONALIZADO --- */
+.custom-dropdown {
+  position: relative;
+  width: 100%;
+}
+
+.custom-dropdown-trigger {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  padding: 10px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-primary);
+  transition: all 0.3s ease;
+  min-height: 40px;
+}
+
+.custom-dropdown-trigger:hover {
+  border-color: var(--text-secondary);
+}
+
+.custom-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  width: 100%;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  z-index: 1000;
+  max-height: 250px;
+  overflow-y: auto;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+  padding: 5px 0;
+}
+
+.custom-dropdown-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-primary);
+  transition: background 0.2s ease;
+}
+
+.custom-dropdown-item:hover {
+  background: var(--bg-tertiary);
+}
+
+.custom-dropdown-item .item-actions {
+  display: flex;
+  gap: 8px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.custom-dropdown-item:hover .item-actions {
+  opacity: 1;
+}
+
+.custom-dropdown-item .item-actions i {
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  font-size: 13px;
+}
+
+.custom-dropdown-item .item-actions i.fa-pencil-alt {
+  color: var(--text-secondary);
+}
+
+.custom-dropdown-item .item-actions i.fa-pencil-alt:hover {
+  color: var(--primary-color);
+  background: rgba(99, 102, 241, 0.15);
+}
+
+.custom-dropdown-item .item-actions i.fa-trash {
+  color: var(--text-secondary);
+}
+
+.custom-dropdown-item .item-actions i.fa-trash:hover {
+  color: var(--danger-color);
+  background: rgba(220, 53, 69, 0.15);
+}
+
+.custom-dropdown-item.create-new-item {
+  border-top: 1px solid var(--border-color);
+  color: var(--primary-color);
+  font-weight: 600;
+  display: flex;
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+.custom-dropdown-item.create-new-item:hover {
+  background: rgba(99, 102, 241, 0.05);
+}
+

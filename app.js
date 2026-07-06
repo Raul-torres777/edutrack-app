@@ -9,6 +9,7 @@ let activeModuleIndex = 0;
 let activeLessonIndex = 0;
 let activeStudentCategory = 'Todos';
 let activeInstructorCategory = 'Todos';
+let selectedCategory = 'Programación';
 
 let quizState = {
   courseId: null,
@@ -127,8 +128,9 @@ const DOM = {
   editCourseTitle: document.getElementById('edit-course-title'),
   editCourseDescription: document.getElementById('edit-course-description'),
   editCourseInstructor: document.getElementById('edit-course-instructor'),
-  editCourseCategory: document.getElementById('edit-course-category'),
-  editCourseCategorySelect: document.getElementById('edit-course-category-select'),
+  categoryDropdownTrigger: document.getElementById('category-dropdown-trigger'),
+  categoryDropdownMenu: document.getElementById('category-dropdown-menu'),
+  selectedCategoryText: document.getElementById('selected-category-text'),
   editCourseDifficulty: document.getElementById('edit-course-difficulty'),
   editCourseTheme: document.getElementById('edit-course-theme'),
   
@@ -217,87 +219,16 @@ function initApp() {
   DOM.btnEditorAddQuestion.addEventListener('click', () => addQuestionField());
   DOM.btnEditorSaveCourse.addEventListener('click', saveCourseFromEditor);
   
-  DOM.editCourseCategorySelect.addEventListener('change', async (e) => {
-    const val = e.target.value;
-    if (val === '__new__') {
-      const newCat = prompt('Escribe el nombre de la nueva categoría:');
-      if (newCat && newCat.trim()) {
-        const catClean = newCat.trim();
-        const opt = document.createElement('option');
-        opt.value = catClean;
-        opt.textContent = catClean;
-        DOM.editCourseCategorySelect.insertBefore(opt, DOM.editCourseCategorySelect.firstChild);
-        DOM.editCourseCategorySelect.value = catClean;
-        DOM.editCourseCategory.value = catClean;
-      } else {
-        DOM.editCourseCategorySelect.value = DOM.editCourseCategory.value || 'Programación';
-      }
-    } else {
-      DOM.editCourseCategory.value = val;
-    }
+  // Control de Dropdown de Categorías Personalizado
+  DOM.categoryDropdownTrigger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isVisible = DOM.categoryDropdownMenu.style.display === 'block';
+    DOM.categoryDropdownMenu.style.display = isVisible ? 'none' : 'block';
   });
   
-  DOM.btnRenameCategory.addEventListener('click', async () => {
-    const oldName = DOM.editCourseCategorySelect.value;
-    if (!oldName || oldName === '__new__') {
-      alert('Por favor selecciona una categoría válida para renombrar.');
-      return;
-    }
-    
-    const newName = prompt(`Cambiar nombre de la categoría "${oldName}" a:`, oldName);
-    if (newName && newName.trim() && newName.trim() !== oldName) {
-      const nameClean = newName.trim();
-      DOM.btnRenameCategory.disabled = true;
-      try {
-        const courses = await db.getCourses();
-        const coursesToUpdate = courses.filter(c => c.category === oldName);
-        for (const course of coursesToUpdate) {
-          course.category = nameClean;
-          await db.updateCourse(course.id, course);
-        }
-        alert(`Categoría renombrada con éxito en ${coursesToUpdate.length} curso(s).`);
-        await populateCategoriesDatalist();
-        DOM.editCourseCategorySelect.value = nameClean;
-        DOM.editCourseCategory.value = nameClean;
-        await loadInstructorDashboard();
-        await loadStudentDashboard();
-      } catch (err) {
-        console.error(err);
-        alert('Error al renombrar la categoría: ' + err.message);
-      } finally {
-        DOM.btnRenameCategory.disabled = false;
-      }
-    }
-  });
-
-  DOM.btnDeleteCategory.addEventListener('click', async () => {
-    const catName = DOM.editCourseCategorySelect.value;
-    if (!catName || catName === '__new__') {
-      alert('Por favor selecciona una categoría válida para eliminar.');
-      return;
-    }
-    
-    if (confirm(`¿Estás seguro de eliminar la categoría "${catName}"?\nTodos los cursos en esta categoría se cambiarán a "General".`)) {
-      DOM.btnDeleteCategory.disabled = true;
-      try {
-        const courses = await db.getCourses();
-        const coursesToUpdate = courses.filter(c => c.category === catName);
-        for (const course of coursesToUpdate) {
-          course.category = 'General';
-          await db.updateCourse(course.id, course);
-        }
-        alert(`Categoría "${catName}" eliminada con éxito. ${coursesToUpdate.length} curso(s) fueron cambiados a "General".`);
-        await populateCategoriesDatalist();
-        DOM.editCourseCategorySelect.value = 'General';
-        DOM.editCourseCategory.value = 'General';
-        await loadInstructorDashboard();
-        await loadStudentDashboard();
-      } catch (err) {
-        console.error(err);
-        alert('Error al eliminar la categoría: ' + err.message);
-      } finally {
-        DOM.btnDeleteCategory.disabled = false;
-      }
+  document.addEventListener('click', () => {
+    if (DOM.categoryDropdownMenu) {
+      DOM.categoryDropdownMenu.style.display = 'none';
     }
   });
   
@@ -1652,24 +1583,115 @@ function downloadCertificatePNG() {
   link.click();
 }
 
-// Poblar dinámicamente el selector de categorías de cursos
+// Poblar dinámicamente el selector de categorías de cursos (Dropdown Personalizado)
 async function populateCategoriesDatalist() {
-  const select = document.getElementById('edit-course-category-select');
-  if (!select) return;
+  const menu = DOM.categoryDropdownMenu;
+  if (!menu) return;
   try {
     const courses = await db.getCourses();
     const defaultCategories = ['Programación', 'Diseño', 'Negocios', 'Fotografía', 'Idiomas', 'Música'];
     const dbCategories = courses.map(c => c.category).filter(Boolean);
     const allCategories = [...new Set([...defaultCategories, ...dbCategories])];
     
-    let optionsHtml = allCategories.map(cat => `<option value="${cat}">${cat}</option>`).join('');
-    optionsHtml += `<option value="__new__">+ Crear Nueva Categoría...</option>`;
+    let html = allCategories.map(cat => `
+      <div class="custom-dropdown-item" onclick="selectDropdownCategory('${cat}')">
+        <span>${cat}</span>
+        <div class="item-actions">
+          <i class="fas fa-pencil-alt" onclick="renameDropdownCategory(event, '${cat}')" title="Editar nombre"></i>
+          <i class="fas fa-trash" onclick="deleteDropdownCategory(event, '${cat}')" title="Eliminar"></i>
+        </div>
+      </div>
+    `).join('');
     
-    select.innerHTML = optionsHtml;
+    html += `
+      <div class="custom-dropdown-item create-new-item" onclick="createDropdownCategory()">
+        <i class="fas fa-plus"></i>
+        <span>+ Crear Nueva Categoría...</span>
+      </div>
+    `;
+    
+    menu.innerHTML = html;
   } catch (err) {
-    console.error('Error al poblar selector de categorías:', err);
+    console.error('Error al poblar dropdown de categorías:', err);
   }
 }
+
+// Cambiar la categoría seleccionada
+window.selectDropdownCategory = function(catName) {
+  selectedCategory = catName;
+  if (DOM.selectedCategoryText) {
+    DOM.selectedCategoryText.textContent = catName;
+  }
+  if (DOM.categoryDropdownMenu) {
+    DOM.categoryDropdownMenu.style.display = 'none';
+  }
+};
+
+// Crear nueva categoría inline por diálogo prompt
+window.createDropdownCategory = function() {
+  const newCat = prompt('Escribe el nombre de la nueva categoría:');
+  if (newCat && newCat.trim()) {
+    const catClean = newCat.trim();
+    selectDropdownCategory(catClean);
+    populateCategoriesDatalist();
+  }
+};
+
+// Renombrar categoría globalmente
+window.renameDropdownCategory = async function(e, oldName) {
+  e.stopPropagation();
+  const newName = prompt(`Cambiar nombre de la categoría "${oldName}" a:`, oldName);
+  if (newName && newName.trim() && newName.trim() !== oldName) {
+    const nameClean = newName.trim();
+    try {
+      const courses = await db.getCourses();
+      const coursesToUpdate = courses.filter(c => c.category === oldName);
+      for (const course of coursesToUpdate) {
+        course.category = nameClean;
+        await db.updateCourse(course.id, course);
+      }
+      alert(`Categoría renombrada con éxito en ${coursesToUpdate.length} curso(s).`);
+      
+      if (selectedCategory === oldName) {
+        selectDropdownCategory(nameClean);
+      }
+      
+      await populateCategoriesDatalist();
+      await loadInstructorDashboard();
+      await loadStudentDashboard();
+    } catch (err) {
+      console.error(err);
+      alert('Error al renombrar la categoría: ' + err.message);
+    }
+  }
+};
+
+// Eliminar categoría globalmente
+window.deleteDropdownCategory = async function(e, catName) {
+  e.stopPropagation();
+  if (confirm(`¿Estás seguro de eliminar la categoría "${catName}"?\nTodos los cursos en esta categoría se cambiarán a "General".`)) {
+    try {
+      const courses = await db.getCourses();
+      const coursesToUpdate = courses.filter(c => c.category === catName);
+      for (const course of coursesToUpdate) {
+        course.category = 'General';
+        await db.updateCourse(course.id, course);
+      }
+      alert(`Categoría "${catName}" eliminada con éxito. ${coursesToUpdate.length} curso(s) fueron cambiados a "General".`);
+      
+      if (selectedCategory === catName) {
+        selectDropdownCategory('General');
+      }
+      
+      await populateCategoriesDatalist();
+      await loadInstructorDashboard();
+      await loadStudentDashboard();
+    } catch (err) {
+      console.error(err);
+      alert('Error al eliminar la categoría: ' + err.message);
+    }
+  }
+};
 
 
 
@@ -1820,8 +1842,7 @@ async function startNewCourseEditor() {
   DOM.editCourseTitle.value = '';
   DOM.editCourseDescription.value = '';
   DOM.editCourseInstructor.value = editingCourse.instructor;
-  DOM.editCourseCategorySelect.value = 'Programación';
-  DOM.editCourseCategory.value = 'Programación';
+  selectDropdownCategory('Programación');
   DOM.editCourseDifficulty.value = 'Principiante';
   DOM.editCourseTheme.value = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
   
@@ -1848,15 +1869,7 @@ async function loadCourseEditor(courseId) {
     DOM.editCourseDescription.value = editingCourse.description;
     DOM.editCourseInstructor.value = editingCourse.instructor;
     
-    DOM.editCourseCategory.value = editingCourse.category || '';
-    DOM.editCourseCategorySelect.value = editingCourse.category || 'Programación';
-    if (!DOM.editCourseCategorySelect.value && editingCourse.category) {
-      const opt = document.createElement('option');
-      opt.value = editingCourse.category;
-      opt.textContent = editingCourse.category;
-      DOM.editCourseCategorySelect.insertBefore(opt, DOM.editCourseCategorySelect.firstChild);
-      DOM.editCourseCategorySelect.value = editingCourse.category;
-    }
+    selectDropdownCategory(editingCourse.category || 'Programación');
     
     DOM.editCourseDifficulty.value = editingCourse.difficulty;
     DOM.editCourseTheme.value = editingCourse.thumbnail;
@@ -2126,7 +2139,7 @@ async function saveCourseFromEditor() {
   const title = DOM.editCourseTitle.value.trim();
   const description = DOM.editCourseDescription.value.trim();
   const instructor = DOM.editCourseInstructor.value.trim();
-  const category = DOM.editCourseCategory.value;
+  const category = selectedCategory;
   const difficulty = DOM.editCourseDifficulty.value;
   const theme = DOM.editCourseTheme.value;
   
