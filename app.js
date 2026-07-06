@@ -1583,15 +1583,38 @@ function downloadCertificatePNG() {
   link.click();
 }
 
+// Obtener la lista de categorías (combinando localStorage y base de datos)
+async function getCategoriesList() {
+  const defaultCats = ['Programación', 'Diseño', 'Negocios', 'Fotografía', 'Idiomas', 'Música'];
+  let localCats = localStorage.getItem('edutrack_categories');
+  if (localCats) {
+    try {
+      localCats = JSON.parse(localCats);
+    } catch (e) {
+      localCats = defaultCats;
+    }
+  } else {
+    localCats = defaultCats;
+    localStorage.setItem('edutrack_categories', JSON.stringify(localCats));
+  }
+  
+  try {
+    const courses = await db.getCourses();
+    const dbCategories = courses.map(c => c.category).filter(Boolean);
+    const merged = [...new Set([...localCats, ...dbCategories])];
+    return merged;
+  } catch (err) {
+    console.error('Error al obtener cursos para categorías:', err);
+    return localCats;
+  }
+}
+
 // Poblar dinámicamente el selector de categorías de cursos (Dropdown Personalizado)
 async function populateCategoriesDatalist() {
   const menu = DOM.categoryDropdownMenu;
   if (!menu) return;
   try {
-    const courses = await db.getCourses();
-    const defaultCategories = ['Programación', 'Diseño', 'Negocios', 'Fotografía', 'Idiomas', 'Música'];
-    const dbCategories = courses.map(c => c.category).filter(Boolean);
-    const allCategories = [...new Set([...defaultCategories, ...dbCategories])];
+    const allCategories = await getCategoriesList();
     
     let html = allCategories.map(cat => `
       <div class="custom-dropdown-item" onclick="selectDropdownCategory('${cat}')">
@@ -1628,12 +1651,19 @@ window.selectDropdownCategory = function(catName) {
 };
 
 // Crear nueva categoría inline por diálogo prompt
-window.createDropdownCategory = function() {
+window.createDropdownCategory = async function() {
   const newCat = prompt('Escribe el nombre de la nueva categoría:');
   if (newCat && newCat.trim()) {
     const catClean = newCat.trim();
+    
+    let cats = await getCategoriesList();
+    if (!cats.includes(catClean)) {
+      cats.push(catClean);
+      localStorage.setItem('edutrack_categories', JSON.stringify(cats));
+    }
+    
     selectDropdownCategory(catClean);
-    populateCategoriesDatalist();
+    await populateCategoriesDatalist();
   }
 };
 
@@ -1644,13 +1674,20 @@ window.renameDropdownCategory = async function(e, oldName) {
   if (newName && newName.trim() && newName.trim() !== oldName) {
     const nameClean = newName.trim();
     try {
+      // 1. Actualizar en localStorage
+      let cats = await getCategoriesList();
+      cats = cats.map(c => c === oldName ? nameClean : c);
+      localStorage.setItem('edutrack_categories', JSON.stringify(cats));
+      
+      // 2. Actualizar en la base de datos de Supabase para cursos vinculados
       const courses = await db.getCourses();
       const coursesToUpdate = courses.filter(c => c.category === oldName);
       for (const course of coursesToUpdate) {
         course.category = nameClean;
         await db.updateCourse(course.id, course);
       }
-      alert(`Categoría renombrada con éxito en ${coursesToUpdate.length} curso(s).`);
+      
+      alert(`Categoría renombrada con éxito.`);
       
       if (selectedCategory === oldName) {
         selectDropdownCategory(nameClean);
@@ -1671,13 +1708,20 @@ window.deleteDropdownCategory = async function(e, catName) {
   e.stopPropagation();
   if (confirm(`¿Estás seguro de eliminar la categoría "${catName}"?\nTodos los cursos en esta categoría se cambiarán a "General".`)) {
     try {
+      // 1. Actualizar en localStorage
+      let cats = await getCategoriesList();
+      cats = cats.filter(c => c !== catName);
+      localStorage.setItem('edutrack_categories', JSON.stringify(cats));
+      
+      // 2. Actualizar en la base de datos de Supabase para cursos vinculados
       const courses = await db.getCourses();
       const coursesToUpdate = courses.filter(c => c.category === catName);
       for (const course of coursesToUpdate) {
         course.category = 'General';
         await db.updateCourse(course.id, course);
       }
-      alert(`Categoría "${catName}" eliminada con éxito. ${coursesToUpdate.length} curso(s) fueron cambiados a "General".`);
+      
+      alert(`Categoría "${catName}" eliminada con éxito.`);
       
       if (selectedCategory === catName) {
         selectDropdownCategory('General');
