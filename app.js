@@ -116,7 +116,8 @@ const DOM = {
   btnEditorBack: document.getElementById('btn-editor-back'),
   btnEditorSaveCourse: document.getElementById('btn-editor-save-course'),
   btnEditorAddModule: document.getElementById('btn-editor-add-module'),
-  btnManageCategories: document.getElementById('btn-manage-categories'),
+  btnRenameCategory: document.getElementById('btn-rename-category'),
+  btnDeleteCategory: document.getElementById('btn-delete-category'),
   btnEditorAddQuestion: document.getElementById('btn-editor-add-question'),
   curriculumBuilderList: document.getElementById('curriculum-builder-list'),
   quizBuilderQuestionsList: document.getElementById('quiz-builder-questions-list'),
@@ -139,7 +140,6 @@ const DOM = {
   // Modales
   modalAddModule: document.getElementById('modal-add-module'),
   modalAddLesson: document.getElementById('modal-add-lesson'),
-  modalManageCategories: document.getElementById('modal-manage-categories'),
   newModuleTitle: document.getElementById('new-module-title'),
   btnSubmitAddModule: document.getElementById('btn-submit-add-module'),
   
@@ -217,18 +217,89 @@ function initApp() {
   DOM.btnEditorAddQuestion.addEventListener('click', () => addQuestionField());
   DOM.btnEditorSaveCourse.addEventListener('click', saveCourseFromEditor);
   
-  DOM.editCourseCategorySelect.addEventListener('change', (e) => {
+  DOM.editCourseCategorySelect.addEventListener('change', async (e) => {
     const val = e.target.value;
     if (val === '__new__') {
-      DOM.editCourseCategory.value = '';
-      DOM.editCourseCategory.placeholder = 'Escribe el nombre de la nueva categoría';
-      DOM.editCourseCategory.focus();
+      const newCat = prompt('Escribe el nombre de la nueva categoría:');
+      if (newCat && newCat.trim()) {
+        const catClean = newCat.trim();
+        const opt = document.createElement('option');
+        opt.value = catClean;
+        opt.textContent = catClean;
+        DOM.editCourseCategorySelect.insertBefore(opt, DOM.editCourseCategorySelect.firstChild);
+        DOM.editCourseCategorySelect.value = catClean;
+        DOM.editCourseCategory.value = catClean;
+      } else {
+        DOM.editCourseCategorySelect.value = DOM.editCourseCategory.value || 'Programación';
+      }
     } else {
       DOM.editCourseCategory.value = val;
     }
   });
   
-  DOM.btnManageCategories.addEventListener('click', openManageCategoriesModal);
+  DOM.btnRenameCategory.addEventListener('click', async () => {
+    const oldName = DOM.editCourseCategorySelect.value;
+    if (!oldName || oldName === '__new__') {
+      alert('Por favor selecciona una categoría válida para renombrar.');
+      return;
+    }
+    
+    const newName = prompt(`Cambiar nombre de la categoría "${oldName}" a:`, oldName);
+    if (newName && newName.trim() && newName.trim() !== oldName) {
+      const nameClean = newName.trim();
+      DOM.btnRenameCategory.disabled = true;
+      try {
+        const courses = await db.getCourses();
+        const coursesToUpdate = courses.filter(c => c.category === oldName);
+        for (const course of coursesToUpdate) {
+          course.category = nameClean;
+          await db.updateCourse(course.id, course);
+        }
+        alert(`Categoría renombrada con éxito en ${coursesToUpdate.length} curso(s).`);
+        await populateCategoriesDatalist();
+        DOM.editCourseCategorySelect.value = nameClean;
+        DOM.editCourseCategory.value = nameClean;
+        await loadInstructorDashboard();
+        await loadStudentDashboard();
+      } catch (err) {
+        console.error(err);
+        alert('Error al renombrar la categoría: ' + err.message);
+      } finally {
+        DOM.btnRenameCategory.disabled = false;
+      }
+    }
+  });
+
+  DOM.btnDeleteCategory.addEventListener('click', async () => {
+    const catName = DOM.editCourseCategorySelect.value;
+    if (!catName || catName === '__new__') {
+      alert('Por favor selecciona una categoría válida para eliminar.');
+      return;
+    }
+    
+    if (confirm(`¿Estás seguro de eliminar la categoría "${catName}"?\nTodos los cursos en esta categoría se cambiarán a "General".`)) {
+      DOM.btnDeleteCategory.disabled = true;
+      try {
+        const courses = await db.getCourses();
+        const coursesToUpdate = courses.filter(c => c.category === catName);
+        for (const course of coursesToUpdate) {
+          course.category = 'General';
+          await db.updateCourse(course.id, course);
+        }
+        alert(`Categoría "${catName}" eliminada con éxito. ${coursesToUpdate.length} curso(s) fueron cambiados a "General".`);
+        await populateCategoriesDatalist();
+        DOM.editCourseCategorySelect.value = 'General';
+        DOM.editCourseCategory.value = 'General';
+        await loadInstructorDashboard();
+        await loadStudentDashboard();
+      } catch (err) {
+        console.error(err);
+        alert('Error al eliminar la categoría: ' + err.message);
+      } finally {
+        DOM.btnDeleteCategory.disabled = false;
+      }
+    }
+  });
   
   DOM.btnSubmitAddModule.addEventListener('click', submitAddModule);
   DOM.btnSubmitAddLesson.addEventListener('click', submitAddLesson);
@@ -1600,136 +1671,7 @@ async function populateCategoriesDatalist() {
   }
 }
 
-// Abrir modal de gestión de categorías
-async function openManageCategoriesModal() {
-  DOM.modalManageCategories.classList.add('active');
-  await renderManageCategoriesList();
-}
 
-// Renderizar la lista de categorías editables
-async function renderManageCategoriesList() {
-  const container = document.getElementById('manage-categories-list');
-  if (!container) return;
-  try {
-    const courses = await db.getCourses();
-    const defaultCategories = ['Programación', 'Diseño', 'Negocios', 'Fotografía', 'Idiomas', 'Música'];
-    const dbCategories = courses.map(c => c.category).filter(Boolean);
-    const allCategories = [...new Set([...defaultCategories, ...dbCategories])];
-    
-    container.innerHTML = allCategories.map(cat => {
-      return `
-        <div style="display: flex; gap: 8px; align-items: center;">
-          <input type="text" class="form-control edit-cat-name-input" value="${cat}" data-original="${cat}" style="flex: 1; height: 38px;">
-          <button class="btn btn-secondary btn-icon btn-save-cat" onclick="saveCategoryName(this)" title="Guardar cambios" style="height: 38px; width: 38px; display: flex; align-items: center; justify-content: center; padding: 0;">
-            <i class="fas fa-save"></i>
-          </button>
-          <button class="btn btn-danger btn-icon btn-delete-cat" onclick="deleteCategory(this)" title="Eliminar categoría" style="height: 38px; width: 38px; display: flex; align-items: center; justify-content: center; padding: 0; background: var(--danger-color); color: #fff; border: none;">
-            <i class="fas fa-trash"></i>
-          </button>
-        </div>
-      `;
-    }).join('');
-  } catch (err) {
-    console.error('Error al renderizar categorías:', err);
-    container.innerHTML = `<p style="color: var(--danger-color);">Error al cargar categorías.</p>`;
-  }
-}
-
-// Guardar nombre nuevo de la categoría (globalmente en todos los cursos)
-window.saveCategoryName = async function(btn) {
-  const row = btn.parentElement;
-  const input = row.querySelector('.edit-cat-name-input');
-  const oldName = input.getAttribute('data-original');
-  const newName = input.value.trim();
-  
-  if (!newName) {
-    alert('El nombre de la categoría no puede estar vacío.');
-    return;
-  }
-  
-  if (oldName === newName) {
-    alert('No se detectaron cambios en el nombre.');
-    return;
-  }
-  
-  btn.disabled = true;
-  const icon = btn.querySelector('i');
-  icon.className = 'fas fa-spinner fa-spin';
-  
-  try {
-    const courses = await db.getCourses();
-    const coursesToUpdate = courses.filter(c => c.category === oldName);
-    
-    for (const course of coursesToUpdate) {
-      course.category = newName;
-      await db.updateCourse(course.id, course);
-    }
-    
-    alert(`Categoría renombrada de "${oldName}" a "${newName}" en ${coursesToUpdate.length} curso(s).`);
-    
-    // Recargar componentes de la interfaz
-    await populateCategoriesDatalist();
-    await renderManageCategoriesList();
-    
-    if (DOM.editCourseCategory.value === oldName) {
-      DOM.editCourseCategory.value = newName;
-      DOM.editCourseCategorySelect.value = newName;
-    }
-    
-    await loadInstructorDashboard();
-    await loadStudentDashboard();
-  } catch (err) {
-    console.error(err);
-    alert('Error al renombrar categoría: ' + err.message);
-  } finally {
-    btn.disabled = false;
-    icon.className = 'fas fa-save';
-  }
-};
-
-// Eliminar categoría (restablece a 'General' en todos los cursos)
-window.deleteCategory = async function(btn) {
-  const row = btn.parentElement;
-  const input = row.querySelector('.edit-cat-name-input');
-  const catName = input.getAttribute('data-original');
-  
-  if (!confirm(`¿Estás seguro de eliminar la categoría "${catName}"?\nTodos los cursos de esta categoría se cambiarán a la categoría "General".`)) {
-    return;
-  }
-  
-  btn.disabled = true;
-  const icon = btn.querySelector('i');
-  icon.className = 'fas fa-spinner fa-spin';
-  
-  try {
-    const courses = await db.getCourses();
-    const coursesToUpdate = courses.filter(c => c.category === catName);
-    
-    for (const course of coursesToUpdate) {
-      course.category = 'General';
-      await db.updateCourse(course.id, course);
-    }
-    
-    alert(`Categoría "${catName}" eliminada con éxito. ${coursesToUpdate.length} curso(s) fueron movidos a "General".`);
-    
-    await populateCategoriesDatalist();
-    await renderManageCategoriesList();
-    
-    if (DOM.editCourseCategory.value === catName) {
-      DOM.editCourseCategory.value = 'General';
-      DOM.editCourseCategorySelect.value = 'General';
-    }
-    
-    await loadInstructorDashboard();
-    await loadStudentDashboard();
-  } catch (err) {
-    console.error(err);
-    alert('Error al eliminar la categoría: ' + err.message);
-  } finally {
-    btn.disabled = false;
-    icon.className = 'fas fa-trash';
-  }
-};
 
 // Renderizar filtros de categorías dinámicos
 function renderCategoryFilters(containerId, courses, activeCategory, onClickCallbackName) {
