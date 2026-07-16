@@ -130,7 +130,7 @@ export const db = {
       username,
       email,
       phone,
-      password: null, // No almacenamos la contraseña en texto plano por seguridad
+      password: "(encriptada)", // Se usa un placeholder no nulo por la restricción NOT NULL de la base de datos
       role: 'student',
       assigned_courses: [],
       registered_at: new Date().toISOString()
@@ -236,7 +236,7 @@ export const db = {
   async clearPlaintextPassword(userId) {
     const { error } = await supabase
       .from('users')
-      .update({ password: null })
+      .update({ password: "(encriptada)" })
       .eq('id', userId);
     if (error) throw error;
     return true;
