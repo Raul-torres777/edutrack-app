@@ -646,14 +646,14 @@
           <!-- Paso A: Identificar -->
           <div id="recovery-step-1">
             <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 20px; line-height: 1.5; text-align: center;">
-              Ingresa tu nombre de usuario, correo o teléfono registrado. Te enviaremos un código de validación.
+              Ingresa tu nombre de usuario, correo o celular. Te enviaremos un correo electrónico con un enlace seguro para restablecer tu contraseña.
             </p>
             <div class="form-group">
               <label for="recovery-identifier">Identificador de Usuario</label>
               <input type="text" class="form-control" id="recovery-identifier" placeholder="usuario, correo o celular">
             </div>
-            <button type="button" class="btn btn-primary btn-block" id="btn-recovery-send" onclick="sendRecoveryCode()" style="margin-top: 20px;">
-              Enviar Código de Validación <i class="fas fa-paper-plane"></i>
+            <button type="button" class="btn btn-primary btn-block" id="btn-recovery-send" onclick="sendRecoveryEmail()" style="margin-top: 20px;">
+              Enviar Enlace de Recuperación <i class="fas fa-paper-plane"></i>
             </button>
           </div>
 

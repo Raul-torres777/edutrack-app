@@ -5,7 +5,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 const SUPABASE_URL = 'https://fegbjrmzgxpdllianhfy.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_Evh8a4ODcKE72arLSSeStw_Flous6TL';
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Utilidad para simular latencia opcional (Supabase ya tiene latencia de red real)
 const delay = (ms = 50) => new Promise(resolve => setTimeout(resolve, ms));
@@ -62,6 +62,8 @@ initDB();
  * Módulo de Base de Datos - API Asíncrona conectada a Supabase
  */
 export const db = {
+  // Exponer el cliente para uso de app.js (ej. AuthStateListener)
+  supabase,
   
   // --- AUTENTICACIÓN Y USUARIOS ---
 
@@ -81,9 +83,10 @@ export const db = {
     const password = userData.password;
 
     // Obtener todos los usuarios para validar duplicados
-    const users = await this.getUsers();
+    const { data: existingUsers, error: getError } = await supabase.from('users').select('username, email, phone');
+    if (getError) throw getError;
     
-    const duplicate = users.find(u => 
+    const duplicate = existingUsers.find(u => 
       u.username.toLowerCase() === username.toLowerCase() ||
       (email && u.email && u.email.toLowerCase() === email) ||
       (phone && u.phone === phone)
@@ -105,12 +108,29 @@ export const db = {
       throw new Error('Este nombre de usuario o correo está reservado para administración.');
     }
 
+    // 1. Registrar en Supabase Auth nativo
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email: email || undefined,
+      password: password,
+      options: {
+        data: {
+          username: username,
+          phone: phone,
+          role: 'student'
+        }
+      }
+    });
+
+    if (authError) throw authError;
+    if (!authData.user) throw new Error('No se pudo completar el registro de autenticación.');
+
+    // 2. Insertar en la tabla pública de perfiles (public.users) usando el UUID de Auth
     const newUser = {
-      id: 'user-' + Date.now(),
+      id: authData.user.id,
       username,
       email,
       phone,
-      password,
+      password: null, // No almacenamos la contraseña en texto plano por seguridad
       role: 'student',
       assigned_courses: [],
       registered_at: new Date().toISOString()
@@ -119,8 +139,7 @@ export const db = {
     const { error: insertError } = await supabase.from('users').insert([newUser]);
     if (insertError) throw insertError;
 
-    const { password: _, ...userWithoutPassword } = mapUser(newUser);
-    return userWithoutPassword;
+    return mapUser(newUser);
   },
 
   async getStudents() {
@@ -162,9 +181,9 @@ export const db = {
       };
     }
 
-    // 2. Buscar Estudiante en la base de datos de Supabase
-    const { data: users, error } = await supabase.from('users').select('*');
-    if (error) throw error;
+    // 2. Buscar Estudiante en la base de datos pública para obtener su correo electrónico
+    const { data: users, error: selectError } = await supabase.from('users').select('*');
+    if (selectError) throw selectError;
 
     const user = users.find(u => 
       u.username.toLowerCase() === idClean.toLowerCase() ||
@@ -176,14 +195,54 @@ export const db = {
       throw new Error('Usuario, correo o teléfono no encontrado.');
     }
 
-    if (user.password !== password) {
-      throw new Error('Contraseña incorrecta.');
+    if (!user.email) {
+      throw new Error('Este estudiante no tiene correo electrónico asociado para iniciar sesión.');
+    }
+
+    // 3. Autenticar usando Supabase Auth
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      email: user.email,
+      password: password
+    });
+
+    if (authError) {
+      if (authError.message.includes('Invalid login credentials')) {
+        throw new Error('Contraseña incorrecta.');
+      }
+      throw authError;
     }
 
     const { password: _, ...userWithoutPassword } = mapUser(user);
     return userWithoutPassword;
   },
 
+  // Flujo nativo de recuperación por correo
+  async sendPasswordResetEmail(email) {
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
+      redirectTo: window.location.origin + window.location.pathname
+    });
+    if (error) throw error;
+    return true;
+  },
+
+  // Cambiar contraseña del usuario actualmente logueado
+  async updateLoggedInUserPassword(newPassword) {
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) throw error;
+    return true;
+  },
+
+  // Limpiar / borrar contraseña en texto plano por seguridad
+  async clearPlaintextPassword(userId) {
+    const { error } = await supabase
+      .from('users')
+      .update({ password: null })
+      .eq('id', userId);
+    if (error) throw error;
+    return true;
+  },
+
+  // Método legacy por compatibilidad (si se llamara en otro lado)
   async updateUserPassword(identifier, newPassword) {
     const idClean = identifier.trim().toLowerCase();
     

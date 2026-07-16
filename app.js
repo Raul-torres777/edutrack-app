@@ -264,6 +264,28 @@ function initApp() {
     btn.addEventListener('click', () => showView('view-student-dashboard'));
   });
   
+  // --- ESCUCHAR EVENTOS DE RECUPERACIÓN DE CONTRASEÑA EN SUPABASE ---
+  db.supabase.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'PASSWORD_RECOVERY') {
+      console.log('Recuperación de contraseña nativa detectada. Mostrando formulario de nueva contraseña.');
+      // Ocultar pantalla de auth normal, mostrar panel de recuperación
+      DOM.authTabBar.style.display = 'none';
+      DOM.authLoginForm.classList.remove('active');
+      DOM.authRegisterForm.classList.remove('active');
+      DOM.authRecoveryPanel.classList.add('active');
+      
+      // Mostrar el Paso 3 directamente (establecer nueva contraseña)
+      document.getElementById('recovery-step-1').style.display = 'none';
+      document.getElementById('recovery-step-2').style.display = 'none';
+      document.getElementById('recovery-step-3').style.display = 'block';
+      DOM.recoveryNewPassword.value = '';
+      DOM.recoveryConfirmPassword.value = '';
+      
+      // Mostrar la vista de login/auth por si acaso
+      showView('view-auth');
+    }
+  });
+
   // --- CARGAR SESIÓN DE USUARIO ---
   checkUserSession();
 }
@@ -287,6 +309,14 @@ async function resetDatabase() {
 
 // === COMPROBAR SESIÓN DE USUARIO ===
 async function checkUserSession() {
+  // Si estamos en medio de un redireccionamiento de recuperación de contraseña de Supabase,
+  // evitamos cargar la interfaz normal y esperamos al listener de auth
+  if (window.location.hash.includes('type=recovery') || window.location.hash.includes('access_token')) {
+    console.log('Esperando redirección de recuperación de contraseña...');
+    showView('view-auth');
+    return;
+  }
+
   const sessionData = localStorage.getItem('edutrack_current_user');
   
   if (sessionData) {
@@ -297,15 +327,25 @@ async function checkUserSession() {
       setupAuthenticatedUI();
       switchRole('instructor');
     } else {
-      // Recargar estudiante de la base de datos para obtener asignación de cursos en tiempo real
+      // Recargar estudiante desde Supabase Auth y sincronizar perfil
       try {
-        const users = await db.getUsers();
-        const student = users.find(u => u.id === cachedUser.id);
-        if (student) {
-          currentUser = student;
-          localStorage.setItem('edutrack_current_user', JSON.stringify(student));
+        const { data: { session }, error } = await db.supabase.auth.getSession();
+        if (session && session.user) {
+          const users = await db.getUsers();
+          const student = users.find(u => u.id === session.user.id);
+          if (student) {
+            currentUser = student;
+            localStorage.setItem('edutrack_current_user', JSON.stringify(student));
+          } else {
+            currentUser = cachedUser;
+          }
         } else {
-          currentUser = cachedUser;
+          // Si expiró la sesión de Supabase Auth, forzar deslogueo
+          currentUser = null;
+          localStorage.removeItem('edutrack_current_user');
+          setupLoggedOutUI();
+          showView('view-auth');
+          return;
         }
       } catch (err) {
         console.error('Error al sincronizar sesión del estudiante:', err);
@@ -315,7 +355,24 @@ async function checkUserSession() {
       switchRole('student');
     }
   } else {
-    // Si no hay sesión, forzar la vista de Login
+    // Si no hay sesión local, verificar si hay una sesión activa de Supabase Auth
+    try {
+      const { data: { session }, error } = await db.supabase.auth.getSession();
+      if (session && session.user) {
+        const users = await db.getUsers();
+        const student = users.find(u => u.id === session.user.id);
+        if (student) {
+          currentUser = student;
+          localStorage.setItem('edutrack_current_user', JSON.stringify(student));
+          setupAuthenticatedUI();
+          switchRole('student');
+          return;
+        }
+      }
+    } catch (err) {
+      console.error('Error al comprobar sesión automática en Supabase:', err);
+    }
+
     currentUser = null;
     setupLoggedOutUI();
     showView('view-auth');
@@ -511,9 +568,10 @@ function cancelRecoveryFlow() {
   switchAuthTab('login');
 }
 
-// Enviar código de verificación ficticio
-async function sendRecoveryCode() {
+// Enviar correo de restablecimiento nativo de Supabase
+async function sendRecoveryEmail() {
   DOM.authErrorMsg.style.display = 'none';
+  DOM.authSuccessMsg.style.display = 'none';
   
   const identifier = DOM.recoveryIdentifier.value.trim();
   if (!identifier) {
@@ -526,60 +584,58 @@ async function sendRecoveryCode() {
     const users = await db.getUsers();
     const cleanId = identifier.toLowerCase();
     
-    const userExists = users.some(u => 
+    const user = users.find(u => 
       u.email.toLowerCase() === cleanId || 
       u.phone === cleanId ||
       u.username.toLowerCase() === cleanId
     );
     
-    if (!userExists) {
+    if (!user) {
       if (cleanId === 'raul20centavos@gmail.com' || cleanId === 'administrador') {
         throw new Error('La cuenta de Administrador no puede ser restablecida localmente.');
       }
       throw new Error('No se encontró ningún estudiante registrado con ese identificador.');
     }
+
+    if (!user.email) {
+      throw new Error('Este estudiante no tiene correo electrónico asociado para enviarle el restablecimiento.');
+    }
     
-    // Generar código aleatorio
-    const simulatedCode = Math.floor(100000 + Math.random() * 900000).toString();
+    // Guardar identificador para saber a quién actualizar
     recoveryCodeState = {
-      code: simulatedCode,
-      identifier
+      code: 'native_flow',
+      identifier: user.username
     };
+
+    // Disparar correo de Supabase Auth
+    await db.sendPasswordResetEmail(user.email);
     
-    // Mostrar código en la tarjeta
-    DOM.simulatedCodeDisplay.textContent = simulatedCode;
+    // Ocultar campos y mostrar mensaje de éxito
+    DOM.authSuccessText.textContent = `Se ha enviado un enlace de recuperación a: ${user.email.substring(0, 3)}***@${user.email.split('@')[1]}. Por favor, revisa tu correo y haz clic en el enlace.`;
+    DOM.authSuccessMsg.style.display = 'flex';
     
-    // Avanzar a Paso 2
-    document.getElementById('recovery-step-1').style.display = 'none';
-    document.getElementById('recovery-step-2').style.display = 'block';
-    DOM.recoveryCodeInput.value = '';
+    const btn = document.getElementById('btn-recovery-send');
+    if (btn) {
+      btn.disabled = true;
+      setTimeout(() => { btn.disabled = false; }, 30000);
+    }
   } catch (err) {
     DOM.authErrorText.textContent = err.message;
     DOM.authErrorMsg.style.display = 'flex';
   }
 }
 
-// Validar código ingresado
+// Validar código ingresado (legacy / no-op)
 function verifyRecoveryCode() {
   DOM.authErrorMsg.style.display = 'none';
-  const inputCode = DOM.recoveryCodeInput.value.trim();
-  
-  if (inputCode === recoveryCodeState.code) {
-    // Avanzar a Paso 3
-    document.getElementById('recovery-step-2').style.display = 'none';
-    document.getElementById('recovery-step-3').style.display = 'block';
-    
-    DOM.recoveryNewPassword.value = '';
-    DOM.recoveryConfirmPassword.value = '';
-  } else {
-    DOM.authErrorText.textContent = 'El código ingresado es incorrecto o inválido.';
-    DOM.authErrorMsg.style.display = 'flex';
-  }
+  DOM.authErrorText.textContent = 'El flujo ahora utiliza recuperación por correo directa. Por favor, haz clic en el enlace recibido.';
+  DOM.authErrorMsg.style.display = 'flex';
 }
 
-// Guardar nueva contraseña
+// Guardar nueva contraseña en Supabase Auth
 async function saveNewPassword() {
   DOM.authErrorMsg.style.display = 'none';
+  DOM.authSuccessMsg.style.display = 'none';
   const newPass = DOM.recoveryNewPassword.value;
   const confirmPass = DOM.recoveryConfirmPassword.value;
   
@@ -595,12 +651,22 @@ async function saveNewPassword() {
   }
   
   try {
-    await db.updateUserPassword(recoveryCodeState.identifier, newPass);
+    // 1. Obtener la sesión activa de recuperación de Supabase Auth
+    const { data: { session } } = await db.supabase.auth.getSession();
+    if (session && session.user) {
+      // 2. Actualizar contraseña nativa en Auth
+      await db.updateLoggedInUserPassword(newPass);
+      // 3. Limpiar contraseña en texto plano en public.users
+      await db.clearPlaintextPassword(session.user.id);
+    } else {
+      throw new Error('No hay ninguna sesión activa de recuperación de contraseña. Por favor, solicita un nuevo enlace de recuperación.');
+    }
     
-    DOM.authSuccessText.textContent = 'Contraseña restablecida con éxito. Inicia sesión con tus nuevas credenciales.';
+    DOM.authSuccessText.textContent = 'Contraseña restablecida con éxito. Redirigiendo al inicio de sesión...';
     DOM.authSuccessMsg.style.display = 'flex';
     
     setTimeout(() => {
+      logoutUser();
       cancelRecoveryFlow();
     }, 2000);
   } catch (err) {
@@ -613,6 +679,7 @@ async function saveNewPassword() {
 function logoutUser() {
   currentUser = null;
   localStorage.removeItem('edutrack_current_user');
+  db.supabase.auth.signOut().catch(err => console.error('Error al cerrar sesión en Supabase:', err));
   setupLoggedOutUI();
   showView('view-auth');
 }
@@ -2267,6 +2334,7 @@ window.submitRegister = submitRegister;
 window.startRecoveryFlow = startRecoveryFlow;
 window.cancelRecoveryFlow = cancelRecoveryFlow;
 window.sendRecoveryCode = sendRecoveryCode;
+window.sendRecoveryEmail = sendRecoveryEmail;
 window.verifyRecoveryCode = verifyRecoveryCode;
 window.saveNewPassword = saveNewPassword;
 window.openAssignCoursesModal = openAssignCoursesModal;
