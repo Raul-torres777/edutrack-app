@@ -1,4 +1,4 @@
-import { db } from './db.js?v=6';
+import { db } from './db.js?v=7';
 
 // === ESTADO GLOBAL DE LA APP ===
 let currentUser = null; // Almacenará el usuario logueado en la sesión
@@ -283,6 +283,30 @@ function initApp() {
       
       // Mostrar la vista de login/auth por si acaso
       showView('view-auth');
+    } else if (event === 'SIGNED_IN' && session) {
+      const isRecovery = window.location.hash.includes('type=recovery') || window.location.hash.includes('recovery');
+      const isConfirmation = window.location.hash.includes('access_token');
+      
+      if (!isRecovery && isConfirmation) {
+        console.log('Usuario confirmado por correo (SIGNED_IN). Sincronizando perfil...');
+        try {
+          const users = await db.getUsers();
+          const student = users.find(u => u.id === session.user.id);
+          if (student) {
+            currentUser = student;
+            localStorage.setItem('edutrack_current_user', JSON.stringify(student));
+            setupAuthenticatedUI();
+            switchRole('student');
+            
+            // Limpiar el hash de la URL para que no quede expuesto el token
+            if (window.location.hash) {
+              window.history.replaceState(null, null, window.location.pathname);
+            }
+          }
+        } catch (err) {
+          console.error('Error al sincronizar sesión tras confirmación:', err);
+        }
+      }
     }
   });
 
