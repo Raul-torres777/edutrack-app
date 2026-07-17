@@ -1,4 +1,4 @@
-import { db } from './db.js?v=9';
+import { db } from './db.js?v=10';
 
 // === ESTADO GLOBAL DE LA APP ===
 let currentUser = null; // Almacenará el usuario logueado en la sesión
@@ -266,7 +266,9 @@ function initApp() {
   
   // --- ESCUCHAR EVENTOS DE RECUPERACIÓN DE CONTRASEÑA EN SUPABASE ---
   db.supabase.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'PASSWORD_RECOVERY') {
+    const isRecovery = window.location.hash.includes('type=recovery') || window.location.hash.includes('recovery');
+
+    if (event === 'PASSWORD_RECOVERY' || ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && isRecovery)) {
       console.log('Recuperación de contraseña nativa detectada. Mostrando formulario de nueva contraseña.');
       // Ocultar pantalla de auth normal, mostrar panel de recuperación
       DOM.authTabBar.style.display = 'none';
@@ -284,7 +286,6 @@ function initApp() {
       // Mostrar la vista de login/auth por si acaso
       showView('view-auth');
     } else if (event === 'SIGNED_IN' && session) {
-      const isRecovery = window.location.hash.includes('type=recovery') || window.location.hash.includes('recovery');
       const isConfirmation = window.location.hash.includes('access_token');
       
       if (!isRecovery && isConfirmation) {
