@@ -1,4 +1,4 @@
-import { db } from './db.js?v=7';
+import { db } from './db.js?v=8';
 
 // === ESTADO GLOBAL DE LA APP ===
 let currentUser = null; // Almacenará el usuario logueado en la sesión
@@ -2357,7 +2357,6 @@ window.submitLogin = submitLogin;
 window.submitRegister = submitRegister;
 window.startRecoveryFlow = startRecoveryFlow;
 window.cancelRecoveryFlow = cancelRecoveryFlow;
-window.sendRecoveryCode = sendRecoveryCode;
 window.sendRecoveryEmail = sendRecoveryEmail;
 window.verifyRecoveryCode = verifyRecoveryCode;
 window.saveNewPassword = saveNewPassword;
