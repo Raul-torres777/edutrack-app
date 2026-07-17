@@ -1,4 +1,4 @@
-import { db } from './db.js?v=8';
+import { db } from './db.js?v=9';
 
 // === ESTADO GLOBAL DE LA APP ===
 let currentUser = null; // Almacenará el usuario logueado en la sesión
@@ -2341,7 +2341,6 @@ function closeAllModals() {
   DOM.modalAddModule.classList.remove('active');
   DOM.modalAddLesson.classList.remove('active');
   DOM.modalAssignCourses.classList.remove('active');
-  DOM.modalManageCategories.classList.remove('active');
 }
 window.closeAllModals = closeAllModals;
 
