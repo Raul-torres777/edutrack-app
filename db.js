@@ -218,8 +218,13 @@ export const db = {
 
   // Flujo nativo de recuperación por correo
   async sendPasswordResetEmail(email) {
+    const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const redirectTo = isLocal 
+      ? window.location.origin + window.location.pathname 
+      : 'https://raul-torres777.github.io/edutrack-app/';
+
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), {
-      redirectTo: window.location.origin + window.location.pathname
+      redirectTo: redirectTo
     });
     if (error) throw error;
     return true;
