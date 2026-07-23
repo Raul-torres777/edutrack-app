@@ -1,4 +1,4 @@
-import { db } from './db.js?v=12';
+import { db } from './db.js?v=13';
 
 // === ESTADO GLOBAL DE LA APP ===
 let currentUser = null; // Almacenará el usuario logueado en la sesión
@@ -25,6 +25,7 @@ let recoveryCodeState = {
 
 let editingCourse = null;
 let activeEditingModuleIndex = null;
+let editingLessonIndex = null;
 let selectedLocalFile = null;
 
 // === SELECCIÓN DE ELEMENTOS DEL DOM ===
@@ -2071,6 +2072,9 @@ function renderEditorCurriculum() {
               <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;" onclick="moveLesson(${mIdx}, ${lIdx}, 'down')" ${lIdx === mod.lessons.length - 1 ? 'disabled' : ''} title="Mover abajo">
                 <i class="fas fa-arrow-down"></i>
               </button>
+              <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;" onclick="openEditLessonModal(${mIdx}, ${lIdx})" title="Editar Clase">
+                <i class="fas fa-edit"></i> Editar
+              </button>
               <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem; color: var(--danger-color);" onclick="deleteLesson(${mIdx}, ${lIdx})" title="Eliminar">
                 <i class="fas fa-trash-alt"></i> Eliminar
               </button>
@@ -2119,6 +2123,7 @@ window.deleteModule = function(mIdx) {
 
 window.openAddLessonModal = function(moduleIndex) {
   activeEditingModuleIndex = moduleIndex;
+  editingLessonIndex = null;
   
   DOM.newLessonTitle.value = '';
   DOM.newLessonType.value = 'video';
@@ -2130,6 +2135,42 @@ window.openAddLessonModal = function(moduleIndex) {
   DOM.fileUploadStatus.textContent = 'Arrastra o selecciona un video o PDF';
   DOM.filenamePreview.style.display = 'none';
   selectedLocalFile = null;
+  
+  // Reset titles
+  DOM.modalAddLesson.querySelector('.modal-header h3').textContent = 'Agregar Nueva Clase';
+  document.getElementById('btn-submit-add-lesson').textContent = 'Agregar Clase';
+  
+  toggleLessonSourceFields();
+  DOM.modalAddLesson.classList.add('active');
+};
+
+window.openEditLessonModal = function(moduleIndex, lessonIndex) {
+  activeEditingModuleIndex = moduleIndex;
+  editingLessonIndex = lessonIndex;
+  
+  const lesson = editingCourse.modules[moduleIndex].lessons[lessonIndex];
+  
+  DOM.newLessonTitle.value = lesson.title;
+  DOM.newLessonType.value = lesson.type;
+  DOM.newLessonDuration.value = lesson.duration || '';
+  DOM.newLessonNotes.value = lesson.notes || '';
+  
+  if (lesson.url && (lesson.url.startsWith('http') || lesson.url.startsWith('https') || lesson.url.startsWith('blob:'))) {
+    DOM.newLessonSourceType.value = 'url';
+    DOM.newLessonUrl.value = lesson.url;
+  } else {
+    DOM.newLessonSourceType.value = 'url';
+    DOM.newLessonUrl.value = lesson.url || '';
+  }
+  
+  DOM.newLessonFileInput.value = '';
+  DOM.fileUploadStatus.textContent = 'Selecciona un archivo si deseas cambiar el archivo actual';
+  DOM.filenamePreview.style.display = 'none';
+  selectedLocalFile = null;
+  
+  // Set titles for edit mode
+  DOM.modalAddLesson.querySelector('.modal-header h3').textContent = 'Editar Clase';
+  document.getElementById('btn-submit-add-lesson').textContent = 'Guardar Cambios';
   
   toggleLessonSourceFields();
   DOM.modalAddLesson.classList.add('active');
@@ -2185,23 +2226,40 @@ function submitAddLesson() {
       return;
     }
   } else {
-    if (!selectedLocalFile) {
-      alert('Por favor selecciona un archivo.');
-      return;
+    // Si estamos editando y no seleccionamos un nuevo archivo local, mantenemos el URL existente
+    if (editingLessonIndex !== null && !selectedLocalFile) {
+      const existingLesson = editingCourse.modules[activeEditingModuleIndex].lessons[editingLessonIndex];
+      targetUrl = existingLesson.url;
+    } else {
+      if (!selectedLocalFile) {
+        alert('Por favor selecciona un archivo.');
+        return;
+      }
+      targetUrl = URL.createObjectURL(selectedLocalFile);
     }
-    targetUrl = URL.createObjectURL(selectedLocalFile);
   }
   
-  const newLesson = {
-    id: 'lesson-' + Date.now(),
-    title,
-    type,
-    url: targetUrl,
-    duration: duration || (type === 'video' ? '10:00' : '10 min de lectura'),
-    notes
-  };
+  if (editingLessonIndex !== null) {
+    // Editar lección existente
+    const lesson = editingCourse.modules[activeEditingModuleIndex].lessons[editingLessonIndex];
+    lesson.title = title;
+    lesson.type = type;
+    lesson.url = targetUrl;
+    lesson.duration = duration || (type === 'video' ? '10:00' : '10 min de lectura');
+    lesson.notes = notes;
+  } else {
+    // Agregar nueva lección
+    const newLesson = {
+      id: 'lesson-' + Date.now(),
+      title,
+      type,
+      url: targetUrl,
+      duration: duration || (type === 'video' ? '10:00' : '10 min de lectura'),
+      notes
+    };
+    editingCourse.modules[activeEditingModuleIndex].lessons.push(newLesson);
+  }
   
-  editingCourse.modules[activeEditingModuleIndex].lessons.push(newLesson);
   closeAllModals();
   renderEditorCurriculum();
 }
