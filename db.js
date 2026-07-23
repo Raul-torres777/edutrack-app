@@ -342,6 +342,23 @@ export const db = {
     return data;
   },
 
+  async deleteCourse(courseId) {
+    // 1. Eliminar progreso asociado en la base de datos
+    await supabase.from('progress').delete().eq('course_id', courseId);
+    // 2. Eliminar resultados de cuestionarios asociados
+    await supabase.from('quiz_results').delete().eq('course_id', courseId);
+    // 3. Eliminar certificados asociados
+    await supabase.from('certificates').delete().eq('course_id', courseId);
+    // 4. Eliminar el curso
+    const { error } = await supabase
+      .from('courses')
+      .delete()
+      .eq('id', courseId);
+    if (error) throw error;
+    return true;
+  },
+
+
   async addModuleToCourse(courseId, moduleTitle) {
     const course = await this.getCourseById(courseId);
     if (!course) throw new Error('Curso no encontrado');

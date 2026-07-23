@@ -1,4 +1,4 @@
-import { db } from './db.js?v=10';
+import { db } from './db.js?v=11';
 
 // === ESTADO GLOBAL DE LA APP ===
 let currentUser = null; // Almacenará el usuario logueado en la sesión
@@ -1922,9 +1922,14 @@ async function loadInstructorDashboard() {
                 <span><i class="fas fa-list"></i> ${course.modules.length} Módulos</span>
                 <span><i class="fas fa-video"></i> ${lessonCount} Clases</span>
               </div>
-              <button class="btn btn-secondary btn-block" onclick="loadCourseEditor('${course.id}')">
-                <i class="fas fa-edit"></i> Administrar Temario
-              </button>
+              <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button class="btn btn-secondary" style="flex: 1;" onclick="loadCourseEditor('${course.id}')">
+                  <i class="fas fa-edit"></i> Administrar
+                </button>
+                <button class="btn btn-danger" style="padding: 10px 15px;" onclick="deleteCourse('${course.id}')" title="Eliminar Curso">
+                  <i class="fas fa-trash-alt"></i>
+                </button>
+              </div>
             </div>
           </div>
         `;
@@ -2361,6 +2366,26 @@ window.sendRecoveryEmail = sendRecoveryEmail;
 window.verifyRecoveryCode = verifyRecoveryCode;
 window.saveNewPassword = saveNewPassword;
 window.openAssignCoursesModal = openAssignCoursesModal;
+
+async function deleteCourse(courseId) {
+  try {
+    const course = await db.getCourseById(courseId);
+    if (!course) {
+      alert('Curso no encontrado.');
+      return;
+    }
+    if (confirm(`¿Estás seguro de que deseas eliminar el curso "${course.title}"? Esta acción no se puede deshacer y borrará todo su temario asociado, progreso de alumnos y certificados.`)) {
+      await db.deleteCourse(courseId);
+      alert('Curso eliminado con éxito.');
+      await loadInstructorDashboard();
+    }
+  } catch (err) {
+    console.error('Error al eliminar el curso:', err);
+    alert('Ocurrió un error al intentar eliminar el curso: ' + (err.message || err));
+  }
+}
+
+window.deleteCourse = deleteCourse;
 
 // --- CONTROLADOR GLOBAL DE ERRORES (DIAGNÓSTICO) ---
 window.addEventListener('unhandledrejection', event => {
