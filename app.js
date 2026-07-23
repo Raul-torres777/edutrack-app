@@ -1,4 +1,4 @@
-import { db } from './db.js?v=11';
+import { db } from './db.js?v=12';
 
 // === ESTADO GLOBAL DE LA APP ===
 let currentUser = null; // Almacenará el usuario logueado en la sesión
@@ -2064,9 +2064,17 @@ function renderEditorCurriculum() {
               <i class="${icon}"></i>
               <span class="lesson-title">${les.title} <span style="font-size: 0.75rem; color: var(--text-secondary);">(${les.duration})</span></span>
             </div>
-            <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem; color: var(--danger-color);" onclick="deleteLesson(${mIdx}, ${lIdx})">
-              <i class="fas fa-trash-alt"></i> Eliminar
-            </button>
+            <div class="builder-lesson-actions" style="display: flex; gap: 6px;">
+              <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;" onclick="moveLesson(${mIdx}, ${lIdx}, 'up')" ${lIdx === 0 ? 'disabled' : ''} title="Mover arriba">
+                <i class="fas fa-arrow-up"></i>
+              </button>
+              <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;" onclick="moveLesson(${mIdx}, ${lIdx}, 'down')" ${lIdx === mod.lessons.length - 1 ? 'disabled' : ''} title="Mover abajo">
+                <i class="fas fa-arrow-down"></i>
+              </button>
+              <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem; color: var(--danger-color);" onclick="deleteLesson(${mIdx}, ${lIdx})" title="Eliminar">
+                <i class="fas fa-trash-alt"></i> Eliminar
+              </button>
+            </div>
           </div>
         `;
       });
@@ -2203,6 +2211,20 @@ window.deleteLesson = function(mIdx, lIdx) {
     editingCourse.modules[mIdx].lessons.splice(lIdx, 1);
     renderEditorCurriculum();
   }
+};
+
+window.moveLesson = function(mIdx, lIdx, direction) {
+  const lessons = editingCourse.modules[mIdx].lessons;
+  if (direction === 'up' && lIdx > 0) {
+    const temp = lessons[lIdx];
+    lessons[lIdx] = lessons[lIdx - 1];
+    lessons[lIdx - 1] = temp;
+  } else if (direction === 'down' && lIdx < lessons.length - 1) {
+    const temp = lessons[lIdx];
+    lessons[lIdx] = lessons[lIdx + 1];
+    lessons[lIdx + 1] = temp;
+  }
+  renderEditorCurriculum();
 };
 
 function renderEditorQuiz() {
