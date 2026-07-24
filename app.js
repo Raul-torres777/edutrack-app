@@ -28,6 +28,8 @@ let activeEditingModuleIndex = null;
 let editingLessonIndex = null;
 let selectedLocalFile = null;
 let iframeCompletionTimer = null;
+let maxTimeWatched = 0;
+let lastActiveVideoTime = 0;
 
 // === SELECCIÓN DE ELEMENTOS DEL DOM ===
 const DOM = {
@@ -253,6 +255,29 @@ function initApp() {
   
   // Listeners de enlaces en el Reproductor de Vídeo
   DOM.videoPlayer.addEventListener('ended', autoMarkLessonComplete);
+  
+  DOM.videoPlayer.addEventListener('timeupdate', () => {
+    if (currentRole === 'student' && activeLesson && !isLessonCompletedLocal(activeLesson.id)) {
+      if (DOM.videoPlayer.currentTime < maxTimeWatched) {
+        // Permitir retroceder o reproducir lo ya visto
+      } else {
+        maxTimeWatched = DOM.videoPlayer.currentTime;
+      }
+      if (Math.abs(DOM.videoPlayer.currentTime - lastActiveVideoTime) <= 2) {
+        lastActiveVideoTime = DOM.videoPlayer.currentTime;
+      }
+    }
+  });
+
+  DOM.videoPlayer.addEventListener('seeking', () => {
+    if (currentRole === 'student' && activeLesson && !isLessonCompletedLocal(activeLesson.id)) {
+      // Bloquear adelantar (más de 1.5 segundos por delante de lo visto máximo)
+      if (DOM.videoPlayer.currentTime > maxTimeWatched + 1.5) {
+        DOM.videoPlayer.currentTime = lastActiveVideoTime;
+      }
+    }
+  });
+
   if (DOM.btnCompleteIframeVideo) {
     DOM.btnCompleteIframeVideo.addEventListener('click', autoMarkLessonComplete);
   }
@@ -1294,11 +1319,13 @@ function selectPlayerLesson(lesson, mIdx, lIdx) {
     DOM.playerResourcesList.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 20px;">No se han adjuntado archivos o lecturas para esta clase en específico.</p>';
   }
 
-  // Limpiar cualquier temporizador activo previo
+  // Limpiar cualquier temporizador activo previo y reiniciar variables de progreso de video nativo
   if (iframeCompletionTimer) {
     clearInterval(iframeCompletionTimer);
     iframeCompletionTimer = null;
   }
+  maxTimeWatched = 0;
+  lastActiveVideoTime = 0;
   
   // Ocultar por defecto los controles de finalización
   if (DOM.videoCompletionContainer) {
@@ -1344,9 +1371,24 @@ function selectPlayerLesson(lesson, mIdx, lIdx) {
             DOM.btnCompleteIframeVideo.disabled = true;
           }
           
-          let secondsLeft = 10;
+          let secondsLeft = 10; // Por defecto
+          if (lesson.duration && lesson.duration.includes(':')) {
+            const parts = lesson.duration.split(':');
+            const mins = parseInt(parts[0], 10);
+            const secs = parseInt(parts[1], 10);
+            if (!isNaN(mins) && !isNaN(secs)) {
+              secondsLeft = mins * 60 + secs;
+            }
+          }
+
+          const formatSeconds = (totalSeconds) => {
+            const mins = Math.floor(totalSeconds / 60);
+            const secs = totalSeconds % 60;
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+          };
+          
           if (DOM.btnCompleteIframeVideo) {
-            DOM.btnCompleteIframeVideo.innerHTML = `<i class="fas fa-lock"></i> Habilitando en ${secondsLeft}s...`;
+            DOM.btnCompleteIframeVideo.innerHTML = `<i class="fas fa-lock"></i> Habilitando en ${formatSeconds(secondsLeft)}...`;
           }
           if (DOM.videoCompletionText) {
             DOM.videoCompletionText.innerHTML = '<i class="fas fa-clock" style="color: var(--primary-color);"></i> Reproduce el video para habilitar la finalización.';
@@ -1366,7 +1408,7 @@ function selectPlayerLesson(lesson, mIdx, lIdx) {
               }
             } else {
               if (DOM.btnCompleteIframeVideo) {
-                DOM.btnCompleteIframeVideo.innerHTML = `<i class="fas fa-lock"></i> Habilitando en ${secondsLeft}s...`;
+                DOM.btnCompleteIframeVideo.innerHTML = `<i class="fas fa-lock"></i> Habilitando en ${formatSeconds(secondsLeft)}...`;
               }
             }
           }, 1000);
