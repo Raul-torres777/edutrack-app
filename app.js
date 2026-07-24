@@ -187,7 +187,9 @@ function initApp() {
   }
   
   DOM.themeToggle.addEventListener('click', toggleTheme);
-  DOM.btnResetDb.addEventListener('click', resetDatabase);
+  if (DOM.btnResetDb) {
+    DOM.btnResetDb.addEventListener('click', resetDatabase);
+  }
   DOM.btnLogout.addEventListener('click', logoutUser);
   
   // Roles de Usuario
