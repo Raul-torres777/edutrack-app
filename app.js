@@ -942,23 +942,38 @@ async function loadStudentDashboard() {
       const progress = await db.getCourseProgress(course.id, currentUser.id);
       const isQuizPassed = await checkIfQuizPassed(course.id);
       
-      let actionBtnText = 'Comenzar Curso';
-      let actionBtnClass = 'btn-primary';
-      let actionOnClick = `startCourse('${course.id}')`;
+      let actionButtonsHtml = '';
       
-      if (progress.percent > 0 && progress.percent < 100) {
-        actionBtnText = 'Continuar Curso';
-        actionBtnClass = 'btn-primary';
-      } else if (progress.percent === 100) {
-        if (isQuizPassed) {
-          actionBtnText = 'Ver Certificado';
-          actionBtnClass = 'btn-success';
-          actionOnClick = `viewCertificate('${course.id}')`;
-        } else {
+      if (progress.percent === 100 && isQuizPassed) {
+        actionButtonsHtml = `
+          <div style="display: flex; gap: 10px;">
+            <button class="btn btn-success" style="flex: 1;" onclick="viewCertificate('${course.id}')">
+              <i class="fas fa-award"></i> Certificado
+            </button>
+            <button class="btn btn-secondary" style="flex: 1;" onclick="startCourse('${course.id}')">
+              <i class="fas fa-book-open"></i> Repasar
+            </button>
+          </div>
+        `;
+      } else {
+        let actionBtnText = 'Comenzar Curso';
+        let actionBtnClass = 'btn-primary';
+        let actionOnClick = `startCourse('${course.id}')`;
+        
+        if (progress.percent > 0 && progress.percent < 100) {
+          actionBtnText = 'Continuar Curso';
+          actionBtnClass = 'btn-primary';
+        } else if (progress.percent === 100) {
           actionBtnText = 'Tomar Cuestionario';
           actionBtnClass = 'btn-primary';
           actionOnClick = `startQuiz('${course.id}')`;
         }
+        
+        actionButtonsHtml = `
+          <button class="btn ${actionBtnClass} btn-block" onclick="${actionOnClick}">
+            ${actionBtnText}
+          </button>
+        `;
       }
       
       let lessonCount = 0;
@@ -988,9 +1003,7 @@ async function loadStudentDashboard() {
               </div>
             </div>
             
-            <button class="btn ${actionBtnClass} btn-block" onclick="${actionOnClick}">
-              ${actionBtnText}
-            </button>
+            ${actionButtonsHtml}
           </div>
         </div>
       `;
@@ -1133,6 +1146,15 @@ function isLessonCompletedLocal(lessonId) {
 // Comprobación de si una lección está desbloqueada (secuencialmente)
 function isLessonUnlocked(lessonId) {
   if (!activeCourse) return false;
+  if (currentRole === 'instructor') return true;
+  
+  const progress = JSON.parse(localStorage.getItem(`edutrack_progress_${currentUser.id}`)) || {};
+  const courseProgress = progress[activeCourse.id];
+  
+  // Si el curso completo está finalizado, o si esta lección en específico ya fue completada
+  if (courseProgress && (courseProgress.completed || courseProgress.completedLessons.includes(lessonId))) {
+    return true;
+  }
   
   const allLessons = [];
   activeCourse.modules.forEach(mod => {
