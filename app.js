@@ -27,6 +27,7 @@ let editingCourse = null;
 let activeEditingModuleIndex = null;
 let editingLessonIndex = null;
 let selectedLocalFile = null;
+let iframeCompletionTimer = null;
 
 // === SELECCIÓN DE ELEMENTOS DEL DOM ===
 const DOM = {
@@ -89,6 +90,9 @@ const DOM = {
   playerSyllabusList: document.getElementById('player-syllabus-list'),
   btnStartQuiz: document.getElementById('btn-start-quiz'),
   btnPlayerBack: document.getElementById('btn-player-back'),
+  videoCompletionContainer: document.getElementById('video-completion-container'),
+  videoCompletionText: document.getElementById('video-completion-text'),
+  btnCompleteIframeVideo: document.getElementById('btn-complete-iframe-video'),
   
   // Elementos del Quiz
   quizCourseTitle: document.getElementById('quiz-course-title'),
@@ -249,6 +253,9 @@ function initApp() {
   
   // Listeners de enlaces en el Reproductor de Vídeo
   DOM.videoPlayer.addEventListener('ended', autoMarkLessonComplete);
+  if (DOM.btnCompleteIframeVideo) {
+    DOM.btnCompleteIframeVideo.addEventListener('click', autoMarkLessonComplete);
+  }
   
   // Manejador de Pestañas del Reproductor
   document.querySelectorAll('.player-tab-btn').forEach(btn => {
@@ -1079,14 +1086,24 @@ function renderPlayerSyllabus() {
     `;
     
     mod.lessons.forEach((les, lIdx) => {
+      const isLocked = currentRole === 'student' && !isLessonUnlocked(les.id);
       const isCompleted = isLessonCompletedLocal(les.id);
       const isActive = activeLesson && activeLesson.id === les.id;
       const typeIcon = les.type === 'video' ? 'fa-play-circle' : 'fa-file-alt';
       
+      let checkboxContent = '<i class="fas fa-check"></i>';
+      let checkboxClass = isCompleted ? 'completed' : '';
+      if (isLocked) {
+        checkboxContent = '<i class="fas fa-lock" style="font-size: 0.7rem;"></i>';
+        checkboxClass = 'locked';
+      }
+      
+      const itemClass = isLocked ? 'locked' : (isActive ? 'active' : '');
+      
       html += `
-        <div class="lesson-item ${isActive ? 'active' : ''}" data-lesson-id="${les.id}" onclick="selectLessonById('${les.id}', ${mIdx}, ${lIdx})">
-          <div class="lesson-checkbox ${isCompleted ? 'completed' : ''}" onclick="event.stopPropagation(); toggleLessonCheckbox('${les.id}')">
-            <i class="fas fa-check"></i>
+        <div class="lesson-item ${itemClass}" data-lesson-id="${les.id}" onclick="selectLessonById('${les.id}', ${mIdx}, ${lIdx})">
+          <div class="lesson-checkbox ${checkboxClass}" onclick="event.stopPropagation(); toggleLessonCheckbox('${les.id}')">
+            ${checkboxContent}
           </div>
           <div class="lesson-info">
             <div class="lesson-title-text">${les.title}</div>
@@ -1113,8 +1130,33 @@ function isLessonCompletedLocal(lessonId) {
   return courseProgress && courseProgress.completedLessons.includes(lessonId);
 }
 
+// Comprobación de si una lección está desbloqueada (secuencialmente)
+function isLessonUnlocked(lessonId) {
+  if (!activeCourse) return false;
+  
+  const allLessons = [];
+  activeCourse.modules.forEach(mod => {
+    allLessons.push(...mod.lessons);
+  });
+  
+  const index = allLessons.findIndex(l => l.id === lessonId);
+  if (index <= 0) return true; // La primera lección siempre está desbloqueada
+  
+  // Está desbloqueada si todas las lecciones anteriores están completadas
+  for (let i = 0; i < index; i++) {
+    if (!isLessonCompletedLocal(allLessons[i].id)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 // Seleccionar lección por ID
 window.selectLessonById = function(lessonId, mIdx, lIdx) {
+  if (!isLessonUnlocked(lessonId)) {
+    alert('Esta lección está bloqueada. Debes completar las lecciones anteriores en orden.');
+    return;
+  }
   const mod = activeCourse.modules[mIdx];
   const les = mod.lessons[lIdx];
   selectPlayerLesson(les, mIdx, lIdx);
@@ -1123,6 +1165,10 @@ window.selectLessonById = function(lessonId, mIdx, lIdx) {
 // Alternar checkbox de lección completada al hacer click directo
 window.toggleLessonCheckbox = async function(lessonId) {
   if (!currentUser) return;
+  // Bloquear a los estudiantes el marcar/desmarcar de forma manual
+  if (currentRole === 'student') {
+    return;
+  }
   const progress = await db.toggleLessonComplete(activeCourse.id, lessonId, currentUser.id);
   await updatePlayerProgress();
   renderPlayerSyllabus();
@@ -1225,10 +1271,32 @@ function selectPlayerLesson(lesson, mIdx, lIdx) {
   } else {
     DOM.playerResourcesList.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 20px;">No se han adjuntado archivos o lecturas para esta clase en específico.</p>';
   }
+
+  // Limpiar cualquier temporizador activo previo
+  if (iframeCompletionTimer) {
+    clearInterval(iframeCompletionTimer);
+    iframeCompletionTimer = null;
+  }
   
+  // Ocultar por defecto los controles de finalización
+  if (DOM.videoCompletionContainer) {
+    DOM.videoCompletionContainer.style.display = 'none';
+  }
+  if (DOM.btnCompleteIframeVideo) {
+    DOM.btnCompleteIframeVideo.style.display = 'none';
+  }
+
   // Cargar video en reproductor HTML5 o Iframe
   if (lesson.type === 'video') {
     const embedUrl = getEmbedUrl(lesson.url);
+    const isCompleted = isLessonCompletedLocal(lesson.id);
+
+    if (currentRole === 'student') {
+      if (DOM.videoCompletionContainer) {
+        DOM.videoCompletionContainer.style.display = 'flex';
+      }
+    }
+
     if (embedUrl) {
       // Usar Iframe (YouTube, Vimeo, Google Drive)
       if (DOM.videoPlayer) {
@@ -1238,6 +1306,49 @@ function selectPlayerLesson(lesson, mIdx, lIdx) {
       if (DOM.iframePlayer) {
         DOM.iframePlayer.style.display = 'block';
         DOM.iframePlayer.src = embedUrl;
+      }
+
+      if (currentRole === 'student') {
+        if (isCompleted) {
+          if (DOM.videoCompletionText) {
+            DOM.videoCompletionText.innerHTML = '<i class="fas fa-check-circle" style="color: var(--success-color);"></i> Has completado esta clase.';
+          }
+          if (DOM.btnCompleteIframeVideo) {
+            DOM.btnCompleteIframeVideo.style.display = 'none';
+          }
+        } else {
+          if (DOM.btnCompleteIframeVideo) {
+            DOM.btnCompleteIframeVideo.style.display = 'block';
+            DOM.btnCompleteIframeVideo.disabled = true;
+          }
+          
+          let secondsLeft = 10;
+          if (DOM.btnCompleteIframeVideo) {
+            DOM.btnCompleteIframeVideo.innerHTML = `<i class="fas fa-lock"></i> Habilitando en ${secondsLeft}s...`;
+          }
+          if (DOM.videoCompletionText) {
+            DOM.videoCompletionText.innerHTML = '<i class="fas fa-clock" style="color: var(--primary-color);"></i> Reproduce el video para habilitar la finalización.';
+          }
+
+          iframeCompletionTimer = setInterval(() => {
+            secondsLeft--;
+            if (secondsLeft <= 0) {
+              clearInterval(iframeCompletionTimer);
+              iframeCompletionTimer = null;
+              if (DOM.btnCompleteIframeVideo) {
+                DOM.btnCompleteIframeVideo.disabled = false;
+                DOM.btnCompleteIframeVideo.innerHTML = '<i class="fas fa-check-circle"></i> Marcar como Completado';
+              }
+              if (DOM.videoCompletionText) {
+                DOM.videoCompletionText.innerHTML = '<i class="fas fa-info-circle" style="color: var(--primary-color);"></i> Ya puedes marcar esta clase como completada.';
+              }
+            } else {
+              if (DOM.btnCompleteIframeVideo) {
+                DOM.btnCompleteIframeVideo.innerHTML = `<i class="fas fa-lock"></i> Habilitando en ${secondsLeft}s...`;
+              }
+            }
+          }, 1000);
+        }
       }
     } else {
       // Usar Reproductor de Video Nativo (Directo MP4, Blob local)
@@ -1253,6 +1364,18 @@ function selectPlayerLesson(lesson, mIdx, lIdx) {
           console.log("Auto-reproducción bloqueada por políticas del navegador.");
         });
       }
+
+      if (currentRole === 'student') {
+        if (isCompleted) {
+          if (DOM.videoCompletionText) {
+            DOM.videoCompletionText.innerHTML = '<i class="fas fa-check-circle" style="color: var(--success-color);"></i> Has completado esta clase.';
+          }
+        } else {
+          if (DOM.videoCompletionText) {
+            DOM.videoCompletionText.innerHTML = '<i class="fas fa-info-circle" style="color: var(--primary-color);"></i> El video debe reproducirse por completo para marcar la clase como terminada.';
+          }
+        }
+      }
     }
   } else {
     // Si es documento, ocultar ambos y mostrar poster de documento
@@ -1266,8 +1389,11 @@ function selectPlayerLesson(lesson, mIdx, lIdx) {
       DOM.videoPlayer.poster = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450"><rect width="800" height="450" fill="%23131b2e"/><text x="50%" y="45%" font-family="sans-serif" font-size="28" fill="%2394a3b8" text-anchor="middle">Esta lección es de tipo Documento</text><text x="50%" y="55%" font-family="sans-serif" font-size="16" fill="%2364748b" text-anchor="middle">Puedes descargar y leer el archivo en la pestaña "Material de Apoyo"</text></svg>';
     }
     
-    if (!isLessonCompletedLocal(lesson.id)) {
-      toggleLessonCheckbox(lesson.id);
+    if (currentRole === 'student' && !isLessonCompletedLocal(lesson.id)) {
+      db.toggleLessonComplete(activeCourse.id, lesson.id, currentUser.id).then(() => {
+        updatePlayerProgress();
+        renderPlayerSyllabus();
+      });
     }
   }
 }

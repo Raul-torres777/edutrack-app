@@ -720,6 +720,19 @@ body.light-theme .lesson-item.active {
   background: rgba(99, 102, 241, 0.04);
 }
 
+.lesson-item.locked {
+  opacity: 0.5;
+}
+
+.lesson-item.locked:hover {
+  background: transparent;
+  cursor: not-allowed;
+}
+
+.lesson-item.locked * {
+  cursor: not-allowed;
+}
+
 .lesson-checkbox {
   width: 20px;
   height: 20px;
@@ -737,6 +750,17 @@ body.light-theme .lesson-item.active {
   border-color: var(--success-color);
   background: var(--success-color);
   color: white;
+}
+
+.lesson-checkbox.locked {
+  border-color: var(--text-secondary);
+  opacity: 0.7;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+}
+
+.lesson-checkbox.locked i {
+  display: block;
 }
 
 .lesson-checkbox i {

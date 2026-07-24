@@ -93,6 +93,16 @@
               <iframe id="course-iframe-player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
             </div>
             
+            <!-- Controles de finalización de video -->
+            <div id="video-completion-container" style="display: none; margin-top: 15px; padding: 15px; background: rgba(99, 102, 241, 0.05); border: 1px solid rgba(99, 102, 241, 0.15); border-radius: 12px; align-items: center; justify-content: space-between; gap: 15px; flex-wrap: wrap;">
+              <span id="video-completion-text" style="font-size: 0.9rem; color: var(--text-secondary); display: flex; align-items: center; gap: 8px;">
+                <i class="fas fa-info-circle" style="color: var(--primary-color);"></i> Para avanzar, debes ver este video por completo.
+              </span>
+              <button id="btn-complete-iframe-video" class="btn btn-primary" style="display: none; padding: 8px 16px; font-size: 0.85rem;">
+                <i class="fas fa-check-circle"></i> Marcar como Completado
+              </button>
+            </div>
+            
             <div class="class-title-info">
               <h2 id="player-lesson-title">Cargando título de clase...</h2>
               <div class="player-tabs-header">
