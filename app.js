@@ -1156,12 +1156,11 @@ function getEmbedUrl(url) {
   }
   
   // Google Drive
-  if (url.includes('drive.google.com')) {
+  if (url.includes('drive.google.com') || url.includes('docs.google.com')) {
     let fileId = '';
-    if (url.includes('/file/d/')) {
-      fileId = url.split('/file/d/')[1].split('/')[0];
-    } else if (url.includes('id=')) {
-      fileId = url.split('id=')[1].split(/[&#]/)[0];
+    const match = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+    if (match) {
+      fileId = match[1];
     }
     return fileId ? `https://drive.google.com/file/d/${fileId}/preview` : url;
   }
