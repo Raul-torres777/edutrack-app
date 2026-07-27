@@ -550,6 +550,19 @@ body.light-theme .nav-tab.active {
   display: none;
 }
 
+.iframe-popout-blocker {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 70px;
+  height: 56px;
+  background: #000;
+  z-index: 15;
+  pointer-events: auto;
+  cursor: default;
+  display: none;
+}
+
 .class-title-info {
   background: var(--bg-secondary);
   padding: 25px;

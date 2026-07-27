@@ -99,6 +99,7 @@ const DOM = {
   btnVideoRewind: document.getElementById('btn-video-rewind'),
   btnVideoForward: document.getElementById('btn-video-forward'),
   selectVideoSpeed: document.getElementById('select-video-speed'),
+  iframePopoutBlocker: document.getElementById('iframe-popout-blocker'),
   
   // Elementos del Quiz
   quizCourseTitle: document.getElementById('quiz-course-title'),
@@ -1430,6 +1431,9 @@ function selectPlayerLesson(lesson, mIdx, lIdx) {
   if (DOM.customPlayerControls) {
     DOM.customPlayerControls.style.display = 'none';
   }
+  if (DOM.iframePopoutBlocker) {
+    DOM.iframePopoutBlocker.style.display = 'none';
+  }
 
   // Cargar video en reproductor HTML5 o Iframe
   if (lesson.type === 'video') {
@@ -1451,6 +1455,9 @@ function selectPlayerLesson(lesson, mIdx, lIdx) {
       if (DOM.iframePlayer) {
         DOM.iframePlayer.style.display = 'block';
         DOM.iframePlayer.src = embedUrl;
+      }
+      if (DOM.iframePopoutBlocker) {
+        DOM.iframePopoutBlocker.style.display = 'block';
       }
 
       if (currentRole === 'student') {
