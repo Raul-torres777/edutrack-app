@@ -98,6 +98,7 @@ const DOM = {
   customPlayerControls: document.getElementById('custom-player-controls'),
   btnVideoRewind: document.getElementById('btn-video-rewind'),
   btnVideoForward: document.getElementById('btn-video-forward'),
+  selectVideoSpeed: document.getElementById('select-video-speed'),
   
   // Elementos del Quiz
   quizCourseTitle: document.getElementById('quiz-course-title'),
@@ -307,6 +308,14 @@ function initApp() {
           }
         }
         DOM.videoPlayer.currentTime = Math.min(DOM.videoPlayer.duration || 0, targetTime);
+      }
+    });
+  }
+
+  if (DOM.selectVideoSpeed) {
+    DOM.selectVideoSpeed.addEventListener('change', (e) => {
+      if (DOM.videoPlayer) {
+        DOM.videoPlayer.playbackRate = parseFloat(e.target.value) || 1.0;
       }
     });
   }
@@ -1313,17 +1322,17 @@ function getEmbedUrl(url) {
     } else if (url.includes('embed/')) {
       videoId = url.split('embed/')[1].split(/[?#]/)[0];
     }
-    return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
+    return videoId ? `https://www.youtube.com/embed/${videoId}?controls=1&rel=0&playsinline=1&modestbranding=1&enablejsapi=1` : url;
   }
   
   // Vimeo
   if (url.includes('vimeo.com')) {
     if (url.includes('player.vimeo.com/video/')) {
-      return url;
+      return url.includes('?') ? `${url}&playsinline=1&controls=1` : `${url}?playsinline=1&controls=1`;
     }
     const parts = url.split('/');
     const videoId = parts[parts.length - 1].split(/[?#]/)[0];
-    return `https://player.vimeo.com/video/${videoId}`;
+    return `https://player.vimeo.com/video/${videoId}?playsinline=1&controls=1`;
   }
   
   // Google Drive

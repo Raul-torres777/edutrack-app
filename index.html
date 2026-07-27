@@ -90,17 +90,24 @@
                 Tu navegador no soporta reproducción de video.
               </video>
               <!-- Iframe para incrustar videos (Google Drive, YouTube, Vimeo) -->
-              <iframe id="course-iframe-player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+              <iframe id="course-iframe-player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen" allowfullscreen></iframe>
             </div>
 
-            <!-- Controles personalizados de vídeo nativo (adelantar/atrasar) -->
-            <div class="custom-player-controls" id="custom-player-controls" style="display: none; justify-content: center; gap: 15px; margin-top: 12px; margin-bottom: 5px;">
+            <!-- Controles personalizados de vídeo nativo (adelantar/atrasar/velocidad) -->
+            <div class="custom-player-controls" id="custom-player-controls" style="display: none; justify-content: center; align-items: center; gap: 12px; margin-top: 12px; margin-bottom: 5px; flex-wrap: wrap;">
               <button class="btn btn-secondary" id="btn-video-rewind" title="Retroceder 10 segundos">
                 <i class="fas fa-backward"></i> -10s
               </button>
               <button class="btn btn-secondary" id="btn-video-forward" title="Adelantar 10 segundos">
                 +10s <i class="fas fa-forward"></i>
               </button>
+              <select class="form-control" id="select-video-speed" style="width: auto; padding: 8px 12px; font-size: 0.85rem; cursor: pointer;" title="Velocidad de Reproducción (Ajustes)">
+                <option value="1">⚙️ 1.0x (Normal)</option>
+                <option value="1.25">⚡ 1.25x</option>
+                <option value="1.5">⚡ 1.5x</option>
+                <option value="2">🚀 2.0x</option>
+                <option value="0.75">🐢 0.75x</option>
+              </select>
             </div>
             
             <!-- Controles de finalización de video -->
