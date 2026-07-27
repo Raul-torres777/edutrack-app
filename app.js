@@ -107,6 +107,9 @@ const DOM = {
   starRatingGroup: document.getElementById('star-rating-group'),
   starRatingText: document.getElementById('star-rating-text'),
   btnSubmitFeedback: document.getElementById('btn-submit-feedback'),
+  editCourseFormTitle: document.getElementById('edit-course-form-title'),
+  playerFormCustomTitle: document.getElementById('player-form-custom-title'),
+  feedbackQuestionsDynamicGroup: document.getElementById('feedback-questions-dynamic-group'),
   
   // Elementos del Quiz
   quizCourseTitle: document.getElementById('quiz-course-title'),
@@ -1626,13 +1629,52 @@ function showLessonFeedbackForm() {
     return;
   }
   
+  if (DOM.playerFormCustomTitle && activeCourse) {
+    const formTitle = activeCourse.formTitle || 'Formulario de Evaluación y Comprensión';
+    DOM.playerFormCustomTitle.innerHTML = `<i class="fas fa-clipboard-check" style="color: var(--accent-color);"></i> ${formTitle}`;
+  }
+
+  // Renderizar el grupo de preguntas del administrador
+  if (DOM.feedbackQuestionsDynamicGroup) {
+    if (activeCourse && activeCourse.quiz && activeCourse.quiz.length > 0) {
+      let qHtml = '';
+      activeCourse.quiz.forEach((q, qIdx) => {
+        qHtml += `
+          <div class="feedback-question-card" style="background: rgba(255, 255, 255, 0.03); padding: 16px; border-radius: 12px; border: 1px solid var(--border-color);">
+            <p style="font-weight: 600; margin-bottom: 12px; color: var(--text-primary); font-size: 0.95rem;">
+              <span style="color: var(--accent-color); margin-right: 5px;">${qIdx + 1}.</span> ${q.question} <span style="color: var(--danger-color);">*</span>
+            </p>
+            <div class="feedback-options-list" style="display: flex; flex-direction: column; gap: 8px;">
+        `;
+        (q.options || []).forEach((opt, optIdx) => {
+          if (opt && opt.trim()) {
+            qHtml += `
+              <label style="display: flex; align-items: center; gap: 10px; font-size: 0.9rem; color: var(--text-secondary); cursor: pointer; padding: 8px 12px; border-radius: 8px; background: rgba(0,0,0,0.18); border: 1px solid rgba(255,255,255,0.05); transition: background 0.2s ease;">
+                <input type="radio" name="form_question_${qIdx}" value="${optIdx}" required style="accent-color: var(--primary-color); transform: scale(1.1);">
+                <span>${opt}</span>
+              </label>
+            `;
+          }
+        });
+        qHtml += `
+            </div>
+          </div>
+        `;
+      });
+      DOM.feedbackQuestionsDynamicGroup.innerHTML = qHtml;
+      DOM.feedbackQuestionsDynamicGroup.style.display = 'flex';
+    } else {
+      DOM.feedbackQuestionsDynamicGroup.innerHTML = '';
+      DOM.feedbackQuestionsDynamicGroup.style.display = 'none';
+    }
+  }
+
   if (DOM.lessonFeedbackContainer) {
     DOM.lessonFeedbackContainer.style.display = 'block';
     DOM.lessonFeedbackContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
   if (DOM.feedbackSummary) {
     DOM.feedbackSummary.value = '';
-    DOM.feedbackSummary.focus();
   }
   if (DOM.feedbackComments) {
     DOM.feedbackComments.value = '';
@@ -2717,6 +2759,9 @@ window.moveLesson = function(mIdx, lIdx, direction) {
 
 function renderEditorQuiz() {
   DOM.quizBuilderQuestionsList.innerHTML = '';
+  if (DOM.editCourseFormTitle) {
+    DOM.editCourseFormTitle.value = editingCourse.formTitle || 'Formulario de Evaluación y Comprensión';
+  }
   if (!editingCourse.quiz || editingCourse.quiz.length === 0) {
     editingCourse.quiz = [];
     addQuestionField();
@@ -2890,6 +2935,7 @@ async function saveCourseFromEditor() {
   editingCourse.category = category;
   editingCourse.difficulty = difficulty;
   editingCourse.thumbnail = theme;
+  editingCourse.formTitle = DOM.editCourseFormTitle ? DOM.editCourseFormTitle.value.trim() : 'Formulario de Evaluación y Comprensión';
   editingCourse.quiz = quizQuestions;
   
   try {

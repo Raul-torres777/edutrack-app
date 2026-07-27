@@ -309,6 +309,7 @@ export const db = {
       duration: courseData.duration || '0 horas',
       thumbnail: courseData.thumbnail || 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
       modules: [],
+      formTitle: courseData.formTitle || 'Formulario de Evaluación y Comprensión',
       quiz: courseData.quiz || []
     };
 
@@ -328,6 +329,7 @@ export const db = {
       category: courseData.category,
       difficulty: courseData.difficulty,
       thumbnail: courseData.thumbnail,
+      formTitle: courseData.formTitle || current.formTitle || 'Formulario de Evaluación y Comprensión',
       modules: courseData.modules || current.modules,
       quiz: courseData.quiz || current.quiz
     };

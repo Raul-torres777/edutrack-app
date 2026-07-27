@@ -122,15 +122,20 @@
               </button>
             </div>
 
-            <!-- Formulario Evaluativo / Feedback al Finalizar Clase -->
+            <!-- Formulario (Grupo de Preguntas) al Finalizar Clase -->
             <div id="lesson-feedback-container" class="lesson-feedback-card" style="display: none; margin-top: 20px;">
               <div class="feedback-card-header" style="margin-bottom: 20px;">
-                <h3 style="font-size: 1.2rem; display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                <h3 id="player-form-custom-title" style="font-size: 1.2rem; display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
                   <i class="fas fa-clipboard-check" style="color: var(--accent-color);"></i> Formulario Evaluativo de la Clase
                 </h3>
-                <p style="font-size: 0.9rem; color: var(--text-secondary);">Completa este breve formulario para registrar tu aprendizaje y desbloquear la siguiente clase.</p>
+                <p style="font-size: 0.9rem; color: var(--text-secondary);">Responde este formulario para verificar tu aprendizaje y desbloquear el siguiente video.</p>
               </div>
               <form id="form-lesson-feedback" onsubmit="event.preventDefault(); submitLessonFeedback();">
+                <!-- Contenedor Dinámico para el Grupo de Preguntas del Administrador -->
+                <div id="feedback-questions-dynamic-group" style="display: flex; flex-direction: column; gap: 18px; margin-bottom: 20px;">
+                  <!-- Se poblará dinámicamente -->
+                </div>
+
                 <div class="form-group">
                   <label>¿Cómo calificas esta clase?</label>
                   <div class="star-rating-group" id="star-rating-group" style="display: flex; align-items: center; gap: 6px; margin-top: 5px;">
@@ -489,15 +494,24 @@
               <!-- Dinámico: Módulos y sus lecciones para editar -->
             </div>
 
-            <!-- Configuración del Quiz -->
+            <!-- Configuración del Formulario (Grupo de Preguntas) -->
             <div class="section-header" style="margin-top: 40px; margin-bottom: 20px; border-top: 1px solid var(--border-color); padding-top: 30px;">
-              <h3>Configurar Cuestionario Evaluativo</h3>
-              <button class="btn btn-secondary" id="btn-editor-add-question" style="padding: 8px 16px; font-size: 0.85rem;">
-                <i class="fas fa-plus"></i> Agregar Pregunta
+              <div>
+                <h3 style="margin-bottom: 4px;">Formulario (Grupo de Preguntas Post-Video)</h3>
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0;">Configura el nombre del formulario y las preguntas que responderá el alumno al finalizar cada clase para habilitar la siguiente.</p>
+              </div>
+              <button class="btn btn-secondary" id="btn-editor-add-question" style="padding: 8px 16px; font-size: 0.85rem; margin-top: 10px;">
+                <i class="fas fa-plus"></i> Agregar Pregunta al Formulario
               </button>
             </div>
+            
+            <div class="form-group" style="margin-bottom: 20px; background: rgba(255, 255, 255, 0.03); padding: 15px; border-radius: 12px; border: 1px solid var(--border-color);">
+              <label for="edit-course-form-title" style="font-weight: 600; color: var(--text-primary);">Nombre del Formulario</label>
+              <input type="text" class="form-control" id="edit-course-form-title" placeholder="Ej: Formulario de Evaluación de la Lección" value="Formulario de Evaluación y Comprensión">
+            </div>
+
             <div id="quiz-builder-questions-list" style="display: flex; flex-direction: column; gap: 15px;">
-              <!-- Dinámico: Preguntas del examen para configurar -->
+              <!-- Dinámico: Grupo de preguntas del Formulario -->
             </div>
           </div>
         </div>
