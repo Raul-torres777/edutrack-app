@@ -210,7 +210,12 @@ function initApp() {
   DOM.btnSubmitAssignCourses.addEventListener('click', submitCourseAssignment);
   
   // Navegaciones de Botones de Volver
-  DOM.btnPlayerBack.addEventListener('click', () => showView('view-student-dashboard'));
+  DOM.btnPlayerBack.addEventListener('click', () => {
+    if (currentUser) {
+      localStorage.removeItem(`edutrack_active_course_${currentUser.id}`);
+    }
+    showView('view-student-dashboard');
+  });
   DOM.btnEditorBack.addEventListener('click', () => showView('view-instructor-dashboard'));
   
   // Registrar Botones de Cerrar Modales
@@ -262,6 +267,8 @@ function initApp() {
         // Permitir retroceder o reproducir lo ya visto
       } else {
         maxTimeWatched = DOM.videoPlayer.currentTime;
+        // Guardar progreso en localStorage
+        localStorage.setItem(`edutrack_video_time_${currentUser.id}_${activeLesson.id}`, DOM.videoPlayer.currentTime);
       }
       if (Math.abs(DOM.videoPlayer.currentTime - lastActiveVideoTime) <= 2) {
         lastActiveVideoTime = DOM.videoPlayer.currentTime;
@@ -296,7 +303,12 @@ function initApp() {
 
   // Escuchar clicks genéricos para volver al dashboard de estudiante
   document.querySelectorAll('.btn-back-dashboard').forEach(btn => {
-    btn.addEventListener('click', () => showView('view-student-dashboard'));
+    btn.addEventListener('click', () => {
+      if (currentUser) {
+        localStorage.removeItem(`edutrack_active_course_${currentUser.id}`);
+      }
+      showView('view-student-dashboard');
+    });
   });
   
   // --- ESCUCHAR EVENTOS DE RECUPERACIÓN DE CONTRASEÑA EN SUPABASE ---
@@ -362,6 +374,12 @@ async function resetDatabase() {
   if (confirm('¿Estás seguro de que deseas restablecer la base de datos? Se perderán todos los cursos creados, estudiantes registrados y progresos.')) {
     await db.resetAllData();
     localStorage.removeItem('edutrack_current_user');
+    // Limpiar todas las claves de edutrack en localStorage
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('edutrack_')) {
+        localStorage.removeItem(key);
+      }
+    });
     alert('Base de datos restablecida correctamente.');
     window.location.reload();
   }
@@ -413,6 +431,12 @@ async function checkUserSession() {
       }
       setupAuthenticatedUI();
       switchRole('student');
+
+      // Auto-restaurar curso activo tras refrescar
+      const storedActiveCourse = localStorage.getItem(`edutrack_active_course_${currentUser.id}`);
+      if (storedActiveCourse) {
+        startCourse(storedActiveCourse);
+      }
     }
   } else {
     // Si no hay sesión local, verificar si hay una sesión activa de Supabase Auth
@@ -426,6 +450,12 @@ async function checkUserSession() {
           localStorage.setItem('edutrack_current_user', JSON.stringify(student));
           setupAuthenticatedUI();
           switchRole('student');
+          
+          // Auto-restaurar curso activo tras refrescar
+          const storedActiveCourse = localStorage.getItem(`edutrack_active_course_${currentUser.id}`);
+          if (storedActiveCourse) {
+            startCourse(storedActiveCourse);
+          }
           return;
         }
       }
@@ -739,6 +769,12 @@ async function saveNewPassword() {
 function logoutUser() {
   currentUser = null;
   localStorage.removeItem('edutrack_current_user');
+  // Limpiar curso y lección activos, y progresos temporales
+  Object.keys(localStorage).forEach(key => {
+    if (key.startsWith('edutrack_active_') || key.startsWith('edutrack_video_time_') || key.startsWith('edutrack_iframe_timer_')) {
+      localStorage.removeItem(key);
+    }
+  });
   db.supabase.auth.signOut().catch(err => console.error('Error al cerrar sesión en Supabase:', err));
   setupLoggedOutUI();
   showView('view-auth');
@@ -1064,14 +1100,30 @@ async function startCourse(courseId) {
     // Renderizar temario
     renderPlayerSyllabus();
     
-    // Seleccionar primera clase por defecto
+    // Seleccionar primera clase o lección previamente activa por defecto
     let firstLesson = null;
-    for (const m of course.modules) {
-      if (m.lessons.length > 0) {
-        firstLesson = m.lessons[0];
-        activeModuleIndex = course.modules.indexOf(m);
-        activeLessonIndex = 0;
-        break;
+    if (currentUser) {
+      const storedModuleIdx = localStorage.getItem(`edutrack_active_module_idx_${currentUser.id}_${courseId}`);
+      const storedLessonIdx = localStorage.getItem(`edutrack_active_lesson_idx_${currentUser.id}_${courseId}`);
+      if (storedModuleIdx !== null && storedLessonIdx !== null) {
+        const mIdx = parseInt(storedModuleIdx, 10);
+        const lIdx = parseInt(storedLessonIdx, 10);
+        if (course.modules[mIdx] && course.modules[mIdx].lessons[lIdx]) {
+          firstLesson = course.modules[mIdx].lessons[lIdx];
+          activeModuleIndex = mIdx;
+          activeLessonIndex = lIdx;
+        }
+      }
+    }
+    
+    if (!firstLesson) {
+      for (const m of course.modules) {
+        if (m.lessons.length > 0) {
+          firstLesson = m.lessons[0];
+          activeModuleIndex = course.modules.indexOf(m);
+          activeLessonIndex = 0;
+          break;
+        }
       }
     }
     
@@ -1267,6 +1319,12 @@ function selectPlayerLesson(lesson, mIdx, lIdx) {
   activeModuleIndex = mIdx;
   activeLessonIndex = lIdx;
   
+  if (currentUser && currentRole === 'student') {
+    localStorage.setItem(`edutrack_active_course_${currentUser.id}`, activeCourse.id);
+    localStorage.setItem(`edutrack_active_module_idx_${currentUser.id}_${activeCourse.id}`, mIdx);
+    localStorage.setItem(`edutrack_active_lesson_idx_${currentUser.id}_${activeCourse.id}`, lIdx);
+  }
+  
   DOM.playerLessonTitle.textContent = lesson.title;
   DOM.playerLessonNotes.textContent = lesson.notes || 'No hay apuntes o anotaciones registradas para esta clase por el instructor.';
   
@@ -1371,7 +1429,15 @@ function selectPlayerLesson(lesson, mIdx, lIdx) {
             DOM.btnCompleteIframeVideo.disabled = true;
           }
           
+          const iframeStorageKey = `edutrack_iframe_timer_${currentUser.id}_${lesson.id}`;
           let secondsLeft = 3600; // Fijado a 1 hora (3600 segundos) por requerimiento
+          const cachedSeconds = localStorage.getItem(iframeStorageKey);
+          if (cachedSeconds !== null) {
+            const parsedSeconds = parseInt(cachedSeconds, 10);
+            if (!isNaN(parsedSeconds) && parsedSeconds > 0) {
+              secondsLeft = parsedSeconds;
+            }
+          }
 
           const formatSeconds = (totalSeconds) => {
             const hrs = Math.floor(totalSeconds / 3600);
@@ -1392,9 +1458,11 @@ function selectPlayerLesson(lesson, mIdx, lIdx) {
 
           iframeCompletionTimer = setInterval(() => {
             secondsLeft--;
+            localStorage.setItem(iframeStorageKey, secondsLeft);
             if (secondsLeft <= 0) {
               clearInterval(iframeCompletionTimer);
               iframeCompletionTimer = null;
+              localStorage.removeItem(iframeStorageKey);
               if (DOM.btnCompleteIframeVideo) {
                 DOM.btnCompleteIframeVideo.disabled = false;
                 DOM.btnCompleteIframeVideo.innerHTML = '<i class="fas fa-check-circle"></i> Marcar como Completado';
@@ -1420,6 +1488,22 @@ function selectPlayerLesson(lesson, mIdx, lIdx) {
         DOM.videoPlayer.style.display = 'block';
         DOM.videoPlayer.src = lesson.url;
         DOM.videoPlayer.load();
+
+        // Restaurar tiempo guardado para reproductor nativo
+        const nativeStorageKey = `edutrack_video_time_${currentUser.id}_${lesson.id}`;
+        const savedTime = localStorage.getItem(nativeStorageKey);
+        if (savedTime && currentRole === 'student' && !isCompleted) {
+          const parsedTime = parseFloat(savedTime);
+          if (!isNaN(parsedTime)) {
+            const setTime = () => {
+              DOM.videoPlayer.currentTime = parsedTime;
+              maxTimeWatched = parsedTime;
+              lastActiveVideoTime = parsedTime;
+            };
+            DOM.videoPlayer.addEventListener('loadedmetadata', setTime, { once: true });
+          }
+        }
+
         DOM.videoPlayer.play().catch(e => {
           console.log("Auto-reproducción bloqueada por políticas del navegador.");
         });
@@ -1462,6 +1546,10 @@ function selectPlayerLesson(lesson, mIdx, lIdx) {
 async function autoMarkLessonComplete() {
   if (!currentUser) return;
   if (activeLesson && !isLessonCompletedLocal(activeLesson.id)) {
+    // Limpiar localStorage de progreso temporal de esta lección al completarse
+    localStorage.removeItem(`edutrack_video_time_${currentUser.id}_${activeLesson.id}`);
+    localStorage.removeItem(`edutrack_iframe_timer_${currentUser.id}_${activeLesson.id}`);
+    
     await db.toggleLessonComplete(activeCourse.id, activeLesson.id, currentUser.id);
     await updatePlayerProgress();
     renderPlayerSyllabus();
@@ -1484,6 +1572,11 @@ function advanceToNextLesson() {
     const nextLesson = activeCourse.modules[nextModIdx].lessons[nextLesIdx];
     selectPlayerLesson(nextLesson, nextModIdx, nextLesIdx);
   } else {
+    if (currentUser) {
+      localStorage.removeItem(`edutrack_active_course_${currentUser.id}`);
+      localStorage.removeItem(`edutrack_active_module_idx_${currentUser.id}_${activeCourse.id}`);
+      localStorage.removeItem(`edutrack_active_lesson_idx_${currentUser.id}_${activeCourse.id}`);
+    }
     alert('¡Felicidades! Has terminado de revisar todas las clases del curso.');
   }
 }
