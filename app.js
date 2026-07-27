@@ -1178,12 +1178,20 @@ async function startCourse(courseId) {
   }
 }
 
-// Actualizar barra de progreso del player
+// Actualizar barra de progreso del player y sincronizar caché local
 async function updatePlayerProgress() {
   if (!currentUser) return;
   const progress = await db.getCourseProgress(activeCourse.id, currentUser.id);
   DOM.playerProgressText.textContent = `${progress.percent}%`;
   DOM.playerProgressFill.style.width = `${progress.percent}%`;
+  
+  // Guardar en la caché local para desbloqueo secuencial síncrono instantáneo
+  const allUserProgress = JSON.parse(localStorage.getItem(`edutrack_progress_${currentUser.id}`)) || {};
+  allUserProgress[activeCourse.id] = {
+    completedLessons: progress.completedLessons || [],
+    completed: progress.percent === 100
+  };
+  localStorage.setItem(`edutrack_progress_${currentUser.id}`, JSON.stringify(allUserProgress));
   
   // Habilitar botón de quiz si el progreso es 100%
   const isQuizPassed = await checkIfQuizPassed(activeCourse.id);
