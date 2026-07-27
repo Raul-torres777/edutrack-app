@@ -1371,19 +1371,15 @@ function selectPlayerLesson(lesson, mIdx, lIdx) {
             DOM.btnCompleteIframeVideo.disabled = true;
           }
           
-          let secondsLeft = 10; // Por defecto
-          if (lesson.duration && lesson.duration.includes(':')) {
-            const parts = lesson.duration.split(':');
-            const mins = parseInt(parts[0], 10);
-            const secs = parseInt(parts[1], 10);
-            if (!isNaN(mins) && !isNaN(secs)) {
-              secondsLeft = mins * 60 + secs;
-            }
-          }
+          let secondsLeft = 3600; // Fijado a 1 hora (3600 segundos) por requerimiento
 
           const formatSeconds = (totalSeconds) => {
-            const mins = Math.floor(totalSeconds / 60);
+            const hrs = Math.floor(totalSeconds / 3600);
+            const mins = Math.floor((totalSeconds % 3600) / 60);
             const secs = totalSeconds % 60;
+            if (hrs > 0) {
+              return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            }
             return `${mins}:${secs.toString().padStart(2, '0')}`;
           };
           
