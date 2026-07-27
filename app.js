@@ -1475,12 +1475,12 @@ function selectPlayerLesson(lesson, mIdx, lIdx) {
           }
           
           const iframeStorageKey = `edutrack_iframe_timer_${currentUser.id}_${lesson.id}`;
-          let secondsLeft = 3600; // Fijado a 1 hora (3600 segundos) por requerimiento
+          let secondsLeft = 180; // Fijado a 3 minutos (180 segundos) por requerimiento
           const cachedSeconds = localStorage.getItem(iframeStorageKey);
           if (cachedSeconds !== null) {
             const parsedSeconds = parseInt(cachedSeconds, 10);
             if (!isNaN(parsedSeconds) && parsedSeconds > 0) {
-              secondsLeft = parsedSeconds;
+              secondsLeft = Math.min(parsedSeconds, 180);
             }
           }
 
