@@ -2020,3 +2020,345 @@ body.light-theme .assigned-course-badge {
   background: rgba(99, 102, 241, 0.05);
 }
 
+/* ==================== DISPOSITIVOS MÓVILES (RESPONSIVE DESIGN) ==================== */
+@media (max-width: 768px) {
+  /* Diseño base y contenedores */
+  .app-shell {
+    grid-template-rows: auto 1fr; /* Permitir que la cabecera crezca si se apila */
+  }
+
+  .main-content {
+    padding: 20px 15px; /* Reducir márgenes laterales */
+  }
+
+  /* Barra de Navegación (Header) */
+  .header-nav {
+    flex-direction: column;
+    height: auto;
+    padding: 15px;
+    gap: 12px;
+    align-items: center;
+    text-align: center;
+  }
+
+  .logo-area {
+    font-size: 1.3rem;
+  }
+
+  .navigation-tabs {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .nav-tab {
+    flex: 1;
+    justify-content: center;
+    padding: 8px 10px;
+    font-size: 0.85rem;
+  }
+
+  .header-actions {
+    width: 100%;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .user-profile {
+    padding: 5px 12px;
+    font-size: 0.8rem;
+  }
+
+  /* Banner de bienvenida */
+  .welcome-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 25px 20px;
+    margin-bottom: 25px;
+    border-radius: 16px;
+  }
+
+  .welcome-text h1 {
+    font-size: 1.5rem;
+    line-height: 1.3;
+    margin-bottom: 6px;
+  }
+
+  .welcome-text p {
+    font-size: 0.9rem;
+    line-height: 1.4;
+  }
+
+  /* Filtros de Categoría Deslizables Horizontalmente */
+  .category-filters-container {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    -webkit-overflow-scrolling: touch;
+    gap: 8px;
+  }
+
+  .category-filter-btn {
+    flex-shrink: 0;
+    padding: 6px 14px;
+    font-size: 0.8rem;
+  }
+
+  /* Grilla de Cursos */
+  .courses-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  /* Tarjeta de Curso */
+  .course-card-header {
+    height: 150px;
+  }
+
+  .course-card-header h3 {
+    font-size: 1.2rem;
+  }
+
+  .course-card-body {
+    padding: 15px;
+  }
+
+  /* Reproductor de Clases */
+  .player-container {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+
+  .player-main {
+    overflow-y: visible; /* Dejar que el scroll sea el de la página */
+    padding-right: 0;
+  }
+
+  .video-wrapper {
+    border-radius: 12px;
+  }
+
+  .class-title-info {
+    padding: 15px;
+    border-radius: 12px;
+  }
+
+  .class-title-info h2 {
+    font-size: 1.3rem;
+  }
+
+  .syllabus-sidebar {
+    height: 450px; /* Tamaño fijo en móvil para que no sea infinito */
+    border-radius: 12px;
+  }
+
+  /* Sección Cuestionario (Quiz) */
+  .quiz-container {
+    margin: 20px 0;
+    border-radius: 16px;
+  }
+
+  .quiz-header {
+    padding: 20px;
+  }
+
+  .quiz-header h2 {
+    font-size: 1.3rem;
+  }
+
+  .quiz-body {
+    padding: 20px;
+  }
+
+  .quiz-question-box h3 {
+    font-size: 1.1rem;
+    margin-bottom: 15px;
+  }
+
+  .option-btn {
+    padding: 12px 15px;
+    font-size: 0.85rem;
+    gap: 10px;
+    border-radius: 10px;
+  }
+
+  .quiz-footer {
+    padding: 20px;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .quiz-footer .btn {
+    width: 100%;
+  }
+
+  /* Certificados (Scroll horizontal para que no se deforme) */
+  .certificate-frame-container {
+    overflow-x: auto;
+    padding: 15px;
+    border-radius: 16px;
+    display: flex;
+    justify-content: flex-start;
+  }
+
+  .certificate-layout {
+    min-width: 650px; /* Mantiene la proporción e impide el encimado */
+    padding: 25px;
+    border-width: 12px;
+  }
+
+  .cert-student-name {
+    font-size: 1.8rem;
+    width: 90%;
+  }
+
+  .cert-description {
+    font-size: 0.85rem;
+    max-width: 90%;
+  }
+
+  .cert-footer {
+    padding: 0 15px;
+  }
+
+  .cert-signature {
+    width: 130px;
+  }
+
+  .cert-badge {
+    width: 45px;
+    height: 45px;
+    font-size: 1.1rem;
+  }
+
+  /* Tablas responsivas */
+  .table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 12px;
+    margin-top: 15px;
+  }
+
+  .custom-table {
+    min-width: 650px; /* Asegura que la tabla no se colapse y tenga scroll */
+  }
+
+  .custom-table th, .custom-table td {
+    padding: 12px 15px;
+    font-size: 0.8rem;
+  }
+
+  /* Modales */
+  .modal-box {
+    width: 95%;
+    border-radius: 16px;
+  }
+
+  .modal-header {
+    padding: 15px 20px;
+  }
+
+  .modal-header h3 {
+    font-size: 1.1rem;
+  }
+
+  .modal-body {
+    padding: 20px;
+  }
+
+  .modal-footer {
+    padding: 15px 20px;
+  }
+
+  /* Formas y Formularios */
+  .form-row {
+    grid-template-columns: 1fr; /* Apilar campos que estén uno al lado del otro */
+    gap: 0;
+  }
+
+  /* Vista de Instructor */
+  .instructor-tabs {
+    flex-direction: column;
+    gap: 5px;
+    border-bottom: none;
+  }
+
+  .instructor-tab {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
+  .stat-card {
+    padding: 15px;
+  }
+
+  /* Creador/Editor de Cursos (Instructor) */
+  .course-details-editor {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .editor-sidebar {
+    position: static; /* Quitar sticky en móvil para flujo normal apilado */
+    width: 100%;
+    padding: 15px;
+  }
+
+  .editor-main {
+    padding: 15px;
+  }
+
+  .curriculum-builder-container {
+    margin-top: 15px;
+  }
+
+  .builder-module-header {
+    padding: 12px 15px;
+  }
+
+  .builder-module-header h4 {
+    font-size: 0.95rem;
+  }
+
+  .builder-lessons-list {
+    padding: 12px;
+  }
+
+  .builder-lesson-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 15px;
+  }
+
+  .builder-lesson-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Pantalla de autenticación en celulares extra pequeños */
+  .auth-card {
+    padding: 25px 15px;
+    border-radius: 16px;
+  }
+
+  .auth-logo {
+    font-size: 1.7rem;
+  }
+
+  .auth-subtitle {
+    font-size: 0.85rem;
+  }
+
+  .auth-tab-btn {
+    font-size: 0.8rem;
+    padding: 8px;
+  }
+}
+
