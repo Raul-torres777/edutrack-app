@@ -717,6 +717,37 @@ export const db = {
   },
 
   // --- REINICIO DE DATOS ---
+  async resetUserProgressByEmail(email) {
+    const cleanEmail = (email || '').trim().toLowerCase();
+    if (!cleanEmail) return false;
+
+    try {
+      const { data: user } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', cleanEmail)
+        .maybeSingle();
+
+      const userId = user ? user.id : cleanEmail;
+
+      await supabase.from('progress').delete().eq('user_id', userId);
+      await supabase.from('quiz_results').delete().eq('user_id', userId);
+      await supabase.from('certificates').delete().eq('user_id', userId);
+      
+      // Limpiar caché local de progreso
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i);
+        if (key && (key.includes(cleanEmail) || key.includes(userId))) {
+          localStorage.removeItem(key);
+        }
+      }
+      return true;
+    } catch (e) {
+      console.error('Error al reiniciar progreso de usuario:', e);
+      return false;
+    }
+  },
+
   async resetAllData() {
     await supabase.from('progress').delete().neq('user_id', '');
     await supabase.from('quiz_results').delete().neq('user_id', '');
