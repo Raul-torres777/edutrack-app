@@ -2531,8 +2531,8 @@ window.addLessonQuizQuestion = function(mIdx, lIdx) {
   const lesson = editingCourse.modules[mIdx].lessons[lIdx];
   if (!lesson.quiz) lesson.quiz = [];
   lesson.quiz.push({
-    question: '',
-    options: ['', '', '', ''],
+    question: 'Nueva Pregunta de Evaluación',
+    options: ['Opción A', 'Opción B', 'Opción C', 'Opción D'],
     correctIndex: 0
   });
   lessonAccordionStates[`${mIdx}_${lIdx}`] = true;
@@ -3087,21 +3087,26 @@ async function saveCourseFromEditor() {
   const quizQuestions = [];
   const questionCards = DOM.quizBuilderQuestionsList.children;
   for (const card of questionCards) {
-    const qText = card.querySelector('.q-text-input').value.trim();
-    const opt0 = card.querySelector('.q-opt-0').value.trim();
-    const opt1 = card.querySelector('.q-opt-1').value.trim();
-    const opt2 = card.querySelector('.q-opt-2').value.trim();
-    const opt3 = card.querySelector('.q-opt-3').value.trim();
-    const correctVal = parseInt(card.querySelector('.q-correct-select').value);
+    const qInput = card.querySelector('.q-text-input');
+    const qText = qInput ? qInput.value.trim() : '';
+    const opt0 = card.querySelector('.q-opt-0') ? card.querySelector('.q-opt-0').value.trim() : '';
+    const opt1 = card.querySelector('.q-opt-1') ? card.querySelector('.q-opt-1').value.trim() : '';
+    const opt2 = card.querySelector('.q-opt-2') ? card.querySelector('.q-opt-2').value.trim() : '';
+    const opt3 = card.querySelector('.q-opt-3') ? card.querySelector('.q-opt-3').value.trim() : '';
+    const selectEl = card.querySelector('.q-correct-select');
+    const correctVal = selectEl ? parseInt(selectEl.value, 10) : 0;
     
-    if (qText && opt0 && opt1) {
-      const opts = [opt0, opt1];
+    if (qText) {
+      const opts = [
+        opt0 || 'Opción A',
+        opt1 || 'Opción B'
+      ];
       if (opt2) opts.push(opt2);
       if (opt3) opts.push(opt3);
       quizQuestions.push({
         question: qText,
         options: opts,
-        correctIndex: correctVal
+        correctIndex: isNaN(correctVal) ? 0 : correctVal
       });
     }
   }
@@ -3112,7 +3117,20 @@ async function saveCourseFromEditor() {
       if (mod.lessons) {
         mod.lessons.forEach(les => {
           if (les.quiz) {
-            les.quiz = les.quiz.filter(q => q && q.question && q.question.trim() !== '');
+            les.quiz = les.quiz.filter(q => q && q.question && q.question.trim() !== '').map(q => {
+              const rawOpts = q.options || [];
+              const opts = [
+                (rawOpts[0] && rawOpts[0].trim()) ? rawOpts[0].trim() : 'Opción A',
+                (rawOpts[1] && rawOpts[1].trim()) ? rawOpts[1].trim() : 'Opción B'
+              ];
+              if (rawOpts[2] && rawOpts[2].trim()) opts.push(rawOpts[2].trim());
+              if (rawOpts[3] && rawOpts[3].trim()) opts.push(rawOpts[3].trim());
+              return {
+                question: q.question.trim(),
+                options: opts,
+                correctIndex: q.correctIndex || 0
+              };
+            });
           }
         });
       }
