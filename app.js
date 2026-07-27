@@ -2618,26 +2618,26 @@ function renderLessonQuizQuestionsHtml(mIdx, lIdx, questions) {
         <div class="q-card-body" style="display: ${isCollapsed ? 'none' : 'block'};">
           <div class="form-group" style="margin-bottom: 8px;">
             <label style="font-size: 0.8rem;">Texto de la Pregunta</label>
-            <input type="text" class="form-control form-control-sm" placeholder="¿Qué significa...?" value="${q.question || ''}" onchange="updateLessonQuizQuestion(${mIdx}, ${lIdx}, ${qIdx}, 'question', this.value)" style="padding: 6px 10px; font-size: 0.85rem;">
+            <input type="text" class="form-control form-control-sm" placeholder="¿Qué significa...?" value="${q.question || ''}" oninput="updateLessonQuizQuestion(${mIdx}, ${lIdx}, ${qIdx}, 'question', this.value)" onchange="updateLessonQuizQuestion(${mIdx}, ${lIdx}, ${qIdx}, 'question', this.value)" style="padding: 6px 10px; font-size: 0.85rem;">
           </div>
           <div class="form-row" style="margin-bottom: 8px; gap: 8px;">
             <div class="form-group" style="margin-bottom: 0;">
               <label style="font-size: 0.75rem;">Opción A</label>
-              <input type="text" class="form-control form-control-sm" placeholder="Opción A" value="${(q.options && q.options[0]) || ''}" onchange="updateLessonQuizOption(${mIdx}, ${lIdx}, ${qIdx}, 0, this.value)" style="padding: 6px 10px; font-size: 0.85rem;">
+              <input type="text" class="form-control form-control-sm" placeholder="Opción A" value="${(q.options && q.options[0]) || ''}" oninput="updateLessonQuizOption(${mIdx}, ${lIdx}, ${qIdx}, 0, this.value)" onchange="updateLessonQuizOption(${mIdx}, ${lIdx}, ${qIdx}, 0, this.value)" style="padding: 6px 10px; font-size: 0.85rem;">
             </div>
             <div class="form-group" style="margin-bottom: 0;">
               <label style="font-size: 0.75rem;">Opción B</label>
-              <input type="text" class="form-control form-control-sm" placeholder="Opción B" value="${(q.options && q.options[1]) || ''}" onchange="updateLessonQuizOption(${mIdx}, ${lIdx}, ${qIdx}, 1, this.value)" style="padding: 6px 10px; font-size: 0.85rem;">
+              <input type="text" class="form-control form-control-sm" placeholder="Opción B" value="${(q.options && q.options[1]) || ''}" oninput="updateLessonQuizOption(${mIdx}, ${lIdx}, ${qIdx}, 1, this.value)" onchange="updateLessonQuizOption(${mIdx}, ${lIdx}, ${qIdx}, 1, this.value)" style="padding: 6px 10px; font-size: 0.85rem;">
             </div>
           </div>
           <div class="form-row" style="margin-bottom: 8px; gap: 8px;">
             <div class="form-group" style="margin-bottom: 0;">
               <label style="font-size: 0.75rem;">Opción C</label>
-              <input type="text" class="form-control form-control-sm" placeholder="Opción C" value="${(q.options && q.options[2]) || ''}" onchange="updateLessonQuizOption(${mIdx}, ${lIdx}, ${qIdx}, 2, this.value)" style="padding: 6px 10px; font-size: 0.85rem;">
+              <input type="text" class="form-control form-control-sm" placeholder="Opción C" value="${(q.options && q.options[2]) || ''}" oninput="updateLessonQuizOption(${mIdx}, ${lIdx}, ${qIdx}, 2, this.value)" onchange="updateLessonQuizOption(${mIdx}, ${lIdx}, ${qIdx}, 2, this.value)" style="padding: 6px 10px; font-size: 0.85rem;">
             </div>
             <div class="form-group" style="margin-bottom: 0;">
               <label style="font-size: 0.75rem;">Opción D</label>
-              <input type="text" class="form-control form-control-sm" placeholder="Opción D" value="${(q.options && q.options[3]) || ''}" onchange="updateLessonQuizOption(${mIdx}, ${lIdx}, ${qIdx}, 3, this.value)" style="padding: 6px 10px; font-size: 0.85rem;">
+              <input type="text" class="form-control form-control-sm" placeholder="Opción D" value="${(q.options && q.options[3]) || ''}" oninput="updateLessonQuizOption(${mIdx}, ${lIdx}, ${qIdx}, 3, this.value)" onchange="updateLessonQuizOption(${mIdx}, ${lIdx}, ${qIdx}, 3, this.value)" style="padding: 6px 10px; font-size: 0.85rem;">
             </div>
           </div>
           <div class="form-group" style="margin-bottom: 0; margin-top: 8px;">
@@ -3106,6 +3106,19 @@ async function saveCourseFromEditor() {
     }
   }
   
+  // Limpiar y asegurar preguntas en cada lección del temario
+  if (editingCourse.modules) {
+    editingCourse.modules.forEach(mod => {
+      if (mod.lessons) {
+        mod.lessons.forEach(les => {
+          if (les.quiz) {
+            les.quiz = les.quiz.filter(q => q && q.question && q.question.trim() !== '');
+          }
+        });
+      }
+    });
+  }
+
   editingCourse.title = title;
   editingCourse.description = description;
   editingCourse.instructor = instructor;
@@ -3116,21 +3129,23 @@ async function saveCourseFromEditor() {
   editingCourse.quiz = quizQuestions;
   
   try {
+    let savedCourse = null;
     if (editingCourse.id) {
-      await db.updateCourse(editingCourse.id, editingCourse);
+      savedCourse = await db.updateCourse(editingCourse.id, editingCourse);
       alert('Curso actualizado correctamente.');
     } else {
-      const newCourse = await db.createCourse(editingCourse);
-      newCourse.modules = editingCourse.modules;
-      newCourse.quiz = editingCourse.quiz;
-      const courses = await db.getCourses();
-      const index = courses.findIndex(c => c.id === newCourse.id);
-      if (index !== -1) {
-        courses[index] = newCourse;
-        localStorage.setItem('edutrack_courses', JSON.stringify(courses));
-      }
+      savedCourse = await db.createCourse(editingCourse);
       alert('Curso creado con éxito.');
     }
+
+    if (savedCourse) {
+      if (activeCourse && activeCourse.id === savedCourse.id) {
+        activeCourse = savedCourse;
+      }
+      const courses = await db.getCourses();
+      localStorage.setItem('edutrack_courses', JSON.stringify(courses));
+    }
+
     showView('view-instructor-dashboard');
     loadInstructorDashboard();
   } catch (err) {
