@@ -563,6 +563,32 @@ body.light-theme .nav-tab.active {
   display: none;
 }
 
+/* Tarjeta de Formulario de Evaluación Post-Video */
+.lesson-feedback-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: var(--card-shadow);
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.star-icon {
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+
+.star-icon:hover {
+  transform: scale(1.25);
+}
+
+.star-icon.active {
+  color: var(--warning-color) !important;
+}
+
+.star-icon.inactive {
+  color: #94a3b8 !important;
+}
+
 .class-title-info {
   background: var(--bg-secondary);
   padding: 25px;

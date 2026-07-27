@@ -508,6 +508,41 @@ export const db = {
     return this.getCourseProgress(courseId, userId);
   },
 
+  // --- RETROALIMENTACIÓN DE CLASES (FEEDBACK POST-VIDEO) ---
+
+  async saveLessonFeedback(courseId, lessonId, userId, rating, summary, comments) {
+    if (!userId) return null;
+    
+    // Almacenamiento de respaldos en caché local
+    const feedbackKey = `edutrack_feedbacks_${userId}`;
+    const localFeedbacks = JSON.parse(localStorage.getItem(feedbackKey)) || [];
+    const newFeedback = {
+      id: 'fb-' + Date.now(),
+      course_id: courseId,
+      lesson_id: lessonId,
+      user_id: userId,
+      rating: rating || 5,
+      summary: summary || '',
+      comments: comments || '',
+      created_at: new Date().toISOString()
+    };
+    localFeedbacks.push(newFeedback);
+    localStorage.setItem(feedbackKey, JSON.stringify(localFeedbacks));
+
+    try {
+      const { data, error } = await supabase
+        .from('lesson_feedbacks')
+        .insert([newFeedback]);
+      if (error) {
+        console.warn('Guardado en caché local de feedback (tabla Supabase opcional):', error.message);
+      }
+      return data || newFeedback;
+    } catch (e) {
+      console.warn('Retenido en caché local de feedback:', e);
+      return newFeedback;
+    }
+  },
+
   // --- EXÁMENES (AISLADO POR USUARIO) ---
 
   async getQuizResults(userId) {

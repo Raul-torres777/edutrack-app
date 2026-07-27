@@ -121,6 +121,40 @@
                 <i class="fas fa-check-circle"></i> Marcar como Completado
               </button>
             </div>
+
+            <!-- Formulario Evaluativo / Feedback al Finalizar Clase -->
+            <div id="lesson-feedback-container" class="lesson-feedback-card" style="display: none; margin-top: 20px;">
+              <div class="feedback-card-header" style="margin-bottom: 20px;">
+                <h3 style="font-size: 1.2rem; display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                  <i class="fas fa-clipboard-check" style="color: var(--accent-color);"></i> Formulario Evaluativo de la Clase
+                </h3>
+                <p style="font-size: 0.9rem; color: var(--text-secondary);">Completa este breve formulario para registrar tu aprendizaje y desbloquear la siguiente clase.</p>
+              </div>
+              <form id="form-lesson-feedback" onsubmit="event.preventDefault(); submitLessonFeedback();">
+                <div class="form-group">
+                  <label>¿Cómo calificas esta clase?</label>
+                  <div class="star-rating-group" id="star-rating-group" style="display: flex; align-items: center; gap: 6px; margin-top: 5px;">
+                    <i class="fas fa-star star-icon active" data-rating="1" style="font-size: 1.3rem; color: var(--warning-color); cursor: pointer;"></i>
+                    <i class="fas fa-star star-icon active" data-rating="2" style="font-size: 1.3rem; color: var(--warning-color); cursor: pointer;"></i>
+                    <i class="fas fa-star star-icon active" data-rating="3" style="font-size: 1.3rem; color: var(--warning-color); cursor: pointer;"></i>
+                    <i class="fas fa-star star-icon active" data-rating="4" style="font-size: 1.3rem; color: var(--warning-color); cursor: pointer;"></i>
+                    <i class="fas fa-star star-icon active" data-rating="5" style="font-size: 1.3rem; color: var(--warning-color); cursor: pointer;"></i>
+                    <span id="star-rating-text" style="font-size: 0.85rem; color: var(--text-secondary); margin-left: 8px;">5 de 5 estrellas</span>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label for="feedback-summary">¿Qué aprendiste en esta clase? <span style="color: var(--danger-color);">*</span></label>
+                  <textarea class="form-control" id="feedback-summary" placeholder="Escribe un breve resumen de los puntos clave aprendidos..." required style="min-height: 80px;"></textarea>
+                </div>
+                <div class="form-group">
+                  <label for="feedback-comments">Dudas o Comentarios para el Instructor (Opcional)</label>
+                  <textarea class="form-control" id="feedback-comments" placeholder="¿Tienes alguna duda o sugerencia sobre el tema?" style="min-height: 60px;"></textarea>
+                </div>
+                <button type="submit" class="btn btn-success btn-block" id="btn-submit-feedback" style="margin-top: 15px;">
+                  <i class="fas fa-paper-plane"></i> Enviar Formulario y Desbloquear Siguiente Clase
+                </button>
+              </form>
+            </div>
             
             <div class="class-title-info">
               <h2 id="player-lesson-title">Cargando título de clase...</h2>

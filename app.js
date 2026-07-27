@@ -100,6 +100,13 @@ const DOM = {
   btnVideoForward: document.getElementById('btn-video-forward'),
   selectVideoSpeed: document.getElementById('select-video-speed'),
   iframePopoutBlocker: document.getElementById('iframe-popout-blocker'),
+  lessonFeedbackContainer: document.getElementById('lesson-feedback-container'),
+  formLessonFeedback: document.getElementById('form-lesson-feedback'),
+  feedbackSummary: document.getElementById('feedback-summary'),
+  feedbackComments: document.getElementById('feedback-comments'),
+  starRatingGroup: document.getElementById('star-rating-group'),
+  starRatingText: document.getElementById('star-rating-text'),
+  btnSubmitFeedback: document.getElementById('btn-submit-feedback'),
   
   // Elementos del Quiz
   quizCourseTitle: document.getElementById('quiz-course-title'),
@@ -322,7 +329,16 @@ function initApp() {
   }
 
   if (DOM.btnCompleteIframeVideo) {
-    DOM.btnCompleteIframeVideo.addEventListener('click', autoMarkLessonComplete);
+    DOM.btnCompleteIframeVideo.addEventListener('click', showLessonFeedbackForm);
+  }
+
+  if (DOM.starRatingGroup) {
+    DOM.starRatingGroup.querySelectorAll('.star-icon').forEach(star => {
+      star.addEventListener('click', (e) => {
+        const rating = parseInt(e.target.getAttribute('data-rating'), 10) || 5;
+        updateStarRatingUI(rating);
+      });
+    });
   }
   
   // Manejador de Pestañas del Reproductor
@@ -1442,6 +1458,9 @@ function selectPlayerLesson(lesson, mIdx, lIdx) {
   if (DOM.iframePopoutBlocker) {
     DOM.iframePopoutBlocker.style.display = 'none';
   }
+  if (DOM.lessonFeedbackContainer) {
+    DOM.lessonFeedbackContainer.style.display = 'none';
+  }
 
   // Cargar video en reproductor HTML5 o Iframe
   if (lesson.type === 'video') {
@@ -1598,6 +1617,80 @@ function selectPlayerLesson(lesson, mIdx, lIdx) {
     }
   }
 }
+
+let selectedFeedbackRating = 5;
+
+function showLessonFeedbackForm() {
+  if (currentRole === 'instructor' || (activeLesson && isLessonCompletedLocal(activeLesson.id))) {
+    autoMarkLessonComplete();
+    return;
+  }
+  
+  if (DOM.lessonFeedbackContainer) {
+    DOM.lessonFeedbackContainer.style.display = 'block';
+    DOM.lessonFeedbackContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+  if (DOM.feedbackSummary) {
+    DOM.feedbackSummary.value = '';
+    DOM.feedbackSummary.focus();
+  }
+  if (DOM.feedbackComments) {
+    DOM.feedbackComments.value = '';
+  }
+  updateStarRatingUI(5);
+}
+
+function updateStarRatingUI(rating) {
+  selectedFeedbackRating = rating;
+  if (!DOM.starRatingGroup) return;
+  const stars = DOM.starRatingGroup.querySelectorAll('.star-icon');
+  stars.forEach((star, index) => {
+    if (index < rating) {
+      star.classList.add('active');
+      star.classList.remove('inactive');
+    } else {
+      star.classList.remove('active');
+      star.classList.add('inactive');
+    }
+  });
+  if (DOM.starRatingText) {
+    DOM.starRatingText.textContent = `${rating} de 5 estrellas`;
+  }
+}
+
+window.submitLessonFeedback = async function() {
+  if (!currentUser || !activeCourse || !activeLesson) return;
+  
+  const summary = DOM.feedbackSummary ? DOM.feedbackSummary.value.trim() : '';
+  const comments = DOM.feedbackComments ? DOM.feedbackComments.value.trim() : '';
+  
+  if (!summary) {
+    alert('Por favor escribe un breve resumen de lo que aprendiste en esta clase.');
+    if (DOM.feedbackSummary) DOM.feedbackSummary.focus();
+    return;
+  }
+  
+  if (DOM.btnSubmitFeedback) {
+    DOM.btnSubmitFeedback.disabled = true;
+    DOM.btnSubmitFeedback.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando y desbloqueando...';
+  }
+  
+  try {
+    await db.saveLessonFeedback(activeCourse.id, activeLesson.id, currentUser.id, selectedFeedbackRating, summary, comments);
+  } catch (err) {
+    console.error('Error guardando feedback:', err);
+  }
+  
+  if (DOM.lessonFeedbackContainer) {
+    DOM.lessonFeedbackContainer.style.display = 'none';
+  }
+  if (DOM.btnSubmitFeedback) {
+    DOM.btnSubmitFeedback.disabled = false;
+    DOM.btnSubmitFeedback.innerHTML = '<i class="fas fa-paper-plane"></i> Enviar Formulario y Desbloquear Siguiente Clase';
+  }
+  
+  await autoMarkLessonComplete();
+};
 
 // Marcar lección actual como completada al finalizar el video
 async function autoMarkLessonComplete() {
