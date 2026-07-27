@@ -1636,15 +1636,19 @@ function showLessonFeedbackForm() {
     DOM.playerFormCustomTitle.innerHTML = `<i class="fas fa-clipboard-check" style="color: var(--accent-color);"></i> ${formTitle}`;
   }
 
-  // Renderizar el grupo de preguntas del administrador
+  // Renderizar las preguntas asignadas específicamente a esta lección (o fallback al curso)
+  const currentQuestions = (activeLesson && activeLesson.quiz && activeLesson.quiz.length > 0)
+    ? activeLesson.quiz
+    : (activeCourse ? activeCourse.quiz : []);
+
   if (DOM.feedbackQuestionsDynamicGroup) {
-    if (activeCourse && activeCourse.quiz && activeCourse.quiz.length > 0) {
-      const totalQuestions = activeCourse.quiz.length;
+    if (currentQuestions && currentQuestions.length > 0) {
+      const totalQuestions = currentQuestions.length;
       if (DOM.questionsGroupWrapper) DOM.questionsGroupWrapper.style.display = 'block';
       if (DOM.groupQuestionsCounter) DOM.groupQuestionsCounter.textContent = `${totalQuestions} preguntas en el grupo`;
 
       let qHtml = '';
-      activeCourse.quiz.forEach((q, qIdx) => {
+      currentQuestions.forEach((q, qIdx) => {
         qHtml += `
           <div class="feedback-question-card" style="background: var(--bg-tertiary); padding: 16px; border-radius: 12px; border: 1px solid var(--border-color);">
             <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
@@ -2507,24 +2511,153 @@ async function loadCourseEditor(courseId) {
   }
 }
 
-function renderEditorCurriculum() {
-  if (editingCourse.modules.length === 0) {
-    DOM.curriculumBuilderList.innerHTML = `
-      <div class="empty-state">
-        <i class="fas fa-layer-group"></i>
-        <h4>No hay módulos creados</h4>
-        <p>Crea tu primer módulo organizador de clases haciendo click en "Agregar Módulo".</p>
+let lessonAccordionStates = {};
+let lessonQuestionCollapsedStates = {};
+
+window.toggleLessonQuizAccordion = function(mIdx, lIdx) {
+  const key = `${mIdx}_${lIdx}`;
+  lessonAccordionStates[key] = !lessonAccordionStates[key];
+  renderEditorCurriculum();
+};
+
+window.toggleLessonQuestionCollapse = function(mIdx, lIdx, qIdx) {
+  const key = `${mIdx}_${lIdx}_${qIdx}`;
+  lessonQuestionCollapsedStates[key] = !lessonQuestionCollapsedStates[key];
+  renderEditorCurriculum();
+};
+
+window.addLessonQuizQuestion = function(mIdx, lIdx) {
+  if (!editingCourse.modules[mIdx] || !editingCourse.modules[mIdx].lessons[lIdx]) return;
+  const lesson = editingCourse.modules[mIdx].lessons[lIdx];
+  if (!lesson.quiz) lesson.quiz = [];
+  lesson.quiz.push({
+    question: '',
+    options: ['', '', '', ''],
+    correctIndex: 0
+  });
+  lessonAccordionStates[`${mIdx}_${lIdx}`] = true;
+  renderEditorCurriculum();
+};
+
+window.removeLessonQuizQuestion = function(mIdx, lIdx, qIdx) {
+  if (!editingCourse.modules[mIdx] || !editingCourse.modules[mIdx].lessons[lIdx]) return;
+  const lesson = editingCourse.modules[mIdx].lessons[lIdx];
+  if (lesson.quiz) {
+    lesson.quiz.splice(qIdx, 1);
+    renderEditorCurriculum();
+  }
+};
+
+window.moveLessonQuizQuestion = function(mIdx, lIdx, qIdx, dir) {
+  if (!editingCourse.modules[mIdx] || !editingCourse.modules[mIdx].lessons[lIdx]) return;
+  const quiz = editingCourse.modules[mIdx].lessons[lIdx].quiz;
+  if (!quiz) return;
+  
+  if (dir === 'up' && qIdx > 0) {
+    const temp = quiz[qIdx];
+    quiz[qIdx] = quiz[qIdx - 1];
+    quiz[qIdx - 1] = temp;
+  } else if (dir === 'down' && qIdx < quiz.length - 1) {
+    const temp = quiz[qIdx];
+    quiz[qIdx] = quiz[qIdx + 1];
+    quiz[qIdx + 1] = temp;
+  }
+  renderEditorCurriculum();
+};
+
+window.updateLessonQuizQuestion = function(mIdx, lIdx, qIdx, field, val) {
+  if (editingCourse.modules[mIdx] && editingCourse.modules[mIdx].lessons[lIdx]) {
+    const quiz = editingCourse.modules[mIdx].lessons[lIdx].quiz;
+    if (quiz && quiz[qIdx]) {
+      quiz[qIdx][field] = val;
+    }
+  }
+};
+
+window.updateLessonQuizOption = function(mIdx, lIdx, qIdx, optIdx, val) {
+  if (editingCourse.modules[mIdx] && editingCourse.modules[mIdx].lessons[lIdx]) {
+    const quiz = editingCourse.modules[mIdx].lessons[lIdx].quiz;
+    if (quiz && quiz[qIdx]) {
+      if (!quiz[qIdx].options) quiz[qIdx].options = ['', '', '', ''];
+      quiz[qIdx].options[optIdx] = val;
+    }
+  }
+};
+
+function renderLessonQuizQuestionsHtml(mIdx, lIdx, questions) {
+  if (!questions || questions.length === 0) {
+    return `<p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0; text-align: center; padding: 12px; background: rgba(255,255,255,0.02); border-radius: 8px;">No has agregado preguntas a este video. Haz clic en "+ Agregar Pregunta a este Video".</p>`;
+  }
+
+  return questions.map((q, qIdx) => {
+    const isCollapsed = lessonQuestionCollapsedStates[`${mIdx}_${lIdx}_${qIdx}`] || false;
+    const textPreview = q.question ? `: ${q.question.substring(0, 30)}...` : '';
+    
+    return `
+      <div class="lesson-q-card ${isCollapsed ? 'collapsed' : ''}" style="background: var(--bg-tertiary); padding: 12px; border-radius: 10px; border: 1px solid var(--border-color); margin-bottom: 8px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: ${isCollapsed ? '0' : '10px'};">
+          <span style="font-weight: 600; font-size: 0.85rem; color: var(--accent-color); flex: 1; cursor: pointer;" onclick="toggleLessonQuestionCollapse(${mIdx}, ${lIdx}, ${qIdx})">
+            Pregunta ${qIdx + 1}${textPreview}
+          </span>
+          <div style="display: flex; gap: 4px;">
+            <button type="button" class="btn btn-secondary btn-sm" title="Mover Arriba" onclick="moveLessonQuizQuestion(${mIdx}, ${lIdx}, ${qIdx}, 'up')" ${qIdx === 0 ? 'disabled' : ''} style="padding: 2px 6px; font-size: 0.7rem;">
+              <i class="fas fa-arrow-up"></i>
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" title="Mover Abajo" onclick="moveLessonQuizQuestion(${mIdx}, ${lIdx}, ${qIdx}, 'down')" ${qIdx === questions.length - 1 ? 'disabled' : ''} style="padding: 2px 6px; font-size: 0.7rem;">
+              <i class="fas fa-arrow-down"></i>
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" title="Contraer/Expandir" onclick="toggleLessonQuestionCollapse(${mIdx}, ${lIdx}, ${qIdx})" style="padding: 2px 6px; font-size: 0.7rem;">
+              <i class="fas ${isCollapsed ? 'fa-chevron-down' : 'fa-chevron-up'}"></i>
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" title="Eliminar Pregunta" onclick="removeLessonQuizQuestion(${mIdx}, ${lIdx}, ${qIdx})" style="padding: 2px 6px; font-size: 0.7rem; color: var(--danger-color);">
+              <i class="fas fa-trash-alt"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="q-card-body" style="display: ${isCollapsed ? 'none' : 'block'};">
+          <div class="form-group" style="margin-bottom: 8px;">
+            <label style="font-size: 0.8rem;">Texto de la Pregunta</label>
+            <input type="text" class="form-control form-control-sm" placeholder="¿Qué significa...?" value="${q.question || ''}" onchange="updateLessonQuizQuestion(${mIdx}, ${lIdx}, ${qIdx}, 'question', this.value)" style="padding: 6px 10px; font-size: 0.85rem;">
+          </div>
+          <div class="form-row" style="margin-bottom: 8px; gap: 8px;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label style="font-size: 0.75rem;">Opción A</label>
+              <input type="text" class="form-control form-control-sm" placeholder="Opción A" value="${(q.options && q.options[0]) || ''}" onchange="updateLessonQuizOption(${mIdx}, ${lIdx}, ${qIdx}, 0, this.value)" style="padding: 6px 10px; font-size: 0.85rem;">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label style="font-size: 0.75rem;">Opción B</label>
+              <input type="text" class="form-control form-control-sm" placeholder="Opción B" value="${(q.options && q.options[1]) || ''}" onchange="updateLessonQuizOption(${mIdx}, ${lIdx}, ${qIdx}, 1, this.value)" style="padding: 6px 10px; font-size: 0.85rem;">
+            </div>
+          </div>
+          <div class="form-row" style="margin-bottom: 8px; gap: 8px;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label style="font-size: 0.75rem;">Opción C</label>
+              <input type="text" class="form-control form-control-sm" placeholder="Opción C" value="${(q.options && q.options[2]) || ''}" onchange="updateLessonQuizOption(${mIdx}, ${lIdx}, ${qIdx}, 2, this.value)" style="padding: 6px 10px; font-size: 0.85rem;">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label style="font-size: 0.75rem;">Opción D</label>
+              <input type="text" class="form-control form-control-sm" placeholder="Opción D" value="${(q.options && q.options[3]) || ''}" onchange="updateLessonQuizOption(${mIdx}, ${lIdx}, ${qIdx}, 3, this.value)" style="padding: 6px 10px; font-size: 0.85rem;">
+            </div>
+          </div>
+        </div>
       </div>
     `;
-    return;
-  }
-  
+  }).join('');
+}
+
+// Renderizar lista de módulos y lecciones en el editor del curso
+function renderEditorCurriculum() {
   let html = '';
+  
   editingCourse.modules.forEach((mod, mIdx) => {
     html += `
-      <div class="builder-module">
+      <div class="builder-module-card">
         <div class="builder-module-header">
-          <h4>${mod.title}</h4>
+          <h4 style="margin: 0; display: flex; align-items: center; gap: 8px;">
+            <i class="fas fa-folder" style="color: var(--primary-color);"></i>
+            <span>Módulo ${mIdx + 1}: ${mod.title}</span>
+          </h4>
           <div class="builder-module-actions">
             <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 0.8rem;" onclick="openAddLessonModal(${mIdx})">
               <i class="fas fa-plus"></i> Agregar Clase
@@ -2542,25 +2675,49 @@ function renderEditorCurriculum() {
     } else {
       mod.lessons.forEach((les, lIdx) => {
         const icon = les.type === 'video' ? 'fas fa-video' : 'fas fa-file-pdf';
+        const quizQuestions = les.quiz || [];
+        const isAccordionOpen = lessonAccordionStates[`${mIdx}_${lIdx}`] || false;
+
         html += `
-          <div class="builder-lesson-row">
-            <div class="builder-lesson-info">
-              <i class="${icon}"></i>
-              <span class="lesson-title">${les.title} <span style="font-size: 0.75rem; color: var(--text-secondary);">(${les.duration})</span></span>
+          <div class="builder-lesson-card" style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 10px; margin-bottom: 10px; overflow: hidden;">
+            <div class="builder-lesson-row" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; border-bottom: ${isAccordionOpen ? '1px solid var(--border-color)' : 'none'};">
+              <div class="builder-lesson-info" style="display: flex; align-items: center; gap: 10px;">
+                <i class="${icon}"></i>
+                <span class="lesson-title">${les.title} <span style="font-size: 0.75rem; color: var(--text-secondary);">(${les.duration})</span></span>
+              </div>
+              <div class="builder-lesson-actions" style="display: flex; gap: 6px; align-items: center;">
+                <button class="btn btn-secondary btn-sm" onclick="toggleLessonQuizAccordion(${mIdx}, ${lIdx})" style="padding: 4px 10px; font-size: 0.75rem; color: var(--accent-color);" title="Gestionar Formulario de este Video">
+                  <i class="fas fa-clipboard-list"></i> Formulario (${quizQuestions.length}) <i class="fas ${isAccordionOpen ? 'fa-chevron-up' : 'fa-chevron-down'}"></i>
+                </button>
+                <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;" onclick="moveLesson(${mIdx}, ${lIdx}, 'up')" ${lIdx === 0 ? 'disabled' : ''} title="Mover arriba">
+                  <i class="fas fa-arrow-up"></i>
+                </button>
+                <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;" onclick="moveLesson(${mIdx}, ${lIdx}, 'down')" ${lIdx === mod.lessons.length - 1 ? 'disabled' : ''} title="Mover abajo">
+                  <i class="fas fa-arrow-down"></i>
+                </button>
+                <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;" onclick="openEditLessonModal(${mIdx}, ${lIdx})" title="Editar Clase">
+                  <i class="fas fa-edit"></i> Editar
+                </button>
+                <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem; color: var(--danger-color);" onclick="deleteLesson(${mIdx}, ${lIdx})" title="Eliminar">
+                  <i class="fas fa-trash-alt"></i> Eliminar
+                </button>
+              </div>
             </div>
-            <div class="builder-lesson-actions" style="display: flex; gap: 6px;">
-              <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;" onclick="moveLesson(${mIdx}, ${lIdx}, 'up')" ${lIdx === 0 ? 'disabled' : ''} title="Mover arriba">
-                <i class="fas fa-arrow-up"></i>
-              </button>
-              <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;" onclick="moveLesson(${mIdx}, ${lIdx}, 'down')" ${lIdx === mod.lessons.length - 1 ? 'disabled' : ''} title="Mover abajo">
-                <i class="fas fa-arrow-down"></i>
-              </button>
-              <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;" onclick="openEditLessonModal(${mIdx}, ${lIdx})" title="Editar Clase">
-                <i class="fas fa-edit"></i> Editar
-              </button>
-              <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.75rem; color: var(--danger-color);" onclick="deleteLesson(${mIdx}, ${lIdx})" title="Eliminar">
-                <i class="fas fa-trash-alt"></i> Eliminar
-              </button>
+
+            <!-- Bloque Desplegable de Formulario por Video -->
+            <div class="lesson-quiz-accordion-body" style="display: ${isAccordionOpen ? 'block' : 'none'}; padding: 15px; background: rgba(0,0,0,0.2);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border-color);">
+                <h5 style="margin: 0; color: var(--accent-color); font-size: 0.9rem; display: flex; align-items: center; gap: 6px;">
+                  <i class="fas fa-clipboard-check"></i> Formulario del Video (${quizQuestions.length} preguntas)
+                </h5>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="addLessonQuizQuestion(${mIdx}, ${lIdx})" style="padding: 4px 10px; font-size: 0.75rem;">
+                  <i class="fas fa-plus"></i> Agregar Pregunta a este Video
+                </button>
+              </div>
+
+              <div class="lesson-quiz-questions-list" style="display: flex; flex-direction: column; gap: 8px;">
+                ${renderLessonQuizQuestionsHtml(mIdx, lIdx, quizQuestions)}
+              </div>
             </div>
           </div>
         `;
