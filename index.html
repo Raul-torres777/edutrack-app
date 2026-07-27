@@ -86,11 +86,21 @@
           <div class="player-main">
             <div class="video-wrapper">
               <!-- Reproductor nativo. Cargará URLs externas o blobs locales -->
-              <video id="course-video-player" controls controlsList="nodownload" poster="">
+              <video id="course-video-player" controls playsinline webkit-playsinline controlsList="nodownload" poster="">
                 Tu navegador no soporta reproducción de video.
               </video>
               <!-- Iframe para incrustar videos (Google Drive, YouTube, Vimeo) -->
               <iframe id="course-iframe-player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+            </div>
+
+            <!-- Controles personalizados de vídeo nativo (adelantar/atrasar) -->
+            <div class="custom-player-controls" id="custom-player-controls" style="display: none; justify-content: center; gap: 15px; margin-top: 12px; margin-bottom: 5px;">
+              <button class="btn btn-secondary" id="btn-video-rewind" title="Retroceder 10 segundos">
+                <i class="fas fa-backward"></i> -10s
+              </button>
+              <button class="btn btn-secondary" id="btn-video-forward" title="Adelantar 10 segundos">
+                +10s <i class="fas fa-forward"></i>
+              </button>
             </div>
             
             <!-- Controles de finalización de video -->

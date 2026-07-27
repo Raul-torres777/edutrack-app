@@ -2368,3 +2368,11 @@ body.light-theme .assigned-course-badge {
   }
 }
 
+/* Asegurar que las herramientas nativas del video y eventos táctiles funcionen siempre */
+video {
+  pointer-events: auto !important;
+}
+video::-webkit-media-controls {
+  display: flex !important;
+}
+

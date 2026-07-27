@@ -95,6 +95,9 @@ const DOM = {
   videoCompletionContainer: document.getElementById('video-completion-container'),
   videoCompletionText: document.getElementById('video-completion-text'),
   btnCompleteIframeVideo: document.getElementById('btn-complete-iframe-video'),
+  customPlayerControls: document.getElementById('custom-player-controls'),
+  btnVideoRewind: document.getElementById('btn-video-rewind'),
+  btnVideoForward: document.getElementById('btn-video-forward'),
   
   // Elementos del Quiz
   quizCourseTitle: document.getElementById('quiz-course-title'),
@@ -284,6 +287,29 @@ function initApp() {
       }
     }
   });
+
+  if (DOM.btnVideoRewind) {
+    DOM.btnVideoRewind.addEventListener('click', () => {
+      if (DOM.videoPlayer) {
+        DOM.videoPlayer.currentTime = Math.max(0, DOM.videoPlayer.currentTime - 10);
+      }
+    });
+  }
+
+  if (DOM.btnVideoForward) {
+    DOM.btnVideoForward.addEventListener('click', () => {
+      if (DOM.videoPlayer) {
+        const targetTime = DOM.videoPlayer.currentTime + 10;
+        if (currentRole === 'student' && activeLesson && !isLessonCompletedLocal(activeLesson.id)) {
+          if (targetTime > maxTimeWatched) {
+            DOM.videoPlayer.currentTime = maxTimeWatched;
+            return;
+          }
+        }
+        DOM.videoPlayer.currentTime = Math.min(DOM.videoPlayer.duration || 0, targetTime);
+      }
+    });
+  }
 
   if (DOM.btnCompleteIframeVideo) {
     DOM.btnCompleteIframeVideo.addEventListener('click', autoMarkLessonComplete);
@@ -1392,6 +1418,9 @@ function selectPlayerLesson(lesson, mIdx, lIdx) {
   if (DOM.btnCompleteIframeVideo) {
     DOM.btnCompleteIframeVideo.style.display = 'none';
   }
+  if (DOM.customPlayerControls) {
+    DOM.customPlayerControls.style.display = 'none';
+  }
 
   // Cargar video en reproductor HTML5 o Iframe
   if (lesson.type === 'video') {
@@ -1488,6 +1517,10 @@ function selectPlayerLesson(lesson, mIdx, lIdx) {
         DOM.videoPlayer.style.display = 'block';
         DOM.videoPlayer.src = lesson.url;
         DOM.videoPlayer.load();
+
+        if (DOM.customPlayerControls) {
+          DOM.customPlayerControls.style.display = 'flex';
+        }
 
         // Restaurar tiempo guardado para reproductor nativo
         const nativeStorageKey = `edutrack_video_time_${currentUser.id}_${lesson.id}`;
