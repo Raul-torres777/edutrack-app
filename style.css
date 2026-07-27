@@ -556,7 +556,7 @@ body.light-theme .nav-tab.active {
   right: 0;
   width: 70px;
   height: 56px;
-  background: #000;
+  background: transparent; /* Invisible shield: video is 100% visible while blocking clicks */
   z-index: 15;
   pointer-events: auto;
   cursor: default;
