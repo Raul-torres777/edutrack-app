@@ -2727,8 +2727,51 @@ function renderEditorQuiz() {
   });
 }
 
+window.moveQuestionUp = function(btn) {
+  const card = btn.closest('.quiz-question-editor-card');
+  if (card && card.previousElementSibling) {
+    card.parentElement.insertBefore(card, card.previousElementSibling);
+    updateQuestionIndices();
+  }
+};
+
+window.moveQuestionDown = function(btn) {
+  const card = btn.closest('.quiz-question-editor-card');
+  if (card && card.nextElementSibling) {
+    card.parentElement.insertBefore(card.nextElementSibling, card);
+    updateQuestionIndices();
+  }
+};
+
+window.toggleQuestionCollapse = function(btn) {
+  const card = btn.closest('.quiz-question-editor-card');
+  if (card) {
+    card.classList.toggle('collapsed');
+    const icon = card.querySelector('.collapse-icon');
+    if (icon) {
+      icon.className = card.classList.contains('collapsed') ? 'fas fa-chevron-down collapse-icon' : 'fas fa-chevron-up collapse-icon';
+    }
+  }
+};
+
+function updateQuestionIndices() {
+  const list = DOM.quizBuilderQuestionsList;
+  if (!list) return;
+  const cards = list.querySelectorAll('.quiz-question-editor-card');
+  cards.forEach((card, idx) => {
+    const titleEl = card.querySelector('.q-card-title');
+    const qInput = card.querySelector('.q-text-input');
+    const textVal = qInput ? qInput.value.trim() : '';
+    const textPreview = textVal ? `: ${textVal}` : '';
+    if (titleEl) {
+      titleEl.textContent = `Pregunta ${idx + 1}${textPreview}`;
+    }
+  });
+}
+
 function addQuestionField(questionData = null, index = null) {
   const list = DOM.quizBuilderQuestionsList;
+  const cardIndex = index !== null ? index + 1 : list.children.length + 1;
   
   const qText = questionData ? questionData.question : '';
   const opt0 = questionData ? questionData.options[0] : '';
@@ -2737,53 +2780,73 @@ function addQuestionField(questionData = null, index = null) {
   const opt3 = questionData ? questionData.options[3] : '';
   const correctIdx = questionData ? questionData.correctIndex : 0;
   
+  const textPreview = qText ? `: ${qText}` : '';
+
   const div = document.createElement('div');
   div.className = 'form-group quiz-question-editor-card';
-  div.style = 'background: var(--bg-tertiary); padding: 20px; border-radius: 14px; border: 1px solid var(--border-color); position: relative; margin-bottom: 10px;';
+  div.style = 'background: var(--bg-tertiary); padding: 18px; border-radius: 14px; border: 1px solid var(--border-color); position: relative; margin-bottom: 12px; transition: all 0.2s ease;';
   div.innerHTML = `
-    <button class="btn btn-secondary" style="position: absolute; top: 10px; right: 10px; padding: 4px 8px; color: var(--danger-color);" onclick="this.parentElement.remove()">
-      <i class="fas fa-trash-alt"></i>
-    </button>
-    <h4 style="margin-bottom: 15px; color: var(--accent-color);">Pregunta</h4>
-    
-    <div class="form-group">
-      <label>Texto de la Pregunta</label>
-      <input type="text" class="form-control q-text-input" placeholder="¿Cuál es...?" value="${qText}" required>
-    </div>
-    
-    <div class="form-row" style="margin-bottom: 10px;">
-      <div class="form-group">
-        <label>Opción A</label>
-        <input type="text" class="form-control q-opt-0" placeholder="Opción A" value="${opt0}" required>
-      </div>
-      <div class="form-group">
-        <label>Opción B</label>
-        <input type="text" class="form-control q-opt-1" placeholder="Opción B" value="${opt1}" required>
-      </div>
-    </div>
-    
-    <div class="form-row" style="margin-bottom: 10px;">
-      <div class="form-group">
-        <label>Opción C</label>
-        <input type="text" class="form-control q-opt-2" placeholder="Opción C" value="${opt2}">
-      </div>
-      <div class="form-group">
-        <label>Opción D</label>
-        <input type="text" class="form-control q-opt-3" placeholder="Opción D" value="${opt3}">
+    <div class="q-card-header" style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--border-color);">
+      <h4 class="q-card-title" style="margin: 0; color: var(--accent-color); font-size: 1rem; flex: 1; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" onclick="toggleQuestionCollapse(this)">
+        Pregunta ${cardIndex}${textPreview}
+      </h4>
+      <div class="q-card-actions" style="display: flex; align-items: center; gap: 6px;">
+        <button type="button" class="btn btn-secondary btn-sm" title="Mover Arriba" onclick="moveQuestionUp(this)" style="padding: 4px 8px; font-size: 0.75rem;">
+          <i class="fas fa-arrow-up"></i>
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm" title="Mover Abajo" onclick="moveQuestionDown(this)" style="padding: 4px 8px; font-size: 0.75rem;">
+          <i class="fas fa-arrow-down"></i>
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm" title="Contraer / Expandir" onclick="toggleQuestionCollapse(this)" style="padding: 4px 8px; font-size: 0.75rem;">
+          <i class="fas fa-chevron-up collapse-icon"></i>
+        </button>
+        <button type="button" class="btn btn-secondary btn-sm" title="Eliminar Pregunta" onclick="this.closest('.quiz-question-editor-card').remove(); updateQuestionIndices();" style="padding: 4px 8px; font-size: 0.75rem; color: var(--danger-color);">
+          <i class="fas fa-trash-alt"></i>
+        </button>
       </div>
     </div>
     
-    <div class="form-group" style="margin-bottom: 0;">
-      <label>Opción Correcta</label>
-      <select class="form-control q-correct-select">
-        <option value="0" ${correctIdx === 0 ? 'selected' : ''}>Opción A</option>
-        <option value="1" ${correctIdx === 1 ? 'selected' : ''}>Opción B</option>
-        <option value="2" ${correctIdx === 2 ? 'selected' : ''}>Opción C</option>
-        <option value="3" ${correctIdx === 3 ? 'selected' : ''}>Opción D</option>
-      </select>
+    <div class="q-card-body">
+      <div class="form-group">
+        <label>Texto de la Pregunta</label>
+        <input type="text" class="form-control q-text-input" placeholder="¿Cuál es...?" value="${qText}" required oninput="updateQuestionIndices()">
+      </div>
+      
+      <div class="form-row" style="margin-bottom: 10px;">
+        <div class="form-group">
+          <label>Opción A</label>
+          <input type="text" class="form-control q-opt-0" placeholder="Opción A" value="${opt0}" required>
+        </div>
+        <div class="form-group">
+          <label>Opción B</label>
+          <input type="text" class="form-control q-opt-1" placeholder="Opción B" value="${opt1}" required>
+        </div>
+      </div>
+      
+      <div class="form-row" style="margin-bottom: 10px;">
+        <div class="form-group">
+          <label>Opción C</label>
+          <input type="text" class="form-control q-opt-2" placeholder="Opción C" value="${opt2}">
+        </div>
+        <div class="form-group">
+          <label>Opción D</label>
+          <input type="text" class="form-control q-opt-3" placeholder="Opción D" value="${opt3}">
+        </div>
+      </div>
+      
+      <div class="form-group" style="margin-bottom: 0;">
+        <label>Opción Correcta</label>
+        <select class="form-control q-correct-select">
+          <option value="0" ${correctIdx === 0 ? 'selected' : ''}>Opción A</option>
+          <option value="1" ${correctIdx === 1 ? 'selected' : ''}>Opción B</option>
+          <option value="2" ${correctIdx === 2 ? 'selected' : ''}>Opción C</option>
+          <option value="3" ${correctIdx === 3 ? 'selected' : ''}>Opción D</option>
+        </select>
+      </div>
     </div>
   `;
   list.appendChild(div);
+  updateQuestionIndices();
 }
 
 async function saveCourseFromEditor() {

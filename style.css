@@ -589,6 +589,16 @@ body.light-theme .nav-tab.active {
   color: #94a3b8 !important;
 }
 
+/* Tarjeta de Pregunta Plegable en Creador de Cursos */
+.quiz-question-editor-card.collapsed .q-card-body {
+  display: none !important;
+}
+.quiz-question-editor-card.collapsed .q-card-header {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+  border-bottom: none !important;
+}
+
 .class-title-info {
   background: var(--bg-secondary);
   padding: 25px;
