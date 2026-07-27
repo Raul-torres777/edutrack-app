@@ -526,6 +526,7 @@ body.light-theme .nav-tab.active {
   aspect-ratio: 16/9;
   background: #000;
   border-radius: 20px;
+  overflow: hidden; /* Prevent iframe overflowing container */
   box-shadow: var(--card-shadow);
   border: 1px solid var(--border-color);
 }
@@ -2135,12 +2136,13 @@ body.light-theme .assigned-course-badge {
   }
 
   .video-wrapper {
-    border-radius: 12px;
+    border-radius: 0;
+    overflow: hidden;
   }
 
   .video-wrapper video,
   .video-wrapper iframe {
-    border-radius: 11px;
+    border-radius: 0;
   }
 
   .class-title-info {
