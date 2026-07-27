@@ -3161,6 +3161,12 @@ async function saveCourseFromEditor() {
         activeCourse = savedCourse;
       }
       const courses = await db.getCourses();
+      const idx = courses.findIndex(c => c.id === savedCourse.id);
+      if (idx !== -1) {
+        courses[idx] = savedCourse;
+      } else {
+        courses.push(savedCourse);
+      }
       localStorage.setItem('edutrack_courses', JSON.stringify(courses));
     }
 

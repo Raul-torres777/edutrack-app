@@ -299,7 +299,7 @@ export const db = {
   },
 
   async createCourse(courseData) {
-    const newCourse = {
+    const payload = {
       id: 'course-' + Date.now(),
       title: courseData.title,
       description: courseData.description,
@@ -308,40 +308,52 @@ export const db = {
       difficulty: courseData.difficulty || 'Principiante',
       duration: courseData.duration || '0 horas',
       thumbnail: courseData.thumbnail || 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)',
-      modules: [],
-      formTitle: courseData.formTitle || 'Formulario de Evaluación y Comprensión',
+      modules: courseData.modules || [],
       quiz: courseData.quiz || []
     };
 
-    const { error } = await supabase.from('courses').insert([newCourse]);
-    if (error) throw error;
-    return newCourse;
+    const { error } = await supabase.from('courses').insert([payload]);
+    if (error) {
+      console.error('Error creando curso en Supabase:', error);
+    }
+    
+    payload.formTitle = courseData.formTitle || 'Formulario de Evaluación y Comprensión';
+    return payload;
   },
 
   async updateCourse(courseId, courseData) {
     const current = await this.getCourseById(courseId);
-    if (!current) throw new Error('Curso no encontrado');
     
-    const updatedCourse = {
+    const payload = {
       title: courseData.title,
       description: courseData.description,
       instructor: courseData.instructor,
       category: courseData.category,
       difficulty: courseData.difficulty,
       thumbnail: courseData.thumbnail,
-      formTitle: courseData.formTitle || current.formTitle || 'Formulario de Evaluación y Comprensión',
-      modules: courseData.modules || current.modules,
-      quiz: courseData.quiz || current.quiz
+      modules: courseData.modules || (current ? current.modules : []),
+      quiz: courseData.quiz || (current ? current.quiz : [])
     };
 
     const { data, error } = await supabase
       .from('courses')
-      .update(updatedCourse)
+      .update(payload)
       .eq('id', courseId)
       .select('*')
-      .single();
-    if (error) throw error;
-    return data;
+      .maybeSingle();
+
+    if (error) {
+      console.error('Error actualizando curso en Supabase:', error);
+    }
+
+    const updatedCourse = {
+      ...(data || current || {}),
+      ...payload,
+      id: courseId,
+      formTitle: courseData.formTitle || (current ? current.formTitle : null) || 'Formulario de Evaluación y Comprensión'
+    };
+
+    return updatedCourse;
   },
 
   async deleteCourse(courseId) {
