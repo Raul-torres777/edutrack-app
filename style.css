@@ -2141,7 +2141,9 @@ body.light-theme .assigned-course-badge {
   }
 
   .video-wrapper {
-    border-radius: 12px;
+    padding-top: 65%; /* Mayor altura para evitar que el reproductor se vea corto en móviles */
+    min-height: 235px;
+    border-radius: 14px;
     overflow: hidden;
   }
 
@@ -2350,6 +2352,15 @@ body.light-theme .assigned-course-badge {
 }
 
 @media (max-width: 480px) {
+  .main-content {
+    padding: 12px 8px; /* Ampliar el ancho del video en pantallas pequeñas */
+  }
+
+  .video-wrapper {
+    padding-top: 68%;
+    min-height: 225px;
+  }
+
   /* Pantalla de autenticación en celulares extra pequeños */
   .auth-card {
     padding: 25px 15px;
