@@ -2640,6 +2640,15 @@ function renderLessonQuizQuestionsHtml(mIdx, lIdx, questions) {
               <input type="text" class="form-control form-control-sm" placeholder="Opción D" value="${(q.options && q.options[3]) || ''}" onchange="updateLessonQuizOption(${mIdx}, ${lIdx}, ${qIdx}, 3, this.value)" style="padding: 6px 10px; font-size: 0.85rem;">
             </div>
           </div>
+          <div class="form-group" style="margin-bottom: 0; margin-top: 8px;">
+            <label style="font-size: 0.75rem; font-weight: 600; color: var(--accent-color);">Opción Correcta</label>
+            <select class="form-control form-control-sm" onchange="updateLessonQuizQuestion(${mIdx}, ${lIdx}, ${qIdx}, 'correctIndex', parseInt(this.value, 10))" style="padding: 6px 10px; font-size: 0.85rem; background: var(--bg-secondary);">
+              <option value="0" ${(q.correctIndex === 0 || !q.correctIndex) ? 'selected' : ''}>Opción A</option>
+              <option value="1" ${q.correctIndex === 1 ? 'selected' : ''}>Opción B</option>
+              <option value="2" ${q.correctIndex === 2 ? 'selected' : ''}>Opción C</option>
+              <option value="3" ${q.correctIndex === 3 ? 'selected' : ''}>Opción D</option>
+            </select>
+          </div>
         </div>
       </div>
     `;
