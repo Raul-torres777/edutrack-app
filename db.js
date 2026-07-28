@@ -15,6 +15,7 @@ function mapUser(user) {
   if (!user) return null;
   return {
     ...user,
+    fullName: user.full_name || user.username || '',
     assignedCourses: user.assigned_courses || [],
     registeredAt: user.registered_at
   };
@@ -100,7 +101,8 @@ export const db = {
   },
 
   async registerStudent(userData) {
-    const username = userData.username.trim();
+    const fullName = userData.fullName ? userData.fullName.trim() : (userData.username ? userData.username.trim() : '');
+    const username = fullName || (userData.email ? userData.email.split('@')[0] : 'Estudiante');
     const email = userData.email ? userData.email.trim().toLowerCase() : '';
     const phone = userData.phone ? userData.phone.trim() : '';
     const password = userData.password;
@@ -110,17 +112,13 @@ export const db = {
     if (getError) throw getError;
     
     const duplicate = existingUsers.find(u => 
-      u.username.toLowerCase() === username.toLowerCase() ||
       (email && u.email && u.email.toLowerCase() === email) ||
       (phone && u.phone === phone)
     );
 
     if (duplicate) {
-      if (duplicate.username.toLowerCase() === username.toLowerCase()) {
-        throw new Error('El nombre de usuario ya está registrado.');
-      }
       if (email && duplicate.email && duplicate.email.toLowerCase() === email) {
-        throw new Error('El correo electrónico ya está registrado.');
+        throw new Error('El correo electrónico ya está registrado. Por favor inicia sesión con tu correo.');
       }
       if (phone && duplicate.phone === phone) {
         throw new Error('El número de teléfono ya está registrado.');
@@ -138,6 +136,7 @@ export const db = {
       options: {
         data: {
           username: username,
+          full_name: fullName,
           phone: phone,
           role: 'student'
         }
@@ -150,10 +149,10 @@ export const db = {
     // 2. Insertar en la tabla pública de perfiles (public.users) usando el UUID de Auth
     const newUser = {
       id: authData.user.id,
-      username,
+      username: username,
       email,
       phone,
-      password: "(encriptada)", // Se usa un placeholder no nulo por la restricción NOT NULL de la base de datos
+      password: "(encriptada)",
       role: 'student',
       assigned_courses: [],
       registered_at: new Date().toISOString()

@@ -67,10 +67,19 @@ const DOM = {
   // Auth Input Fields
   loginIdentifier: document.getElementById('login-identifier'),
   loginPassword: document.getElementById('login-password'),
-  registerUsername: document.getElementById('register-username'),
+  registerFullName: document.getElementById('register-fullname'),
   registerEmail: document.getElementById('register-email'),
   registerPhone: document.getElementById('register-phone'),
   registerPassword: document.getElementById('register-password'),
+  
+  // Student Profile Elements
+  modalStudentProfile: document.getElementById('modal-student-profile'),
+  profileAvatarLarge: document.getElementById('profile-avatar-large'),
+  profileFullName: document.getElementById('profile-full-name'),
+  profileEmail: document.getElementById('profile-email'),
+  profilePhone: document.getElementById('profile-phone'),
+  profileProgressList: document.getElementById('profile-progress-list'),
+  profileCertificatesList: document.getElementById('profile-certificates-list'),
   
   // Recovery Input Fields
   recoveryIdentifier: document.getElementById('recovery-identifier'),
@@ -705,26 +714,32 @@ async function submitLogin() {
 
 // Ejecutar Registro Estudiante
 async function submitRegister() {
-  DOM.authErrorMsg.style.display = 'none';
-  DOM.authSuccessMsg.style.display = 'none';
+  if (DOM.authErrorMsg) DOM.authErrorMsg.style.display = 'none';
+  if (DOM.authSuccessMsg) DOM.authSuccessMsg.style.display = 'none';
   
-  const username = DOM.registerUsername.value;
-  const email = DOM.registerEmail.value;
-  const phone = DOM.registerPhone.value;
-  const password = DOM.registerPassword.value;
+  const fullName = DOM.registerFullName ? DOM.registerFullName.value.trim() : '';
+  const email = DOM.registerEmail ? DOM.registerEmail.value.trim() : '';
+  const phone = DOM.registerPhone ? DOM.registerPhone.value.trim() : '';
+  const password = DOM.registerPassword ? DOM.registerPassword.value : '';
   
+  if (!fullName || !email || !password) {
+    DOM.authErrorText.textContent = 'Por favor completa tu Nombre Completo, Correo y Contraseña.';
+    DOM.authErrorMsg.style.display = 'flex';
+    return;
+  }
+
   try {
-    await db.registerStudent({ username, email, phone, password });
+    await db.registerStudent({ fullName, username: fullName, email, phone, password });
     
     // Mostrar éxito y redirigir
-    DOM.authSuccessText.textContent = '¡Registro exitoso! Ya puedes iniciar sesión con tu cuenta creada.';
+    DOM.authSuccessText.textContent = '¡Registro exitoso! Ya puedes iniciar sesión ingresando tu correo electrónico.';
     DOM.authSuccessMsg.style.display = 'flex';
     
     // Limpiar campos y cambiar pestaña
-    DOM.registerUsername.value = '';
-    DOM.registerEmail.value = '';
-    DOM.registerPhone.value = '';
-    DOM.registerPassword.value = '';
+    if (DOM.registerFullName) DOM.registerFullName.value = '';
+    if (DOM.registerEmail) DOM.registerEmail.value = '';
+    if (DOM.registerPhone) DOM.registerPhone.value = '';
+    if (DOM.registerPassword) DOM.registerPassword.value = '';
     
     setTimeout(() => {
       switchAuthTab('login');
@@ -3258,11 +3273,133 @@ async function saveCourseFromEditor() {
 }
 
 function closeAllModals() {
-  DOM.modalAddModule.classList.remove('active');
-  DOM.modalAddLesson.classList.remove('active');
-  DOM.modalAssignCourses.classList.remove('active');
+  if (DOM.modalAddModule) DOM.modalAddModule.classList.remove('active');
+  if (DOM.modalAddLesson) DOM.modalAddLesson.classList.remove('active');
+  if (DOM.modalAssignCourses) DOM.modalAssignCourses.classList.remove('active');
+  if (DOM.modalStudentProfile) DOM.modalStudentProfile.classList.remove('active');
 }
 window.closeAllModals = closeAllModals;
+
+async function openStudentProfileModal() {
+  if (!currentUser) return;
+  if (!DOM.modalStudentProfile) return;
+
+  const displayName = currentUser.fullName || currentUser.username || 'Estudiante';
+  const initial = displayName.charAt(0).toUpperCase();
+
+  if (DOM.profileAvatarLarge) DOM.profileAvatarLarge.textContent = initial;
+  if (DOM.profileFullName) DOM.profileFullName.textContent = displayName;
+  if (DOM.profileEmail) DOM.profileEmail.innerHTML = `<i class="fas fa-envelope"></i> ${currentUser.email || 'No registrado'}`;
+  if (DOM.profilePhone) DOM.profilePhone.innerHTML = `<i class="fas fa-phone"></i> ${currentUser.phone || 'Sin teléfono'}`;
+
+  // 1. Cargar Avances de Cursos
+  if (DOM.profileProgressList) {
+    DOM.profileProgressList.innerHTML = `
+      <div style="color: var(--text-secondary); text-align: center; padding: 15px;">
+        <i class="fas fa-spinner fa-spin"></i> Cargando tus avances...
+      </div>
+    `;
+    try {
+      const courses = await db.getCourses();
+      let userCertificates = [];
+      try {
+        userCertificates = await db.getUserCertificates(currentUser.id);
+      } catch (e) {
+        userCertificates = [];
+      }
+      const userCertCourseIds = userCertificates.map(c => c.courseId);
+
+      let progressHtml = '';
+
+      courses.forEach(course => {
+        let totalLessons = 0;
+        let completedLessons = 0;
+
+        course.modules.forEach(m => {
+          m.lessons.forEach(l => {
+            totalLessons++;
+            if (isLessonCompletedLocal(l.id)) {
+              completedLessons++;
+            }
+          });
+        });
+
+        const percent = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+        const isCert = userCertCourseIds.includes(course.id) || percent === 100;
+
+        progressHtml += `
+          <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <strong style="color: var(--text-primary); font-size: 0.9rem;">${course.title}</strong>
+              <span class="badge ${isCert ? 'badge-success' : 'badge-primary'}" style="font-size: 0.75rem;">
+                ${isCert ? '¡Completado y Certificado!' : `${percent}% Completado`}
+              </span>
+            </div>
+            <div style="width: 100%; background: var(--bg-tertiary); height: 8px; border-radius: 4px; overflow: hidden; margin-bottom: 8px;">
+              <div style="width: ${percent}%; background: var(--accent-color); height: 100%; transition: width 0.3s ease;"></div>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.75rem; color: var(--text-secondary);">${completedLessons} de ${totalLessons} clases completadas</span>
+              <button class="btn btn-secondary btn-sm" onclick="closeAllModals(); startCourse('${course.id}')" style="padding: 3px 8px; font-size: 0.75rem;">
+                <i class="fas fa-play"></i> Continuar
+              </button>
+            </div>
+          </div>
+        `;
+      });
+
+      DOM.profileProgressList.innerHTML = progressHtml || '<p style="color: var(--text-secondary);">No tienes cursos en progreso.</p>';
+    } catch (e) {
+      console.error(e);
+      DOM.profileProgressList.innerHTML = '<p style="color: var(--danger-color);">Error al cargar avances.</p>';
+    }
+  }
+
+  // 2. Cargar Certificados / Reconocimientos Obtenidos
+  if (DOM.profileCertificatesList) {
+    try {
+      let userCertificates = [];
+      try {
+        userCertificates = await db.getUserCertificates(currentUser.id);
+      } catch (e) {
+        userCertificates = [];
+      }
+
+      if (!userCertificates || userCertificates.length === 0) {
+        DOM.profileCertificatesList.innerHTML = `
+          <div style="text-align: center; color: var(--text-secondary); padding: 15px; background: rgba(255,255,255,0.01); border-radius: 8px;">
+            <i class="fas fa-award fa-2x" style="margin-bottom: 8px; color: var(--border-color);"></i>
+            <p style="margin: 0; font-size: 0.85rem;">Aún no has completado un curso. ¡Finaliza un curso para obtener tu reconocimiento oficial!</p>
+          </div>
+        `;
+      } else {
+        let certHtml = '';
+        userCertificates.forEach(cert => {
+          certHtml += `
+            <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 12px; display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <h5 style="margin: 0 0 3px 0; color: #10b981; font-size: 0.9rem;">
+                  <i class="fas fa-award"></i> Reconocimiento: ${cert.courseTitle}
+                </h5>
+                <span style="font-size: 0.75rem; color: var(--text-secondary);">Emitido el: ${cert.issueDate} | Código: <code>${cert.verificationCode}</code></span>
+              </div>
+              <button class="btn btn-success btn-sm" onclick="closeAllModals(); viewCertificate('${cert.courseId}')" style="padding: 4px 10px; font-size: 0.75rem;">
+                <i class="fas fa-eye"></i> Ver Reconocimiento
+              </button>
+            </div>
+          `;
+        });
+        DOM.profileCertificatesList.innerHTML = certHtml;
+      }
+    } catch (e) {
+      console.error(e);
+      DOM.profileCertificatesList.innerHTML = '<p style="color: var(--danger-color);">Error al cargar reconocimientos.</p>';
+    }
+  }
+
+  DOM.modalStudentProfile.classList.add('active');
+}
+window.openStudentProfileModal = openStudentProfileModal;
 
 // Exponer funciones globales para interactividad inline en HTML5
 window.startCourse = startCourse;
