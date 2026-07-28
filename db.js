@@ -103,13 +103,14 @@ export const db = {
   async updateUserRole(userId, newRole) {
     if (!['instructor', 'student'].includes(newRole)) throw new Error('Rol no válido.');
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('users')
       .update({ role: newRole })
-      .eq('id', userId);
+      .eq('id', userId)
+      .select('*');
 
     if (error) throw error;
-    return true;
+    return data;
   },
 
   async registerStudent(userData) {

@@ -2658,7 +2658,7 @@ async function renderStudentsTableRows(studentsList) {
           <button class="btn btn-primary btn-sm" onclick="openAssignCoursesModal('${student.id}')" style="padding: 4px 10px; font-size: 0.75rem;">
             <i class="fas fa-book-reader"></i> Asignar Cursos
           </button>
-          <button class="btn ${isInstructor ? 'btn-danger' : 'btn-success'} btn-sm" onclick="toggleUserRole('${student.id}', '${student.role || 'student'}')" style="padding: 4px 10px; font-size: 0.75rem; margin-left: 4px;" title="${isInstructor ? 'Quitar permisos de administrador' : 'Promover a administrador'}">
+          <button class="btn ${isInstructor ? 'btn-danger' : 'btn-success'} btn-sm" onclick="toggleUserRole('${student.id}')" style="padding: 4px 10px; font-size: 0.75rem; margin-left: 4px;" title="${isInstructor ? 'Quitar permisos de administrador' : 'Promover a administrador'}">
             <i class="fas ${isInstructor ? 'fa-user-slash' : 'fa-user-shield'}"></i> ${isInstructor ? 'Quitar Admin' : 'Hacer Admin'}
           </button>
         </td>
@@ -2669,7 +2669,7 @@ async function renderStudentsTableRows(studentsList) {
   DOM.studentsTableBody.innerHTML = rowsHtml;
 }
 
-window.toggleUserRole = async function(userId, passedRole) {
+window.toggleUserRole = async function(userId) {
   let student = (allInstructorStudents || []).find(u => u.id === userId);
   if (!student) {
     try {
@@ -2678,25 +2678,27 @@ window.toggleUserRole = async function(userId, passedRole) {
     } catch (e) {}
   }
   
-  const currentRole = passedRole || (student ? student.role : 'student');
-  const studentName = student ? (student.fullName || student.username || 'Usuario') : 'Usuario';
-  const isCurrentlyAdmin = (currentRole === 'instructor') || (student && student.role === 'instructor');
+  if (!student) {
+    alert('No se pudo encontrar la información del usuario.');
+    return;
+  }
+
+  const studentName = student.fullName || student.username || student.email || 'Usuario';
+  const isCurrentlyAdmin = student.role === 'instructor';
   const newRole = isCurrentlyAdmin ? 'student' : 'instructor';
   const roleLabel = newRole === 'instructor' ? 'Administrador / Instructor' : 'Estudiante';
   
-  const confirmMsg = newRole === 'instructor'
-    ? `¿Estás seguro de que deseas promover a "${studentName}" a Administrador / Instructor?\n\nTendrá acceso completo a crear cursos, administrar temarios y gestionar alumnos.`
-    : `¿Estás seguro de que deseas quitar los permisos de Administrador a "${studentName}"?\n\nVolverá a tener únicamente el rol de Estudiante y se le revocará el acceso al panel administrativo.`;
+  const confirmMsg = isCurrentlyAdmin
+    ? `¿Estás seguro de que deseas quitar los permisos de Administrador a "${studentName}"?\n\nVolverá a ser Estudiante y se le revocará el acceso al panel de administración.`
+    : `¿Estás seguro de que deseas promover a "${studentName}" a Administrador / Instructor?\n\nTendrá acceso completo a crear cursos, administrar temarios y gestionar alumnos.`;
 
   if (confirm(confirmMsg)) {
     try {
       await db.updateUserRole(userId, newRole);
       
-      if (student) {
-        student.role = newRole;
-      }
+      student.role = newRole;
       
-      alert(`¡Rol de "${studentName}" actualizado con éxito a ${roleLabel}!`);
+      alert(`¡El rol de "${studentName}" ha sido actualizado con éxito a ${roleLabel}!`);
       
       if (currentUser && currentUser.id === userId) {
         currentUser.role = newRole;
