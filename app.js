@@ -2657,7 +2657,7 @@ async function renderStudentsTableRows(studentsList) {
           <button class="btn btn-primary btn-sm" onclick="openAssignCoursesModal('${student.id}')" style="padding: 4px 10px; font-size: 0.75rem;">
             <i class="fas fa-book-reader"></i> Asignar Cursos
           </button>
-          <button class="btn ${isInstructor ? 'btn-secondary' : 'btn-success'} btn-sm" onclick="toggleUserRole('${student.id}', '${student.role || 'student'}', '${displayName.replace(/'/g, "\\'")}')" style="padding: 4px 10px; font-size: 0.75rem; margin-left: 4px;" title="Cambiar rol del usuario">
+          <button class="btn ${isInstructor ? 'btn-secondary' : 'btn-success'} btn-sm" onclick="toggleUserRole('${student.id}', '${student.role || 'student'}')" style="padding: 4px 10px; font-size: 0.75rem; margin-left: 4px;" title="Cambiar rol del usuario">
             <i class="fas ${isInstructor ? 'fa-user' : 'fa-user-shield'}"></i> ${isInstructor ? 'Quitar Admin' : 'Hacer Admin'}
           </button>
         </td>
@@ -2668,8 +2668,11 @@ async function renderStudentsTableRows(studentsList) {
   DOM.studentsTableBody.innerHTML = rowsHtml;
 }
 
-window.toggleUserRole = async function(userId, currentRole, studentName) {
-  const newRole = currentRole === 'instructor' ? 'student' : 'instructor';
+window.toggleUserRole = async function(userId, currentRole) {
+  const student = allInstructorStudents.find(u => u.id === userId);
+  const studentName = student ? (student.fullName || student.username || 'Usuario') : 'Usuario';
+  const realCurrentRole = student ? (student.role || 'student') : (currentRole || 'student');
+  const newRole = realCurrentRole === 'instructor' ? 'student' : 'instructor';
   const roleLabel = newRole === 'instructor' ? 'Administrador / Instructor' : 'Estudiante';
   
   const confirmMsg = newRole === 'instructor'
@@ -2683,7 +2686,7 @@ window.toggleUserRole = async function(userId, currentRole, studentName) {
       await loadInstructorStudentsTable();
     } catch (err) {
       console.error('Error al cambiar rol:', err);
-      alert('Error al cambiar el rol: ' + err.message);
+      alert('Error al cambiar el rol: ' + (err.message || err));
     }
   }
 };
