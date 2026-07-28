@@ -209,30 +209,33 @@ export const db = {
     if (selectError) throw selectError;
 
     const user = users.find(u => 
-      u.username.toLowerCase() === idClean.toLowerCase() ||
+      (u.username && u.username.toLowerCase() === idClean.toLowerCase()) ||
       (u.email && u.email.toLowerCase() === idClean.toLowerCase()) ||
-      u.phone === idClean
+      (u.phone && u.phone === idClean)
     );
 
     if (!user) {
-      throw new Error('Usuario, correo o teléfono no encontrado.');
+      throw new Error('Usuario, correo electrónico o teléfono no encontrado.');
     }
 
     if (!user.email) {
-      throw new Error('Este estudiante no tiene correo electrónico asociado para iniciar sesión.');
+      throw new Error('Este estudiante no tiene correo electrónico registrado.');
     }
 
     // 3. Autenticar usando Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-      email: user.email,
+      email: user.email.trim().toLowerCase(),
       password: password
     });
 
     if (authError) {
       if (authError.message.includes('Invalid login credentials')) {
-        throw new Error('Contraseña incorrecta.');
+        throw new Error('Contraseña incorrecta. Verifica tu contraseña o haz clic en "¿Olvidaste tu contraseña?".');
       }
-      throw authError;
+      if (authError.message.includes('Email not confirmed')) {
+        throw new Error('El correo electrónico no ha sido confirmado.');
+      }
+      throw new Error(authError.message || 'Error de autenticación.');
     }
 
     const { password: _, ...userWithoutPassword } = mapUser(user);
