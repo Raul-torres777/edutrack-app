@@ -570,32 +570,33 @@ async function checkUserSession() {
 }
 
 function setupAuthenticatedUI() {
-  DOM.userDisplayName.textContent = currentUser.username;
-  DOM.userAvatarChar.textContent = currentUser.username.charAt(0).toUpperCase();
-  DOM.userProfileBadge.style.display = 'flex';
-  DOM.btnLogout.style.display = 'flex';
+  const displayName = currentUser.fullName || currentUser.username || 'Usuario';
+  if (DOM.userDisplayName) DOM.userDisplayName.textContent = displayName;
+  if (DOM.userAvatarChar) DOM.userAvatarChar.textContent = displayName.charAt(0).toUpperCase();
+  if (DOM.userProfileBadge) DOM.userProfileBadge.style.display = 'flex';
+  if (DOM.btnLogout) DOM.btnLogout.style.display = 'flex';
   
   // Mostrar u ocultar pestañas de rol según permisos
   if (currentUser.role === 'instructor') {
-    DOM.navigationTabs.style.display = 'flex';
+    if (DOM.navigationTabs) DOM.navigationTabs.style.display = 'flex';
   } else {
     // Los estudiantes no pueden cambiar de rol ni ver el panel administrativo
-    DOM.navigationTabs.style.display = 'none';
+    if (DOM.navigationTabs) DOM.navigationTabs.style.display = 'none';
   }
 }
 
 function setupLoggedOutUI() {
-  DOM.userProfileBadge.style.display = 'none';
-  DOM.btnLogout.style.display = 'none';
-  DOM.navigationTabs.style.display = 'none';
+  if (DOM.userProfileBadge) DOM.userProfileBadge.style.display = 'none';
+  if (DOM.btnLogout) DOM.btnLogout.style.display = 'none';
+  if (DOM.navigationTabs) DOM.navigationTabs.style.display = 'none';
   
-  // Limpiar inputs
-  DOM.loginIdentifier.value = '';
-  DOM.loginPassword.value = '';
-  DOM.registerUsername.value = '';
-  DOM.registerEmail.value = '';
-  DOM.registerPhone.value = '';
-  DOM.registerPassword.value = '';
+  // Limpiar inputs de forma segura
+  if (DOM.loginIdentifier) DOM.loginIdentifier.value = '';
+  if (DOM.loginPassword) DOM.loginPassword.value = '';
+  if (DOM.registerFullName) DOM.registerFullName.value = '';
+  if (DOM.registerEmail) DOM.registerEmail.value = '';
+  if (DOM.registerPhone) DOM.registerPhone.value = '';
+  if (DOM.registerPassword) DOM.registerPassword.value = '';
 }
 
 // === ENRUTAMIENTO DE ROL ===
