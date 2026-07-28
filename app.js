@@ -218,6 +218,33 @@ function initApp() {
   if (DOM.tabInstructor) DOM.tabInstructor.addEventListener('click', () => switchRole('instructor'));
   if (DOM.logoBtn) DOM.logoBtn.addEventListener('click', navigateToDashboard);
 
+  // Formulario y Pestañas de Autenticación
+  const authLoginForm = document.getElementById('auth-login-form');
+  if (authLoginForm) {
+    authLoginForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      submitLogin();
+    });
+  }
+
+  const authRegisterForm = document.getElementById('auth-register-form');
+  if (authRegisterForm) {
+    authRegisterForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      submitRegister();
+    });
+  }
+
+  const btnTabLogin = document.getElementById('btn-tab-login');
+  if (btnTabLogin) {
+    btnTabLogin.addEventListener('click', () => switchAuthTab('login'));
+  }
+
+  const btnTabRegister = document.getElementById('btn-tab-register');
+  if (btnTabRegister) {
+    btnTabRegister.addEventListener('click', () => switchAuthTab('register'));
+  }
+
   // Pestañas del Panel de Instructor
   if (DOM.btnInsCoursesTab) DOM.btnInsCoursesTab.addEventListener('click', () => switchInstructorTab('courses'));
   if (DOM.btnInsStudentsTab) DOM.btnInsStudentsTab.addEventListener('click', () => switchInstructorTab('students'));
