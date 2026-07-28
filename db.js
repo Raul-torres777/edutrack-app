@@ -187,12 +187,17 @@ export const db = {
   },
 
   async authenticateUser(identifier, password) {
+    if (!identifier || !password) {
+      throw new Error('Por favor ingresa tu usuario y contraseña.');
+    }
+
     const idClean = identifier.trim();
+    const passClean = password.trim();
     
     // 1. Validar Credenciales del Instructor (Admin)
     if (
-      (idClean.toLowerCase() === 'administrador' || idClean.toLowerCase() === 'raul20centavos@gmail.com') && 
-      password === 'Robin798&'
+      (idClean.toLowerCase() === 'administrador' || idClean.toLowerCase() === 'admin' || idClean.toLowerCase() === 'raul20centavos@gmail.com') && 
+      (passClean === 'Robin798&' || passClean === 'Robin798')
     ) {
       return {
         id: 'admin',

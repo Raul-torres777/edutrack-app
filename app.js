@@ -641,9 +641,15 @@ async function submitLogin() {
   DOM.authErrorMsg.style.display = 'none';
   DOM.authSuccessMsg.style.display = 'none';
   
-  const identifier = DOM.loginIdentifier.value;
-  const password = DOM.loginPassword.value;
+  const identifier = DOM.loginIdentifier ? DOM.loginIdentifier.value.trim() : '';
+  const password = DOM.loginPassword ? DOM.loginPassword.value.trim() : '';
   
+  if (!identifier || !password) {
+    DOM.authErrorText.textContent = 'Por favor ingresa tu usuario y contraseña.';
+    DOM.authErrorMsg.style.display = 'flex';
+    return;
+  }
+
   try {
     const user = await db.authenticateUser(identifier, password);
     currentUser = user;
@@ -658,7 +664,8 @@ async function submitLogin() {
       switchRole('student');
     }
   } catch (err) {
-    DOM.authErrorText.textContent = err.message;
+    console.error('Error de login:', err);
+    DOM.authErrorText.textContent = err.message || 'Error al iniciar sesión.';
     DOM.authErrorMsg.style.display = 'flex';
   }
 }
