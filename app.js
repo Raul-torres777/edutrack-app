@@ -1780,20 +1780,38 @@ function advanceToNextLesson() {
 
 // ==================== SISTEMA DE EXAMEN (QUIZZES) ====================
 
+function getCourseAllQuestions(course) {
+  let questions = [];
+  if (course.quiz && Array.isArray(course.quiz) && course.quiz.length > 0) {
+    questions = questions.concat(course.quiz);
+  }
+  if (course.modules && Array.isArray(course.modules)) {
+    course.modules.forEach(m => {
+      if (m.lessons && Array.isArray(m.lessons)) {
+        m.lessons.forEach(l => {
+          if (l.quiz && Array.isArray(l.quiz) && l.quiz.length > 0) {
+            questions = questions.concat(l.quiz);
+          }
+        });
+      }
+    });
+  }
+  return questions;
+}
+
 async function startQuiz(courseId) {
   try {
     const course = await db.getCourseById(courseId);
     if (!course) return;
     
-    if (!course.quiz || course.quiz.length === 0) {
-      // Si el curso no tiene examen, emitir el certificado directamente con el nombre del usuario
-      await db.issueCertificate(courseId, currentUser.username, currentUser.id);
-      viewCertificate(courseId);
+    const allQuestions = getCourseAllQuestions(course);
+    if (allQuestions.length === 0) {
+      alert('Este curso aún no tiene preguntas de evaluación configuradas por el docente.');
       return;
     }
     
     quizState.courseId = courseId;
-    quizState.questions = course.quiz;
+    quizState.questions = allQuestions;
     quizState.currentQuestionIndex = 0;
     quizState.answers = [];
     
@@ -1865,38 +1883,89 @@ async function handleQuizNext() {
 async function evaluateQuiz() {
   if (!currentUser) return;
   
-  // 1. Puntaje del examen final (cuestionario)
+  // 1. Evaluación de preguntas del examen con comparación numérica exacta
   let correctAnswersCount = 0;
+  const questionDetails = [];
+
   quizState.questions.forEach((q, idx) => {
-    if (q.correctIndex === quizState.answers[idx]) {
+    const userAns = quizState.answers[idx];
+    const isCorrect = userAns !== undefined && Number(userAns) === Number(q.correctIndex);
+    if (isCorrect) {
       correctAnswersCount++;
     }
+    questionDetails.push({
+      question: q.question,
+      options: q.options,
+      correctIndex: Number(q.correctIndex),
+      userAnswerIndex: userAns !== undefined ? Number(userAns) : null,
+      isCorrect
+    });
   });
+
   const quizPercent = Math.round((correctAnswersCount / quizState.questions.length) * 100);
   
-  // 2. Sumar resultados de todos los formularios de evaluación de lecciones completados en el curso
-  let evaluationScores = [quizPercent];
+  // 2. Obtener promedio de formularios de lección
+  let lessonFormsAvg = 100;
+  let hasLessonForms = false;
   try {
     const feedbacks = await db.getCourseLessonFeedbacks(quizState.courseId, currentUser.id);
     if (feedbacks && feedbacks.length > 0) {
-      feedbacks.forEach(fb => {
-        const ratingScore = fb.rating ? Math.round((fb.rating / 5) * 100) : 100;
-        evaluationScores.push(ratingScore);
-      });
+      hasLessonForms = true;
+      const sum = feedbacks.reduce((acc, fb) => acc + (fb.rating ? Math.round((fb.rating / 5) * 100) : 100), 0);
+      lessonFormsAvg = Math.round(sum / feedbacks.length);
     }
   } catch (err) {
     console.warn('Error leyendo formularios de lección:', err);
   }
 
-  // 3. Promediar la suma de todos los formularios de evaluación acumulados
-  const totalSum = evaluationScores.reduce((acc, curr) => acc + curr, 0);
-  const finalScorePercent = Math.round(totalSum / evaluationScores.length);
+  // 3. Promedio final acumulado (50% examen + 50% formularios de lección si existen, o 100% examen)
+  const finalScorePercent = hasLessonForms 
+    ? Math.round((quizPercent + lessonFormsAvg) / 2)
+    : quizPercent;
   
-  // 4. ACREDITACIÓN: 70% a 100% | DESACREDITACIÓN: 0% a 69%
-  const passed = finalScorePercent >= 70;
+  // 4. REGLA ESTRICTA DE ACREDITACIÓN:
+  // El alumno DEBE obtener al menos 70% en el examen Y al menos 70% en la nota final acumulada.
+  const passed = (quizPercent >= 70) && (finalScorePercent >= 70);
   
   await db.saveQuizResult(quizState.courseId, finalScorePercent, passed, currentUser.id);
   
+  // 5. Construir Desglose Visual de Preguntas (Directrices de respuestas correctas e incorrectas)
+  let breakdownHtml = '<div style="margin-top: 20px; text-align: left;">';
+  breakdownHtml += '<h4 style="margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 6px; color: var(--text-primary);"><i class="fas fa-list-ol"></i> Desglose de Respuestas de tu Examen:</h4>';
+  
+  questionDetails.forEach((item, idx) => {
+    const userOptionText = item.userAnswerIndex !== null ? item.options[item.userAnswerIndex] : 'Sin responder';
+    const correctOptionText = item.options[item.correctIndex];
+
+    if (item.isCorrect) {
+      breakdownHtml += `
+        <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 12px; margin-bottom: 10px;">
+          <div style="color: #10b981; font-weight: 600; font-size: 0.9rem;">
+            <i class="fas fa-check-circle"></i> Pregunta ${idx + 1}: ${item.question}
+          </div>
+          <div style="font-size: 0.85rem; color: var(--text-primary); margin-top: 4px;">
+            Tu respuesta: <strong style="color: #10b981;">"${userOptionText}"</strong> (✓ Correcto)
+          </div>
+        </div>
+      `;
+    } else {
+      breakdownHtml += `
+        <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; padding: 12px; margin-bottom: 10px;">
+          <div style="color: #ef4444; font-weight: 600; font-size: 0.9rem;">
+            <i class="fas fa-times-circle"></i> Pregunta ${idx + 1}: ${item.question}
+          </div>
+          <div style="font-size: 0.85rem; color: #ef4444; margin-top: 4px;">
+            Tu respuesta: <strong>"${userOptionText}"</strong> (✗ Incorrecto)
+          </div>
+          <div style="font-size: 0.85rem; color: #10b981; margin-top: 4px; font-weight: 600;">
+            Respuesta Correcta: "${correctOptionText}"
+          </div>
+        </div>
+      `;
+    }
+  });
+  breakdownHtml += '</div>';
+
   let resultHtml = '';
   
   if (passed) {
@@ -1907,18 +1976,20 @@ async function evaluateQuiz() {
       <h2 style="color: #10b981;">¡ESTADO: ACREDITADO!</h2>
       <div class="quiz-result-score" style="color: #10b981;">${finalScorePercent}%</div>
       <p style="font-size: 1rem; color: var(--text-primary);">
-        ¡Felicidades! Has alcanzado la acreditación del curso sumando todos tus formularios y evaluaciones.<br>
+        ¡Felicidades! Has acreditado el curso sumando tus evaluaciones y examen.<br>
         <span class="badge badge-success" style="font-size: 0.85rem; margin-top: 8px; display: inline-block; padding: 6px 12px;">
-          <i class="fas fa-check-circle"></i> Acreditación: 70% a 100% (Puntaje obtenido: ${finalScorePercent}%)
+          <i class="fas fa-check-circle"></i> Examen: ${quizPercent}% | Promedio Final: ${finalScorePercent}% (Acreditado >= 70%)
         </span>
       </p>
       
+      ${breakdownHtml}
+
       <div class="form-group" style="max-width: 420px; margin: 20px auto 25px auto; text-align: left;">
         <label for="student-cert-name" style="font-weight:600;">Nombre completo para tu reconocimiento oficial:</label>
         <input type="text" class="form-control" id="student-cert-name" placeholder="Tu Nombre Completo" required value="${currentUser.fullName || currentUser.username}">
       </div>
       
-      <div style="display: flex; gap: 15px; justify-content: center;">
+      <div style="display: flex; gap: 15px; justify-content: center; margin-top: 15px;">
         <button class="btn btn-secondary" onclick="showView('view-student-dashboard')">Volver a Cursos</button>
         <button class="btn btn-success" onclick="issueStudentCertificate('${quizState.courseId}')">Generar Reconocimiento <i class="fas fa-award"></i></button>
       </div>
@@ -1931,13 +2002,15 @@ async function evaluateQuiz() {
       <h2 style="color: #ef4444;">¡ESTADO: DESACREDITADO!</h2>
       <div class="quiz-result-score" style="color: #ef4444;">${finalScorePercent}%</div>
       <p style="font-size: 1rem; color: var(--text-primary);">
-        Tu puntaje final acumulado fue de <strong>${finalScorePercent}%</strong>.<br>
+        ${quizPercent < 70 ? `Obtuviste <strong>${quizPercent}%</strong> en el examen. Se requiere un mínimo del <strong>70% en el examen</strong> para acreditar.` : `Tu promedio acumulado final fue de <strong>${finalScorePercent}%</strong> (menor al 70% requerido).`}<br>
         <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); font-size: 0.85rem; margin-top: 8px; display: inline-block; padding: 6px 12px;">
-          <i class="fas fa-exclamation-triangle"></i> Desacreditado: 69% o menor (Mínimo para acreditar: 70%)
+          <i class="fas fa-exclamation-triangle"></i> Desacreditado: Se requiere 70% o más para recibir el reconocimiento
         </span>
       </p>
-      <p style="font-size: 0.85rem; color: var(--text-secondary);">Repasa los temas y formularios del curso e inténtalo de nuevo para lograr tu acreditación.</p>
-      <div style="display: flex; gap: 15px; justify-content: center;">
+      
+      ${breakdownHtml}
+
+      <div style="display: flex; gap: 15px; justify-content: center; margin-top: 20px;">
         <button class="btn btn-secondary" onclick="showView('view-student-dashboard')">Volver a Cursos</button>
         <button class="btn btn-primary" onclick="startQuiz('${quizState.courseId}')">Reintentar Evaluación <i class="fas fa-redo"></i></button>
       </div>
