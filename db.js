@@ -76,6 +76,29 @@ export const db = {
     return (data || []).map(mapUser);
   },
 
+  async updateStudentName(userId, newName) {
+    const cleanName = newName.trim();
+    if (!cleanName) throw new Error('El nombre no puede estar vacío.');
+
+    const { error } = await supabase
+      .from('users')
+      .update({ username: cleanName })
+      .eq('id', userId);
+
+    if (error) throw error;
+
+    try {
+      await supabase
+        .from('certificates')
+        .update({ student_name: cleanName })
+        .eq('user_id', userId);
+    } catch (e) {
+      console.warn('No se pudieron actualizar certificados:', e);
+    }
+
+    return true;
+  },
+
   async registerStudent(userData) {
     const username = userData.username.trim();
     const email = userData.email ? userData.email.trim().toLowerCase() : '';

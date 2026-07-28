@@ -2454,6 +2454,136 @@ async function loadInstructorDashboard() {
   }
 }
 
+let allInstructorStudents = [];
+
+function switchInstructorTab(tab) {
+  if (tab === 'courses') {
+    if (DOM.btnInsCoursesTab) DOM.btnInsCoursesTab.classList.add('active');
+    if (DOM.btnInsStudentsTab) DOM.btnInsStudentsTab.classList.remove('active');
+    if (DOM.insCoursesSection) DOM.insCoursesSection.classList.add('active');
+    if (DOM.insStudentsSection) DOM.insStudentsSection.classList.remove('active');
+  } else {
+    if (DOM.btnInsStudentsTab) DOM.btnInsStudentsTab.classList.add('active');
+    if (DOM.btnInsCoursesTab) DOM.btnInsCoursesTab.classList.remove('active');
+    if (DOM.insStudentsSection) DOM.insStudentsSection.classList.add('active');
+    if (DOM.insCoursesSection) DOM.insCoursesSection.classList.remove('active');
+    loadInstructorStudentsTable();
+  }
+}
+
+async function loadInstructorStudentsTable() {
+  if (!DOM.studentsTableBody) return;
+  try {
+    DOM.studentsTableBody.innerHTML = `
+      <tr>
+        <td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 30px;">
+          <i class="fas fa-spinner fa-spin"></i> Cargando lista de estudiantes...
+        </td>
+      </tr>
+    `;
+    const users = await db.getUsers();
+    allInstructorStudents = users.filter(u => u.role === 'student' || !u.role);
+    renderStudentsTableRows(allInstructorStudents);
+  } catch (err) {
+    console.error('Error al cargar lista de estudiantes:', err);
+    DOM.studentsTableBody.innerHTML = `
+      <tr>
+        <td colspan="6" style="text-align: center; color: var(--danger-color); padding: 30px;">
+          Error al cargar estudiantes: ${err.message}
+        </td>
+      </tr>
+    `;
+  }
+}
+
+function filterStudentsTable() {
+  const query = DOM.studentSearchInput ? DOM.studentSearchInput.value.trim().toLowerCase() : '';
+  if (!query) {
+    renderStudentsTableRows(allInstructorStudents);
+    return;
+  }
+  const filtered = allInstructorStudents.filter(s => 
+    (s.username && s.username.toLowerCase().includes(query)) ||
+    (s.email && s.email.toLowerCase().includes(query)) ||
+    (s.phone && s.phone.includes(query))
+  );
+  renderStudentsTableRows(filtered);
+}
+
+async function renderStudentsTableRows(studentsList) {
+  if (!DOM.studentsTableBody) return;
+  if (!studentsList || studentsList.length === 0) {
+    DOM.studentsTableBody.innerHTML = `
+      <tr>
+        <td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 30px;">
+          No se encontraron estudiantes registrados.
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  const courses = await db.getCourses();
+  let rowsHtml = '';
+
+  studentsList.forEach(student => {
+    const regDate = student.registeredAt ? new Date(student.registeredAt).toLocaleDateString() : 'N/A';
+    const assignedIds = student.assignedCourses || [];
+    const assignedTitles = courses.filter(c => assignedIds.includes(c.id)).map(c => c.title);
+    
+    let coursesTags = 'Sin cursos asignados';
+    if (assignedTitles.length > 0) {
+      coursesTags = assignedTitles.map(t => `<span class="badge" style="background: rgba(99, 102, 241, 0.15); color: var(--primary-color); border: 1px solid rgba(99, 102, 241, 0.3); font-size: 0.75rem; margin-right: 4px; margin-bottom: 4px; display: inline-block;">${t}</span>`).join('');
+    }
+
+    rowsHtml += `
+      <tr>
+        <td>
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+            <strong style="color: var(--text-primary); font-size: 0.95rem;">${student.username}</strong>
+            <button class="btn btn-secondary btn-sm" onclick="editStudentName('${student.id}', '${student.username.replace(/'/g, "\\'")}')" style="padding: 2px 8px; font-size: 0.75rem;" title="Corregir Nombre del Alumno">
+              <i class="fas fa-edit" style="color: var(--accent-color);"></i> Editar Nombre
+            </button>
+          </div>
+        </td>
+        <td>${student.email || 'N/A'}</td>
+        <td>${student.phone || 'N/A'}</td>
+        <td>${regDate}</td>
+        <td>${coursesTags}</td>
+        <td style="text-align: center;">
+          <button class="btn btn-primary btn-sm" onclick="openAssignCoursesModal('${student.id}')" style="padding: 4px 10px; font-size: 0.75rem;">
+            <i class="fas fa-book-reader"></i> Asignar Cursos
+          </button>
+        </td>
+      </tr>
+    `;
+  });
+
+  DOM.studentsTableBody.innerHTML = rowsHtml;
+}
+
+window.editStudentName = async function(userId, currentName) {
+  const newName = prompt(`Corregir el nombre del alumno "${currentName}" a:`, currentName);
+  if (newName && newName.trim() && newName.trim() !== currentName) {
+    const cleanName = newName.trim();
+    try {
+      await db.updateStudentName(userId, cleanName);
+      alert(`Nombre actualizado a "${cleanName}" correctamente.`);
+      
+      if (currentUser && currentUser.id === userId) {
+        currentUser.username = cleanName;
+        if (DOM.userDisplayName) DOM.userDisplayName.textContent = cleanName;
+      }
+
+      await loadInstructorDashboard();
+      await loadInstructorStudentsTable();
+    } catch (err) {
+      console.error(err);
+      alert('Error al actualizar el nombre del estudiante: ' + err.message);
+    }
+  }
+};
+
 async function startNewCourseEditor() {
   await populateCategoriesDatalist();
   editingCourse = {
