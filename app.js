@@ -1,4 +1,4 @@
-import { db } from './db.js?v=13';
+import { db } from './db.js';
 
 // === ESTADO GLOBAL DE LA APP ===
 let currentUser = null; // Almacenará el usuario logueado en la sesión
@@ -204,6 +204,167 @@ const DOM = {
   btnSubmitAssignCourses: document.getElementById('btn-submit-assign-courses')
 };
 
+function populateDOM() {
+  DOM.logoBtn = document.getElementById('logo-btn');
+  DOM.tabStudent = document.getElementById('tab-student');
+  DOM.tabInstructor = document.getElementById('tab-instructor');
+  DOM.navigationTabs = document.querySelector('.navigation-tabs');
+  DOM.themeToggle = document.getElementById('theme-toggle');
+  DOM.btnResetDb = document.getElementById('btn-reset-db');
+  DOM.userDisplayName = document.getElementById('user-display-name');
+  DOM.userProfileBadge = document.getElementById('user-profile-badge');
+  DOM.userAvatarChar = document.getElementById('user-avatar-char');
+  DOM.btnLogout = document.getElementById('btn-logout');
+  
+  DOM.viewAuth = document.getElementById('view-auth');
+  DOM.viewStudentDashboard = document.getElementById('view-student-dashboard');
+  DOM.viewCoursePlayer = document.getElementById('view-course-player');
+  DOM.viewQuiz = document.getElementById('view-quiz');
+  DOM.viewQuizResult = document.getElementById('view-quiz-result');
+  DOM.viewCertificate = document.getElementById('view-certificate');
+  DOM.viewInstructorDashboard = document.getElementById('view-instructor-dashboard');
+  DOM.viewCourseEditor = document.getElementById('view-course-editor');
+  
+  DOM.authTabBar = document.getElementById('auth-tab-bar');
+  DOM.authErrorMsg = document.getElementById('auth-error-msg');
+  DOM.authErrorText = document.getElementById('auth-error-text');
+  DOM.authSuccessMsg = document.getElementById('auth-success-msg');
+  DOM.authSuccessText = document.getElementById('auth-success-text');
+  DOM.authLoginForm = document.getElementById('auth-login-form');
+  DOM.authRegisterForm = document.getElementById('auth-register-form');
+  DOM.authRecoveryPanel = document.getElementById('auth-recovery-panel');
+  DOM.btnTabLogin = document.getElementById('btn-tab-login');
+  DOM.btnTabRegister = document.getElementById('btn-tab-register');
+  
+  DOM.loginIdentifier = document.getElementById('login-identifier');
+  DOM.loginPassword = document.getElementById('login-password');
+  DOM.registerFullName = document.getElementById('register-fullname');
+  DOM.registerEmail = document.getElementById('register-email');
+  DOM.registerPhone = document.getElementById('register-phone');
+  DOM.registerPassword = document.getElementById('register-password');
+  DOM.registerConfirmPassword = document.getElementById('register-confirm-password');
+  
+  DOM.modalStudentProfile = document.getElementById('modal-student-profile');
+  DOM.profileAvatarLarge = document.getElementById('profile-avatar-large');
+  DOM.profileFullName = document.getElementById('profile-full-name');
+  DOM.profileEmail = document.getElementById('profile-email');
+  DOM.profilePhone = document.getElementById('profile-phone');
+  DOM.profileProgressList = document.getElementById('profile-progress-list');
+  DOM.profileCertificatesList = document.getElementById('profile-certificates-list');
+  
+  DOM.recoveryIdentifier = document.getElementById('recovery-identifier');
+  DOM.simulatedCodeDisplay = document.getElementById('simulated-code-display');
+  DOM.recoveryCodeInput = document.getElementById('recovery-code-input');
+  DOM.recoveryNewPassword = document.getElementById('recovery-new-password');
+  DOM.recoveryConfirmPassword = document.getElementById('recovery-confirm-password');
+  
+  DOM.studentCoursesGrid = document.getElementById('student-courses-grid');
+  DOM.videoPlayer = document.getElementById('course-video-player');
+  DOM.iframePlayer = document.getElementById('course-iframe-player');
+  DOM.playerLessonTitle = document.getElementById('player-lesson-title');
+  DOM.playerLessonNotes = document.getElementById('player-lesson-notes');
+  DOM.playerResourcesList = document.getElementById('player-resources-list');
+  DOM.playerCourseTitle = document.getElementById('player-course-title');
+  DOM.playerProgressText = document.getElementById('player-progress-text');
+  DOM.playerProgressFill = document.getElementById('player-progress-fill');
+  DOM.playerSyllabusList = document.getElementById('player-syllabus-list');
+  DOM.btnStartQuiz = document.getElementById('btn-start-quiz');
+  DOM.btnPlayerBack = document.getElementById('btn-player-back');
+  DOM.videoCompletionContainer = document.getElementById('video-completion-container');
+  DOM.videoCompletionText = document.getElementById('video-completion-text');
+  DOM.btnCompleteIframeVideo = document.getElementById('btn-complete-iframe-video');
+  DOM.customPlayerControls = document.getElementById('custom-player-controls');
+  DOM.btnVideoRewind = document.getElementById('btn-video-rewind');
+  DOM.btnVideoForward = document.getElementById('btn-video-forward');
+  DOM.selectVideoSpeed = document.getElementById('select-video-speed');
+  DOM.iframePopoutBlocker = document.getElementById('iframe-popout-blocker');
+  DOM.lessonFeedbackContainer = document.getElementById('lesson-feedback-container');
+  DOM.formLessonFeedback = document.getElementById('form-lesson-feedback');
+  DOM.feedbackSummary = document.getElementById('feedback-summary');
+  DOM.feedbackComments = document.getElementById('feedback-comments');
+  DOM.starRatingGroup = document.getElementById('star-rating-group');
+  DOM.starRatingText = document.getElementById('star-rating-text');
+  DOM.btnSubmitFeedback = document.getElementById('btn-submit-feedback');
+  DOM.editCourseFormTitle = document.getElementById('edit-course-form-title');
+  DOM.playerFormCustomTitle = document.getElementById('player-form-custom-title');
+  DOM.feedbackQuestionsDynamicGroup = document.getElementById('feedback-questions-dynamic-group');
+  DOM.questionsGroupWrapper = document.getElementById('questions-group-wrapper');
+  DOM.groupQuestionsCounter = document.getElementById('group-questions-counter');
+  
+  DOM.quizCourseTitle = document.getElementById('quiz-course-title');
+  DOM.quizQuestionNumber = document.getElementById('quiz-question-number');
+  DOM.quizProgressPercent = document.getElementById('quiz-progress-percent');
+  DOM.quizQuestionText = document.getElementById('quiz-question-text');
+  DOM.quizOptionsGroup = document.getElementById('quiz-options-group');
+  DOM.btnQuizNext = document.getElementById('btn-quiz-next');
+  DOM.btnQuizExit = document.getElementById('btn-quiz-exit');
+  DOM.quizResultCard = document.getElementById('quiz-result-card');
+  
+  DOM.certDisplayStudent = document.getElementById('cert-display-student');
+  DOM.certDisplayCourse = document.getElementById('cert-display-course');
+  DOM.certDisplaySignature = document.getElementById('cert-display-signature');
+  DOM.certDisplayInstructor = document.getElementById('cert-display-instructor');
+  DOM.certDisplayDate = document.getElementById('cert-display-date');
+  DOM.certDisplayCode = document.getElementById('cert-display-code');
+  DOM.btnPrintCertificate = document.getElementById('btn-print-certificate');
+  DOM.btnDownloadCertificate = document.getElementById('btn-download-certificate');
+  DOM.certCanvas = document.getElementById('cert-canvas');
+  
+  DOM.instructorCoursesGrid = document.getElementById('instructor-courses-grid');
+  DOM.studentRegistryRows = document.getElementById('student-registry-rows');
+  DOM.btnNewCourse = document.getElementById('btn-new-course');
+  DOM.btnEditorBack = document.getElementById('btn-editor-back');
+  DOM.btnEditorSaveCourse = document.getElementById('btn-editor-save-course');
+  DOM.btnEditorAddModule = document.getElementById('btn-editor-add-module');
+  DOM.btnRenameCategory = document.getElementById('btn-rename-category');
+  DOM.btnDeleteCategory = document.getElementById('btn-delete-category');
+  DOM.btnEditorAddQuestion = document.getElementById('btn-editor-add-question');
+  DOM.curriculumBuilderList = document.getElementById('curriculum-builder-list');
+  DOM.quizBuilderQuestionsList = document.getElementById('quiz-builder-questions-list');
+  
+  DOM.formCourseGeneral = document.getElementById('form-course-general');
+  DOM.editCourseTitle = document.getElementById('edit-course-title');
+  DOM.editCourseDescription = document.getElementById('edit-course-description');
+  DOM.editCourseInstructor = document.getElementById('edit-course-instructor');
+  DOM.categoryDropdownTrigger = document.getElementById('category-dropdown-trigger');
+  DOM.categoryDropdownMenu = document.getElementById('category-dropdown-menu');
+  DOM.selectedCategoryText = document.getElementById('selected-category-text');
+  DOM.editCourseDifficulty = document.getElementById('edit-course-difficulty');
+  DOM.editCourseTheme = document.getElementById('edit-course-theme');
+  
+  DOM.statTotalCourses = document.getElementById('stat-total-courses');
+  DOM.statTotalCertificates = document.getElementById('stat-total-certificates');
+  DOM.statActiveStudents = document.getElementById('stat-active-students');
+  
+  DOM.modalAddModule = document.getElementById('modal-add-module');
+  DOM.modalAddLesson = document.getElementById('modal-add-lesson');
+  DOM.newModuleTitle = document.getElementById('new-module-title');
+  DOM.btnSubmitAddModule = document.getElementById('btn-submit-add-module');
+  
+  DOM.newLessonTitle = document.getElementById('new-lesson-title');
+  DOM.newLessonType = document.getElementById('new-lesson-type');
+  DOM.newLessonDuration = document.getElementById('new-lesson-duration');
+  DOM.newLessonSourceType = document.getElementById('new-lesson-source-type');
+  DOM.newLessonUrl = document.getElementById('new-lesson-url');
+  DOM.newLessonFileInput = document.getElementById('new-lesson-file-input');
+  DOM.newLessonNotes = document.getElementById('new-lesson-notes');
+  DOM.btnSubmitAddLesson = document.getElementById('btn-submit-add-lesson');
+  DOM.fileUploadStatus = document.getElementById('file-upload-status');
+  DOM.filenamePreview = document.getElementById('filename-preview');
+
+  DOM.btnInsCoursesTab = document.getElementById('btn-ins-courses-tab');
+  DOM.btnInsStudentsTab = document.getElementById('btn-ins-students-tab');
+  DOM.insCoursesSection = document.getElementById('ins-courses-section');
+  DOM.insStudentsSection = document.getElementById('ins-students-section');
+  DOM.studentSearchInput = document.getElementById('student-search-input');
+  DOM.studentsTableBody = document.getElementById('students-table-body');
+  DOM.modalAssignCourses = document.getElementById('modal-assign-courses');
+  DOM.assignStudentName = document.getElementById('assign-student-name');
+  DOM.assignStudentEmail = document.getElementById('assign-student-email');
+  DOM.assignCoursesList = document.getElementById('assign-courses-list');
+  DOM.btnSubmitAssignCourses = document.getElementById('btn-submit-assign-courses');
+}
+
 // === EVENT LISTENERS INICIALES ===
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initApp);
@@ -212,6 +373,7 @@ if (document.readyState === 'loading') {
 }
 
 function initApp() {
+  populateDOM();
   // Configuración del Tema
   const savedTheme = localStorage.getItem('edutrack_theme') || 'dark';
   if (savedTheme === 'light') {
@@ -668,19 +830,25 @@ function showView(viewId) {
 
 // Alternar pestañas en el panel de Login / Registro
 function switchAuthTab(tab) {
-  if (DOM.authErrorMsg) DOM.authErrorMsg.style.display = 'none';
-  if (DOM.authSuccessMsg) DOM.authSuccessMsg.style.display = 'none';
+  const errContainer = DOM.authErrorMsg || document.getElementById('auth-error-msg');
+  const succContainer = DOM.authSuccessMsg || document.getElementById('auth-success-msg');
+  
+  if (errContainer) errContainer.style.display = 'none';
+  if (succContainer) succContainer.style.display = 'none';
   
   const isLogin = tab === 'login';
-  const btnLogin = document.getElementById('btn-tab-login');
-  const btnRegister = document.getElementById('btn-tab-register');
+  const btnLogin = DOM.btnTabLogin || document.getElementById('btn-tab-login');
+  const btnRegister = DOM.btnTabRegister || document.getElementById('btn-tab-register');
+  const formLogin = DOM.authLoginForm || document.getElementById('auth-login-form');
+  const formRegister = DOM.authRegisterForm || document.getElementById('auth-register-form');
+  const panelRecovery = DOM.authRecoveryPanel || document.getElementById('auth-recovery-panel');
 
   if (btnLogin) btnLogin.classList.toggle('active', isLogin);
   if (btnRegister) btnRegister.classList.toggle('active', !isLogin);
   
-  if (DOM.authLoginForm) DOM.authLoginForm.classList.toggle('active', isLogin);
-  if (DOM.authRegisterForm) DOM.authRegisterForm.classList.toggle('active', !isLogin);
-  if (DOM.authRecoveryPanel) DOM.authRecoveryPanel.classList.remove('active');
+  if (formLogin) formLogin.classList.toggle('active', isLogin);
+  if (formRegister) formRegister.classList.toggle('active', !isLogin);
+  if (panelRecovery) panelRecovery.classList.remove('active');
 }
 window.switchAuthTab = switchAuthTab;
 
