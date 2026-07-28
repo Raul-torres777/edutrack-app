@@ -1006,6 +1006,7 @@ async function loadStudentDashboard() {
     if (latestStudent) {
       currentUser = latestStudent;
       localStorage.setItem('edutrack_current_user', JSON.stringify(latestStudent));
+      setupAuthenticatedUI();
     }
 
     const allCourses = await db.getCourses();
@@ -2669,7 +2670,13 @@ async function renderStudentsTableRows(studentsList) {
 }
 
 window.toggleUserRole = async function(userId, currentRole) {
-  const student = allInstructorStudents.find(u => u.id === userId);
+  let student = (allInstructorStudents || []).find(u => u.id === userId);
+  if (!student) {
+    try {
+      const users = await db.getUsers();
+      student = users.find(u => u.id === userId);
+    } catch (e) {}
+  }
   const studentName = student ? (student.fullName || student.username || 'Usuario') : 'Usuario';
   const realCurrentRole = student ? (student.role || 'student') : (currentRole || 'student');
   const newRole = realCurrentRole === 'instructor' ? 'student' : 'instructor';
@@ -2683,6 +2690,11 @@ window.toggleUserRole = async function(userId, currentRole) {
     try {
       await db.updateUserRole(userId, newRole);
       alert(`¡Rol de "${studentName}" actualizado con éxito a ${roleLabel}!`);
+      if (currentUser && currentUser.id === userId) {
+        currentUser.role = newRole;
+        localStorage.setItem('edutrack_current_user', JSON.stringify(currentUser));
+        setupAuthenticatedUI();
+      }
       await loadInstructorStudentsTable();
     } catch (err) {
       console.error('Error al cambiar rol:', err);
