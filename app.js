@@ -982,7 +982,7 @@ async function submitCourseAssignment() {
   try {
     await db.assignCoursesToStudent(currentSelectedStudentId, courseIds);
     closeAllModals();
-    loadStudentRegistry(); // Recargar tabla
+    await loadInstructorStudentsTable();
   } catch (err) {
     console.error('Error al guardar asignación:', err);
     alert('Error al guardar la asignación: ' + err.message);
@@ -2514,24 +2514,32 @@ async function renderStudentsTableRows(studentsList) {
   }
 
   const courses = await db.getCourses();
+  const courseMap = {};
+  courses.forEach(c => {
+    courseMap[c.id] = c.title;
+  });
+
   let rowsHtml = '';
 
   studentsList.forEach(student => {
     const regDate = student.registeredAt ? new Date(student.registeredAt).toLocaleDateString() : 'N/A';
     const assignedIds = student.assignedCourses || [];
-    const assignedTitles = courses.filter(c => assignedIds.includes(c.id)).map(c => c.title);
+    const displayName = student.fullName || student.username || 'Estudiante';
     
-    let coursesTags = 'Sin cursos asignados';
-    if (assignedTitles.length > 0) {
-      coursesTags = assignedTitles.map(t => `<span class="badge" style="background: rgba(99, 102, 241, 0.15); color: var(--primary-color); border: 1px solid rgba(99, 102, 241, 0.3); font-size: 0.75rem; margin-right: 4px; margin-bottom: 4px; display: inline-block;">${t}</span>`).join('');
+    let coursesTags = '<span style="color: var(--text-secondary); font-size: 0.8rem; font-style: italic;">Sin cursos asignados</span>';
+    if (assignedIds.length > 0) {
+      coursesTags = assignedIds.map(id => {
+        const title = courseMap[id] || id;
+        return `<span class="badge" style="background: rgba(99, 102, 241, 0.15); color: var(--primary-color); border: 1px solid rgba(99, 102, 241, 0.3); font-size: 0.75rem; margin-right: 4px; margin-bottom: 4px; display: inline-block;">${title}</span>`;
+      }).join('');
     }
 
     rowsHtml += `
       <tr>
         <td>
           <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-            <strong style="color: var(--text-primary); font-size: 0.95rem;">${student.username}</strong>
-            <button class="btn btn-secondary btn-sm" onclick="editStudentName('${student.id}', '${student.username.replace(/'/g, "\\'")}')" style="padding: 2px 8px; font-size: 0.75rem;" title="Corregir Nombre del Alumno">
+            <strong style="color: var(--text-primary); font-size: 0.95rem;">${displayName}</strong>
+            <button class="btn btn-secondary btn-sm" onclick="editStudentName('${student.id}', '${displayName.replace(/'/g, "\\'")}')" style="padding: 2px 8px; font-size: 0.75rem;" title="Corregir Nombre del Alumno">
               <i class="fas fa-edit" style="color: var(--accent-color);"></i> Editar Nombre
             </button>
           </div>
