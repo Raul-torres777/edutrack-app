@@ -646,6 +646,23 @@ async function resetDatabase() {
   }
 }
 
+// === CAMBIAR VISTAS DE LA APLICACIÓN ===
+function showView(viewId) {
+  if (DOM.videoPlayer) DOM.videoPlayer.pause();
+  if (DOM.iframePlayer) DOM.iframePlayer.src = '';
+  
+  document.querySelectorAll('.view-panel').forEach(panel => {
+    panel.classList.remove('active');
+  });
+  
+  const targetView = document.getElementById(viewId);
+  if (targetView) {
+    targetView.classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+}
+window.showView = showView;
+
 // === COMPROBAR SESIÓN DE USUARIO ===
 async function checkUserSession() {
   // Si estamos en medio de un redireccionamiento de recuperación de contraseña de Supabase,
