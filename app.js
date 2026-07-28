@@ -648,8 +648,14 @@ async function resetDatabase() {
 
 // === CAMBIAR VISTAS DE LA APLICACIÓN ===
 function showView(viewId) {
-  if (DOM.videoPlayer) DOM.videoPlayer.pause();
-  if (DOM.iframePlayer) DOM.iframePlayer.src = '';
+  if (!currentUser && viewId !== 'view-auth') {
+    viewId = 'view-auth';
+  }
+
+  if (viewId !== 'view-course-player') {
+    if (DOM.videoPlayer) DOM.videoPlayer.pause();
+    if (DOM.iframePlayer) DOM.iframePlayer.src = '';
+  }
   
   document.querySelectorAll('.view-panel').forEach(panel => {
     panel.classList.remove('active');
@@ -818,28 +824,6 @@ function navigateToDashboardInternal() {
   } else {
     showView('view-instructor-dashboard');
     loadInstructorDashboard();
-  }
-}
-
-function showView(viewId) {
-  // Si no está logueado, bloquear navegación a cualquier pantalla que no sea auth
-  if (!currentUser && viewId !== 'view-auth') {
-    viewId = 'view-auth';
-  }
-  
-  // Pausar video si cambiamos de vista
-  if (viewId !== 'view-course-player') {
-    if (DOM.videoPlayer) DOM.videoPlayer.pause();
-    if (DOM.iframePlayer) DOM.iframePlayer.src = '';
-  }
-  
-  document.querySelectorAll('.view-panel').forEach(panel => {
-    panel.classList.remove('active');
-  });
-  const activePanel = document.getElementById(viewId);
-  if (activePanel) {
-    activePanel.classList.add('active');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 }
 
@@ -2957,85 +2941,6 @@ window.editStudentName = async function(userId, currentName) {
     }
   }
 };
-
-function closeAllModals() {
-  document.querySelectorAll('.modal-overlay').forEach(modal => {
-    modal.classList.remove('active');
-  });
-}
-window.closeAllModals = closeAllModals;
-
-let currentlyAssigningUserId = null;
-
-window.openAssignCoursesModal = async function(studentId) {
-  currentlyAssigningUserId = studentId;
-  const student = (allInstructorStudents || []).find(s => s.id === studentId);
-  if (!student) return;
-
-  if (DOM.assignStudentName) DOM.assignStudentName.textContent = student.fullName || student.username || 'Estudiante';
-  if (DOM.assignStudentEmail) DOM.assignStudentEmail.textContent = student.email || 'N/A';
-
-  try {
-    const allCourses = await db.getCourses();
-    const assignedIds = student.assignedCourses || [];
-
-    let listHtml = '';
-    allCourses.forEach(course => {
-      const isChecked = assignedIds.includes(course.id) ? 'checked' : '';
-      listHtml += `
-        <label style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: rgba(255,255,255,0.03); border-radius: 6px; cursor: pointer; color: var(--text-primary); font-size: 0.9rem;">
-          <input type="checkbox" class="assign-course-checkbox" value="${course.id}" ${isChecked} style="accent-color: var(--primary-color); transform: scale(1.1);">
-          <span><strong>${course.title}</strong> (${course.category || 'General'})</span>
-        </label>
-      `;
-    });
-
-    if (DOM.assignCoursesList) {
-      DOM.assignCoursesList.innerHTML = listHtml || '<p style="color: var(--text-secondary); padding: 10px;">No hay cursos creados en la plataforma.</p>';
-    }
-
-    if (DOM.modalAssignCourses) {
-      DOM.modalAssignCourses.classList.add('active');
-    }
-  } catch (err) {
-    console.error('Error al abrir modal de asignación de cursos:', err);
-    alert('Error al cargar la lista de cursos: ' + err.message);
-  }
-};
-
-async function submitCourseAssignment() {
-  if (!currentlyAssigningUserId) return;
-
-  const checkboxes = document.querySelectorAll('.assign-course-checkbox:checked');
-  const selectedCourseIds = Array.from(checkboxes).map(cb => cb.value);
-
-  if (DOM.btnSubmitAssignCourses) {
-    DOM.btnSubmitAssignCourses.disabled = true;
-    DOM.btnSubmitAssignCourses.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
-  }
-
-  try {
-    await db.assignCoursesToStudent(currentlyAssigningUserId, selectedCourseIds);
-    alert('¡Cursos asignados correctamente al estudiante!');
-
-    const student = (allInstructorStudents || []).find(s => s.id === currentlyAssigningUserId);
-    if (student) {
-      student.assignedCourses = selectedCourseIds;
-    }
-
-    closeAllModals();
-    await loadInstructorStudentsTable();
-  } catch (err) {
-    console.error('Error al guardar asignación de cursos:', err);
-    alert('Error al asignar cursos: ' + (err.message || err));
-  } finally {
-    if (DOM.btnSubmitAssignCourses) {
-      DOM.btnSubmitAssignCourses.disabled = false;
-      DOM.btnSubmitAssignCourses.innerHTML = 'Guardar Asignación';
-    }
-  }
-}
-window.submitCourseAssignment = submitCourseAssignment;
 
 async function startNewCourseEditor() {
   await populateCategoriesDatalist();
