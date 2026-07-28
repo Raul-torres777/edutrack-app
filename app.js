@@ -204,36 +204,36 @@ function initApp() {
   const savedTheme = localStorage.getItem('edutrack_theme') || 'dark';
   if (savedTheme === 'light') {
     document.body.classList.add('light-theme');
-    DOM.themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+    if (DOM.themeToggle) DOM.themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
   } else {
-    DOM.themeToggle.innerHTML = '<i class="fas fa-moon"></i>';
+    if (DOM.themeToggle) DOM.themeToggle.innerHTML = '<i class="fas fa-moon"></i>';
   }
   
-  DOM.themeToggle.addEventListener('click', toggleTheme);
-  if (DOM.btnResetDb) {
-    DOM.btnResetDb.addEventListener('click', resetDatabase);
-  }
-  DOM.btnLogout.addEventListener('click', logoutUser);
+  if (DOM.themeToggle) DOM.themeToggle.addEventListener('click', toggleTheme);
+  if (DOM.btnResetDb) DOM.btnResetDb.addEventListener('click', resetDatabase);
+  if (DOM.btnLogout) DOM.btnLogout.addEventListener('click', logoutUser);
   
   // Roles de Usuario
-  DOM.tabStudent.addEventListener('click', () => switchRole('student'));
-  DOM.tabInstructor.addEventListener('click', () => switchRole('instructor'));
-  DOM.logoBtn.addEventListener('click', navigateToDashboard);
+  if (DOM.tabStudent) DOM.tabStudent.addEventListener('click', () => switchRole('student'));
+  if (DOM.tabInstructor) DOM.tabInstructor.addEventListener('click', () => switchRole('instructor'));
+  if (DOM.logoBtn) DOM.logoBtn.addEventListener('click', navigateToDashboard);
 
   // Pestañas del Panel de Instructor
-  DOM.btnInsCoursesTab.addEventListener('click', () => switchInstructorTab('courses'));
-  DOM.btnInsStudentsTab.addEventListener('click', () => switchInstructorTab('students'));
-  DOM.studentSearchInput.addEventListener('input', filterStudentsTable);
-  DOM.btnSubmitAssignCourses.addEventListener('click', submitCourseAssignment);
+  if (DOM.btnInsCoursesTab) DOM.btnInsCoursesTab.addEventListener('click', () => switchInstructorTab('courses'));
+  if (DOM.btnInsStudentsTab) DOM.btnInsStudentsTab.addEventListener('click', () => switchInstructorTab('students'));
+  if (DOM.studentSearchInput) DOM.studentSearchInput.addEventListener('input', filterStudentsTable);
+  if (DOM.btnSubmitAssignCourses) DOM.btnSubmitAssignCourses.addEventListener('click', submitCourseAssignment);
   
   // Navegaciones de Botones de Volver
-  DOM.btnPlayerBack.addEventListener('click', () => {
-    if (currentUser) {
-      localStorage.removeItem(`edutrack_active_course_${currentUser.id}`);
-    }
-    showView('view-student-dashboard');
-  });
-  DOM.btnEditorBack.addEventListener('click', () => showView('view-instructor-dashboard'));
+  if (DOM.btnPlayerBack) {
+    DOM.btnPlayerBack.addEventListener('click', () => {
+      if (currentUser) {
+        localStorage.removeItem(`edutrack_active_course_${currentUser.id}`);
+      }
+      showView('view-student-dashboard');
+    });
+  }
+  if (DOM.btnEditorBack) DOM.btnEditorBack.addEventListener('click', () => showView('view-instructor-dashboard'));
   
   // Registrar Botones de Cerrar Modales
   document.querySelectorAll('.modal-close-btn').forEach(btn => {
@@ -241,21 +241,25 @@ function initApp() {
   });
   
   // Control de Formularios en Clases Modales
-  DOM.newLessonSourceType.addEventListener('change', toggleLessonSourceFields);
-  DOM.newLessonFileInput.addEventListener('change', handleLessonFileSelect);
+  if (DOM.newLessonSourceType) DOM.newLessonSourceType.addEventListener('change', toggleLessonSourceFields);
+  if (DOM.newLessonFileInput) DOM.newLessonFileInput.addEventListener('change', handleLessonFileSelect);
   
   // Botones del Editor
-  DOM.btnNewCourse.addEventListener('click', () => startNewCourseEditor());
-  DOM.btnEditorAddModule.addEventListener('click', openAddModuleModal);
-  DOM.btnEditorAddQuestion.addEventListener('click', () => addQuestionField());
-  DOM.btnEditorSaveCourse.addEventListener('click', saveCourseFromEditor);
+  if (DOM.btnNewCourse) DOM.btnNewCourse.addEventListener('click', () => startNewCourseEditor());
+  if (DOM.btnEditorAddModule) DOM.btnEditorAddModule.addEventListener('click', openAddModuleModal);
+  if (DOM.btnEditorAddQuestion) DOM.btnEditorAddQuestion.addEventListener('click', () => addQuestionField());
+  if (DOM.btnEditorSaveCourse) DOM.btnEditorSaveCourse.addEventListener('click', saveCourseFromEditor);
   
   // Control de Dropdown de Categorías Personalizado
-  DOM.categoryDropdownTrigger.addEventListener('click', (e) => {
-    e.stopPropagation();
-    const isVisible = DOM.categoryDropdownMenu.style.display === 'block';
-    DOM.categoryDropdownMenu.style.display = isVisible ? 'none' : 'block';
-  });
+  if (DOM.categoryDropdownTrigger) {
+    DOM.categoryDropdownTrigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (DOM.categoryDropdownMenu) {
+        const isVisible = DOM.categoryDropdownMenu.style.display === 'block';
+        DOM.categoryDropdownMenu.style.display = isVisible ? 'none' : 'block';
+      }
+    });
+  }
   
   document.addEventListener('click', () => {
     if (DOM.categoryDropdownMenu) {
@@ -263,44 +267,43 @@ function initApp() {
     }
   });
   
-  DOM.btnSubmitAddModule.addEventListener('click', submitAddModule);
-  DOM.btnSubmitAddLesson.addEventListener('click', submitAddLesson);
+  if (DOM.btnSubmitAddModule) DOM.btnSubmitAddModule.addEventListener('click', submitAddModule);
+  if (DOM.btnSubmitAddLesson) DOM.btnSubmitAddLesson.addEventListener('click', submitAddLesson);
   
   // Botones del Quiz
-  DOM.btnQuizNext.addEventListener('click', handleQuizNext);
-  DOM.btnQuizExit.addEventListener('click', exitQuiz);
-  DOM.btnStartQuiz.addEventListener('click', () => startQuiz(activeCourse.id));
+  if (DOM.btnQuizNext) DOM.btnQuizNext.addEventListener('click', handleQuizNext);
+  if (DOM.btnQuizExit) DOM.btnQuizExit.addEventListener('click', exitQuiz);
+  if (DOM.btnStartQuiz) DOM.btnStartQuiz.addEventListener('click', () => startQuiz(activeCourse ? activeCourse.id : null));
   
   // Impresión y Descarga de Certificado
-  DOM.btnPrintCertificate.addEventListener('click', () => window.print());
-  DOM.btnDownloadCertificate.addEventListener('click', downloadCertificatePNG);
+  if (DOM.btnPrintCertificate) DOM.btnPrintCertificate.addEventListener('click', () => window.print());
+  if (DOM.btnDownloadCertificate) DOM.btnDownloadCertificate.addEventListener('click', downloadCertificatePNG);
   
   // Listeners de enlaces en el Reproductor de Vídeo
-  DOM.videoPlayer.addEventListener('ended', autoMarkLessonComplete);
-  
-  DOM.videoPlayer.addEventListener('timeupdate', () => {
-    if (currentRole === 'student' && activeLesson && !isLessonCompletedLocal(activeLesson.id)) {
-      if (DOM.videoPlayer.currentTime < maxTimeWatched) {
-        // Permitir retroceder o reproducir lo ya visto
-      } else {
-        maxTimeWatched = DOM.videoPlayer.currentTime;
-        // Guardar progreso en localStorage
-        localStorage.setItem(`edutrack_video_time_${currentUser.id}_${activeLesson.id}`, DOM.videoPlayer.currentTime);
+  if (DOM.videoPlayer) {
+    DOM.videoPlayer.addEventListener('ended', autoMarkLessonComplete);
+    DOM.videoPlayer.addEventListener('timeupdate', () => {
+      if (currentRole === 'student' && activeLesson && !isLessonCompletedLocal(activeLesson.id)) {
+        if (DOM.videoPlayer.currentTime >= maxTimeWatched) {
+          maxTimeWatched = DOM.videoPlayer.currentTime;
+          if (currentUser) {
+            localStorage.setItem(`edutrack_video_time_${currentUser.id}_${activeLesson.id}`, DOM.videoPlayer.currentTime);
+          }
+        }
+        if (Math.abs(DOM.videoPlayer.currentTime - lastActiveVideoTime) <= 2) {
+          lastActiveVideoTime = DOM.videoPlayer.currentTime;
+        }
       }
-      if (Math.abs(DOM.videoPlayer.currentTime - lastActiveVideoTime) <= 2) {
-        lastActiveVideoTime = DOM.videoPlayer.currentTime;
-      }
-    }
-  });
+    });
 
-  DOM.videoPlayer.addEventListener('seeking', () => {
-    if (currentRole === 'student' && activeLesson && !isLessonCompletedLocal(activeLesson.id)) {
-      // Bloquear adelantar (más de 1.5 segundos por delante de lo visto máximo)
-      if (DOM.videoPlayer.currentTime > maxTimeWatched + 1.5) {
-        DOM.videoPlayer.currentTime = lastActiveVideoTime;
+    DOM.videoPlayer.addEventListener('seeking', () => {
+      if (currentRole === 'student' && activeLesson && !isLessonCompletedLocal(activeLesson.id)) {
+        if (DOM.videoPlayer.currentTime > maxTimeWatched + 1.5) {
+          DOM.videoPlayer.currentTime = lastActiveVideoTime;
+        }
       }
-    }
-  });
+    });
+  }
 
   if (DOM.btnVideoRewind) {
     DOM.btnVideoRewind.addEventListener('click', () => {
@@ -624,16 +627,19 @@ function showView(viewId) {
 
 // Alternar pestañas en el panel de Login / Registro
 function switchAuthTab(tab) {
-  DOM.authErrorMsg.style.display = 'none';
-  DOM.authSuccessMsg.style.display = 'none';
+  if (DOM.authErrorMsg) DOM.authErrorMsg.style.display = 'none';
+  if (DOM.authSuccessMsg) DOM.authSuccessMsg.style.display = 'none';
   
   const isLogin = tab === 'login';
-  document.getElementById('btn-tab-login').classList.toggle('active', isLogin);
-  document.getElementById('btn-tab-register').classList.toggle('active', !isLogin);
+  const btnLogin = document.getElementById('btn-tab-login');
+  const btnRegister = document.getElementById('btn-tab-register');
+
+  if (btnLogin) btnLogin.classList.toggle('active', isLogin);
+  if (btnRegister) btnRegister.classList.toggle('active', !isLogin);
   
-  DOM.authLoginForm.classList.toggle('active', isLogin);
-  DOM.authRegisterForm.classList.toggle('active', !isLogin);
-  DOM.authRecoveryPanel.classList.remove('active');
+  if (DOM.authLoginForm) DOM.authLoginForm.classList.toggle('active', isLogin);
+  if (DOM.authRegisterForm) DOM.authRegisterForm.classList.toggle('active', !isLogin);
+  if (DOM.authRecoveryPanel) DOM.authRecoveryPanel.classList.remove('active');
 }
 
 // Ejecutar Login
