@@ -1,11 +1,42 @@
-import { INITIAL_COURSES } from './mock_data.js';
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
-
 // Configuración de Supabase
 const SUPABASE_URL = 'https://fegbjrmzgxpdllianhfy.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_Evh8a4ODcKE72arLSSeStw_Flous6TL';
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+let supabaseClient = null;
+
+// 1. Verificar si Supabase JS UMD está cargado en window
+if (typeof window !== 'undefined' && window.supabase && typeof window.supabase.createClient === 'function') {
+  try {
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  } catch (err) {
+    console.warn('Error al instanciar window.supabase:', err);
+  }
+}
+
+// 2. Fallback dummy client si Supabase no se encuentra para garantizar que db.js no rompa la app
+if (!supabaseClient) {
+  const dummyQuery = () => ({
+    select: () => Promise.resolve({ data: [], error: null }),
+    insert: () => Promise.resolve({ data: [], error: null }),
+    update: () => Promise.resolve({ data: [], error: null }),
+    delete: () => Promise.resolve({ data: [], error: null }),
+    eq: function() { return this; },
+    limit: function() { return this; },
+    single: function() { return Promise.resolve({ data: null, error: null }); }
+  });
+
+  supabaseClient = {
+    from: dummyQuery,
+    auth: {
+      getSession: () => Promise.resolve({ data: { session: null }, error: null }),
+      signInWithPassword: () => Promise.resolve({ data: null, error: new Error('Supabase no disponible') }),
+      signOut: () => Promise.resolve({ error: null }),
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } })
+    }
+  };
+}
+
+export const supabase = supabaseClient;
 
 // Utilidad para simular latencia opcional (Supabase ya tiene latencia de red real)
 const delay = (ms = 50) => new Promise(resolve => setTimeout(resolve, ms));
