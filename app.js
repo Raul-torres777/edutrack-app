@@ -739,10 +739,10 @@ async function submitRegister() {
   }
 
   try {
-    await db.registerStudent({ fullName, username: fullName, email, phone, password });
+    const registeredUser = await db.registerStudent({ fullName, username: fullName, email, phone, password });
     
     // Mostrar éxito y redirigir
-    DOM.authSuccessText.textContent = '¡Registro exitoso! Ya puedes iniciar sesión ingresando tu correo electrónico.';
+    DOM.authSuccessText.textContent = '¡Registro exitoso! Iniciando sesión automáticamente...';
     DOM.authSuccessMsg.style.display = 'flex';
     
     // Limpiar campos y cambiar pestaña
@@ -752,9 +752,24 @@ async function submitRegister() {
     if (DOM.registerPassword) DOM.registerPassword.value = '';
     if (DOM.registerConfirmPassword) DOM.registerConfirmPassword.value = '';
     
-    setTimeout(() => {
-      switchAuthTab('login');
-    }, 2000);
+    setTimeout(async () => {
+      try {
+        const user = await db.authenticateUser(email, password);
+        currentUser = user;
+        localStorage.setItem('edutrack_current_user', JSON.stringify(user));
+        setupAuthenticatedUI();
+        switchRole('student');
+      } catch (loginErr) {
+        if (registeredUser) {
+          currentUser = registeredUser;
+          localStorage.setItem('edutrack_current_user', JSON.stringify(registeredUser));
+          setupAuthenticatedUI();
+          switchRole('student');
+        } else {
+          switchAuthTab('login');
+        }
+      }
+    }, 1200);
   } catch (err) {
     DOM.authErrorText.textContent = err.message;
     DOM.authErrorMsg.style.display = 'flex';

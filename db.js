@@ -243,11 +243,13 @@ export const db = {
     });
 
     if (authError) {
+      if (authError.message.includes('Email not confirmed')) {
+        console.log('Correo no confirmado en Supabase Auth. Permitiendo acceso directo por perfil registrado.');
+        const { password: _, ...userWithoutPassword } = mapUser(user);
+        return userWithoutPassword;
+      }
       if (authError.message.includes('Invalid login credentials')) {
         throw new Error('Contraseña incorrecta. Verifica tu contraseña o haz clic en "¿Olvidaste tu contraseña?".');
-      }
-      if (authError.message.includes('Email not confirmed')) {
-        throw new Error('El correo electrónico no ha sido confirmado.');
       }
       throw new Error(authError.message || 'Error de autenticación.');
     }
