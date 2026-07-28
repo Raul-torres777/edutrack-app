@@ -599,6 +599,29 @@ export const db = {
     }
   },
 
+  async getCourseLessonFeedbacks(courseId, userId) {
+    if (!userId || !courseId) return [];
+    
+    // Buscar en caché local de respaldos
+    const feedbackKey = `edutrack_feedbacks_${userId}`;
+    const localFeedbacks = JSON.parse(localStorage.getItem(feedbackKey)) || [];
+    const localForCourse = localFeedbacks.filter(f => f.course_id === courseId);
+
+    try {
+      const { data, error } = await supabase
+        .from('lesson_feedbacks')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('course_id', courseId);
+      if (error || !data || data.length === 0) {
+        return localForCourse;
+      }
+      return data;
+    } catch (e) {
+      return localForCourse;
+    }
+  },
+
   // --- EXÁMENES (AISLADO POR USUARIO) ---
 
   async getQuizResults(userId) {

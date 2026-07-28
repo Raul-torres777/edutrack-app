@@ -1864,18 +1864,38 @@ async function handleQuizNext() {
 
 async function evaluateQuiz() {
   if (!currentUser) return;
-  let correctAnswersCount = 0;
   
+  // 1. Puntaje del examen final (cuestionario)
+  let correctAnswersCount = 0;
   quizState.questions.forEach((q, idx) => {
     if (q.correctIndex === quizState.answers[idx]) {
       correctAnswersCount++;
     }
   });
+  const quizPercent = Math.round((correctAnswersCount / quizState.questions.length) * 100);
   
-  const scorePercent = Math.round((correctAnswersCount / quizState.questions.length) * 100);
-  const passed = scorePercent >= 80;
+  // 2. Sumar resultados de todos los formularios de evaluación de lecciones completados en el curso
+  let evaluationScores = [quizPercent];
+  try {
+    const feedbacks = await db.getCourseLessonFeedbacks(quizState.courseId, currentUser.id);
+    if (feedbacks && feedbacks.length > 0) {
+      feedbacks.forEach(fb => {
+        const ratingScore = fb.rating ? Math.round((fb.rating / 5) * 100) : 100;
+        evaluationScores.push(ratingScore);
+      });
+    }
+  } catch (err) {
+    console.warn('Error leyendo formularios de lección:', err);
+  }
+
+  // 3. Promediar la suma de todos los formularios de evaluación acumulados
+  const totalSum = evaluationScores.reduce((acc, curr) => acc + curr, 0);
+  const finalScorePercent = Math.round(totalSum / evaluationScores.length);
   
-  await db.saveQuizResult(quizState.courseId, scorePercent, passed, currentUser.id);
+  // 4. ACREDITACIÓN: 70% a 100% | DESACREDITACIÓN: 0% a 69%
+  const passed = finalScorePercent >= 70;
+  
+  await db.saveQuizResult(quizState.courseId, finalScorePercent, passed, currentUser.id);
   
   let resultHtml = '';
   
@@ -1884,18 +1904,23 @@ async function evaluateQuiz() {
       <div class="result-icon-container pass">
         <i class="fas fa-award"></i>
       </div>
-      <h2>¡Felicidades, aprobaste!</h2>
-      <div class="quiz-result-score">${scorePercent}%</div>
-      <p>Has aprobado el cuestionario con éxito.<br>Ya puedes generar tu certificado oficial y descargarlo.</p>
+      <h2 style="color: #10b981;">¡ESTADO: ACREDITADO!</h2>
+      <div class="quiz-result-score" style="color: #10b981;">${finalScorePercent}%</div>
+      <p style="font-size: 1rem; color: var(--text-primary);">
+        ¡Felicidades! Has alcanzado la acreditación del curso sumando todos tus formularios y evaluaciones.<br>
+        <span class="badge badge-success" style="font-size: 0.85rem; margin-top: 8px; display: inline-block; padding: 6px 12px;">
+          <i class="fas fa-check-circle"></i> Acreditación: 70% a 100% (Puntaje obtenido: ${finalScorePercent}%)
+        </span>
+      </p>
       
-      <div class="form-group" style="max-width: 400px; margin: 0 auto 25px auto; text-align: left;">
-        <label for="student-cert-name" style="font-weight:600;">Nombre completo para el certificado:</label>
-        <input type="text" class="form-control" id="student-cert-name" placeholder="Tu Nombre Completo" required value="${currentUser.username}">
+      <div class="form-group" style="max-width: 420px; margin: 20px auto 25px auto; text-align: left;">
+        <label for="student-cert-name" style="font-weight:600;">Nombre completo para tu reconocimiento oficial:</label>
+        <input type="text" class="form-control" id="student-cert-name" placeholder="Tu Nombre Completo" required value="${currentUser.fullName || currentUser.username}">
       </div>
       
       <div style="display: flex; gap: 15px; justify-content: center;">
         <button class="btn btn-secondary" onclick="showView('view-student-dashboard')">Volver a Cursos</button>
-        <button class="btn btn-success" onclick="issueStudentCertificate('${quizState.courseId}')">Generar Certificado <i class="fas fa-arrow-right"></i></button>
+        <button class="btn btn-success" onclick="issueStudentCertificate('${quizState.courseId}')">Generar Reconocimiento <i class="fas fa-award"></i></button>
       </div>
     `;
   } else {
@@ -1903,12 +1928,18 @@ async function evaluateQuiz() {
       <div class="result-icon-container fail">
         <i class="fas fa-times-circle"></i>
       </div>
-      <h2>No alcanzaste el mínimo</h2>
-      <div class="quiz-result-score" style="color: var(--danger-color);">${scorePercent}%</div>
-      <p>Se requiere un puntaje mínimo del 80% para aprobar.<br>Repasa los temas del curso e inténtalo de nuevo.</p>
+      <h2 style="color: #ef4444;">¡ESTADO: DESACREDITADO!</h2>
+      <div class="quiz-result-score" style="color: #ef4444;">${finalScorePercent}%</div>
+      <p style="font-size: 1rem; color: var(--text-primary);">
+        Tu puntaje final acumulado fue de <strong>${finalScorePercent}%</strong>.<br>
+        <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); font-size: 0.85rem; margin-top: 8px; display: inline-block; padding: 6px 12px;">
+          <i class="fas fa-exclamation-triangle"></i> Desacreditado: 69% o menor (Mínimo para acreditar: 70%)
+        </span>
+      </p>
+      <p style="font-size: 0.85rem; color: var(--text-secondary);">Repasa los temas y formularios del curso e inténtalo de nuevo para lograr tu acreditación.</p>
       <div style="display: flex; gap: 15px; justify-content: center;">
         <button class="btn btn-secondary" onclick="showView('view-student-dashboard')">Volver a Cursos</button>
-        <button class="btn btn-primary" onclick="startQuiz('${quizState.courseId}')">Reintentar Examen <i class="fas fa-redo"></i></button>
+        <button class="btn btn-primary" onclick="startQuiz('${quizState.courseId}')">Reintentar Evaluación <i class="fas fa-redo"></i></button>
       </div>
     `;
   }
