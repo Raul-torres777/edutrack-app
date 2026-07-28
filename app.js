@@ -680,6 +680,7 @@ function switchAuthTab(tab) {
   if (DOM.authRegisterForm) DOM.authRegisterForm.classList.toggle('active', !isLogin);
   if (DOM.authRecoveryPanel) DOM.authRecoveryPanel.classList.remove('active');
 }
+window.switchAuthTab = switchAuthTab;
 
 // Ejecutar Login
 async function submitLogin() {
@@ -714,6 +715,7 @@ async function submitLogin() {
     DOM.authErrorMsg.style.display = 'flex';
   }
 }
+window.submitLogin = submitLogin;
 
 // Ejecutar Registro Estudiante
 async function submitRegister() {
@@ -775,6 +777,7 @@ async function submitRegister() {
     DOM.authErrorMsg.style.display = 'flex';
   }
 }
+window.submitRegister = submitRegister;
 
 // Iniciar Recuperación de Contraseña
 function startRecoveryFlow() {
@@ -794,11 +797,13 @@ function startRecoveryFlow() {
   
   DOM.recoveryIdentifier.value = '';
 }
+window.startRecoveryFlow = startRecoveryFlow;
 
 function cancelRecoveryFlow() {
   DOM.authTabBar.style.display = 'flex';
   switchAuthTab('login');
 }
+window.cancelRecoveryFlow = cancelRecoveryFlow;
 
 // Enviar correo de restablecimiento nativo de Supabase
 async function sendRecoveryEmail() {
@@ -856,6 +861,7 @@ async function sendRecoveryEmail() {
     DOM.authErrorMsg.style.display = 'flex';
   }
 }
+window.sendRecoveryEmail = sendRecoveryEmail;
 
 // Validar código ingresado (legacy / no-op)
 function verifyRecoveryCode() {
