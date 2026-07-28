@@ -874,6 +874,7 @@ async function submitLogin() {
   const errContainer = DOM.authErrorMsg || document.getElementById('auth-error-msg');
   const errText = DOM.authErrorText || document.getElementById('auth-error-text');
   const succContainer = DOM.authSuccessMsg || document.getElementById('auth-success-msg');
+  const submitBtn = document.getElementById('btn-submit-login');
 
   if (errContainer) errContainer.style.display = 'none';
   if (succContainer) succContainer.style.display = 'none';
@@ -890,6 +891,11 @@ async function submitLogin() {
     return;
   }
 
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verificando...';
+  }
+
   try {
     const user = await db.authenticateUser(identifier, password);
     currentUser = user;
@@ -900,13 +906,20 @@ async function submitLogin() {
     
     if (user.role === 'instructor') {
       switchRole('instructor');
+      showView('view-instructor-dashboard');
     } else {
       switchRole('student');
+      showView('view-student-dashboard');
     }
   } catch (err) {
     console.error('Error de login:', err);
     if (errText) errText.textContent = err.message || 'Error al iniciar sesión.';
     if (errContainer) errContainer.style.display = 'flex';
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = 'Iniciar Sesión <i class="fas fa-sign-in-alt"></i>';
+    }
   }
 }
 window.submitLogin = submitLogin;
