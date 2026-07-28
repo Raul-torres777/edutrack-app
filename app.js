@@ -71,6 +71,7 @@ const DOM = {
   registerEmail: document.getElementById('register-email'),
   registerPhone: document.getElementById('register-phone'),
   registerPassword: document.getElementById('register-password'),
+  registerConfirmPassword: document.getElementById('register-confirm-password'),
   
   // Student Profile Elements
   modalStudentProfile: document.getElementById('modal-student-profile'),
@@ -597,6 +598,7 @@ function setupLoggedOutUI() {
   if (DOM.registerEmail) DOM.registerEmail.value = '';
   if (DOM.registerPhone) DOM.registerPhone.value = '';
   if (DOM.registerPassword) DOM.registerPassword.value = '';
+  if (DOM.registerConfirmPassword) DOM.registerConfirmPassword.value = '';
 }
 
 // === ENRUTAMIENTO DE ROL ===
@@ -722,9 +724,16 @@ async function submitRegister() {
   const email = DOM.registerEmail ? DOM.registerEmail.value.trim() : '';
   const phone = DOM.registerPhone ? DOM.registerPhone.value.trim() : '';
   const password = DOM.registerPassword ? DOM.registerPassword.value : '';
+  const confirmPassword = DOM.registerConfirmPassword ? DOM.registerConfirmPassword.value : '';
   
-  if (!fullName || !email || !password) {
-    DOM.authErrorText.textContent = 'Por favor completa tu Nombre Completo, Correo y Contraseña.';
+  if (!fullName || !email || !password || !confirmPassword) {
+    DOM.authErrorText.textContent = 'Por favor completa todos los campos del formulario de registro.';
+    DOM.authErrorMsg.style.display = 'flex';
+    return;
+  }
+
+  if (password !== confirmPassword) {
+    DOM.authErrorText.textContent = 'Las contraseñas no coinciden. Por favor verifícalas e inténtalo de nuevo.';
     DOM.authErrorMsg.style.display = 'flex';
     return;
   }
@@ -741,6 +750,7 @@ async function submitRegister() {
     if (DOM.registerEmail) DOM.registerEmail.value = '';
     if (DOM.registerPhone) DOM.registerPhone.value = '';
     if (DOM.registerPassword) DOM.registerPassword.value = '';
+    if (DOM.registerConfirmPassword) DOM.registerConfirmPassword.value = '';
     
     setTimeout(() => {
       switchAuthTab('login');
