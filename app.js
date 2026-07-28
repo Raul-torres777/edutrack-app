@@ -1957,9 +1957,6 @@ async function evaluateQuiz() {
           <div style="font-size: 0.85rem; color: #ef4444; margin-top: 4px;">
             Tu respuesta: <strong>"${userOptionText}"</strong> (✗ Incorrecto)
           </div>
-          <div style="font-size: 0.85rem; color: #10b981; margin-top: 4px; font-weight: 600;">
-            Respuesta Correcta: "${correctOptionText}"
-          </div>
         </div>
       `;
     }
