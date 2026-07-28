@@ -2658,8 +2658,8 @@ async function renderStudentsTableRows(studentsList) {
           <button class="btn btn-primary btn-sm" onclick="openAssignCoursesModal('${student.id}')" style="padding: 4px 10px; font-size: 0.75rem;">
             <i class="fas fa-book-reader"></i> Asignar Cursos
           </button>
-          <button class="btn ${isInstructor ? 'btn-secondary' : 'btn-success'} btn-sm" onclick="toggleUserRole('${student.id}', '${student.role || 'student'}')" style="padding: 4px 10px; font-size: 0.75rem; margin-left: 4px;" title="Cambiar rol del usuario">
-            <i class="fas ${isInstructor ? 'fa-user' : 'fa-user-shield'}"></i> ${isInstructor ? 'Quitar Admin' : 'Hacer Admin'}
+          <button class="btn ${isInstructor ? 'btn-danger' : 'btn-success'} btn-sm" onclick="toggleUserRole('${student.id}', '${student.role || 'student'}')" style="padding: 4px 10px; font-size: 0.75rem; margin-left: 4px;" title="${isInstructor ? 'Quitar permisos de administrador' : 'Promover a administrador'}">
+            <i class="fas ${isInstructor ? 'fa-user-slash' : 'fa-user-shield'}"></i> ${isInstructor ? 'Quitar Admin' : 'Hacer Admin'}
           </button>
         </td>
       </tr>
@@ -2684,7 +2684,7 @@ window.toggleUserRole = async function(userId, currentRole) {
   
   const confirmMsg = newRole === 'instructor'
     ? `¿Estás seguro de que deseas promover a "${studentName}" a Administrador / Instructor?\n\nTendrá acceso completo a crear cursos, administrar temarios y gestionar alumnos.`
-    : `¿Deseas quitar los permisos de Administrador a "${studentName}" y cambiar su rol a Estudiante?`;
+    : `¿Estás seguro de que deseas quitar los permisos de Administrador a "${studentName}"?\n\nVolverá a tener únicamente el rol de Estudiante y se le revocará el acceso al panel administrativo.`;
 
   if (confirm(confirmMsg)) {
     try {
