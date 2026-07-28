@@ -863,9 +863,18 @@ function switchAuthTab(tab) {
   if (btnLogin) btnLogin.classList.toggle('active', isLogin);
   if (btnRegister) btnRegister.classList.toggle('active', !isLogin);
   
-  if (formLogin) formLogin.classList.toggle('active', isLogin);
-  if (formRegister) formRegister.classList.toggle('active', !isLogin);
-  if (panelRecovery) panelRecovery.classList.remove('active');
+  if (formLogin) {
+    formLogin.classList.toggle('active', isLogin);
+    formLogin.style.display = isLogin ? 'block' : 'none';
+  }
+  if (formRegister) {
+    formRegister.classList.toggle('active', !isLogin);
+    formRegister.style.display = !isLogin ? 'block' : 'none';
+  }
+  if (panelRecovery) {
+    panelRecovery.classList.remove('active');
+    panelRecovery.style.display = 'none';
+  }
 }
 window.switchAuthTab = switchAuthTab;
 
