@@ -208,11 +208,21 @@ export const db = {
     const { data: users, error: selectError } = await supabase.from('users').select('*');
     if (selectError) throw selectError;
 
-    const user = users.find(u => 
-      (u.username && u.username.toLowerCase() === idClean.toLowerCase()) ||
-      (u.email && u.email.toLowerCase() === idClean.toLowerCase()) ||
-      (u.phone && u.phone === idClean)
-    );
+    const normInput = idClean.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '');
+
+    const user = users.find(u => {
+      const uNameNorm = (u.username || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '');
+      const uEmailNorm = (u.email || '').toLowerCase().trim();
+      const uEmailHandle = uEmailNorm.split('@')[0];
+      const uPhone = (u.phone || '').trim();
+
+      return (
+        uNameNorm === normInput ||
+        uEmailNorm === idClean.toLowerCase() ||
+        uEmailHandle === normInput ||
+        (uPhone && uPhone === idClean)
+      );
+    });
 
     if (!user) {
       throw new Error('Usuario, correo electrónico o teléfono no encontrado.');

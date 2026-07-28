@@ -475,12 +475,16 @@ async function checkUserSession() {
             currentUser = cachedUser;
           }
         } else {
-          // Si expiró la sesión de Supabase Auth, forzar deslogueo
-          currentUser = null;
-          localStorage.removeItem('edutrack_current_user');
-          setupLoggedOutUI();
-          showView('view-auth');
-          return;
+          // Mantener al estudiante logueado con cachedUser si existe
+          if (cachedUser) {
+            currentUser = cachedUser;
+          } else {
+            currentUser = null;
+            localStorage.removeItem('edutrack_current_user');
+            setupLoggedOutUI();
+            showView('view-auth');
+            return;
+          }
         }
       } catch (err) {
         console.error('Error al sincronizar sesión del estudiante:', err);
