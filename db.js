@@ -100,6 +100,18 @@ export const db = {
     return true;
   },
 
+  async updateUserRole(userId, newRole) {
+    if (!['instructor', 'student'].includes(newRole)) throw new Error('Rol no válido.');
+
+    const { error } = await supabase
+      .from('users')
+      .update({ role: newRole })
+      .eq('id', userId);
+
+    if (error) throw error;
+    return true;
+  },
+
   async registerStudent(userData) {
     const fullName = userData.fullName ? userData.fullName.trim() : (userData.username ? userData.username.trim() : '');
     const username = fullName || (userData.email ? userData.email.split('@')[0] : 'Estudiante');

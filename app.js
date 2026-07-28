@@ -2568,19 +2568,19 @@ async function loadInstructorStudentsTable() {
     DOM.studentsTableBody.innerHTML = `
       <tr>
         <td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 30px;">
-          <i class="fas fa-spinner fa-spin"></i> Cargando lista de estudiantes...
+          <i class="fas fa-spinner fa-spin"></i> Cargando lista de usuarios...
         </td>
       </tr>
     `;
     const users = await db.getUsers();
-    allInstructorStudents = users.filter(u => u.role === 'student' || !u.role);
+    allInstructorStudents = users;
     renderStudentsTableRows(allInstructorStudents);
   } catch (err) {
-    console.error('Error al cargar lista de estudiantes:', err);
+    console.error('Error al cargar lista de usuarios:', err);
     DOM.studentsTableBody.innerHTML = `
       <tr>
         <td colspan="6" style="text-align: center; color: var(--danger-color); padding: 30px;">
-          Error al cargar estudiantes: ${err.message}
+          Error al cargar usuarios: ${err.message}
         </td>
       </tr>
     `;
@@ -2607,7 +2607,7 @@ async function renderStudentsTableRows(studentsList) {
     DOM.studentsTableBody.innerHTML = `
       <tr>
         <td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 30px;">
-          No se encontraron estudiantes registrados.
+          No se encontraron usuarios registrados.
         </td>
       </tr>
     `;
@@ -2625,7 +2625,8 @@ async function renderStudentsTableRows(studentsList) {
   studentsList.forEach(student => {
     const regDate = student.registeredAt ? new Date(student.registeredAt).toLocaleDateString() : 'N/A';
     const assignedIds = student.assignedCourses || [];
-    const displayName = student.fullName || student.username || 'Estudiante';
+    const displayName = student.fullName || student.username || 'Usuario';
+    const isInstructor = student.role === 'instructor';
     
     let coursesTags = '<span style="color: var(--text-secondary); font-size: 0.8rem; font-style: italic;">Sin cursos asignados</span>';
     if (assignedIds.length > 0) {
@@ -2639,7 +2640,10 @@ async function renderStudentsTableRows(studentsList) {
       <tr>
         <td>
           <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-            <strong style="color: var(--text-primary); font-size: 0.95rem;">${displayName}</strong>
+            <div>
+              <strong style="color: var(--text-primary); font-size: 0.95rem;">${displayName}</strong>
+              ${isInstructor ? '<span class="badge badge-success" style="font-size: 0.7rem; margin-left: 6px;"><i class="fas fa-user-shield"></i> Admin</span>' : ''}
+            </div>
             <button class="btn btn-secondary btn-sm" onclick="editStudentName('${student.id}', '${displayName.replace(/'/g, "\\'")}')" style="padding: 2px 8px; font-size: 0.75rem;" title="Corregir Nombre del Alumno">
               <i class="fas fa-edit" style="color: var(--accent-color);"></i> Editar Nombre
             </button>
@@ -2649,9 +2653,12 @@ async function renderStudentsTableRows(studentsList) {
         <td>${student.phone || 'N/A'}</td>
         <td>${regDate}</td>
         <td>${coursesTags}</td>
-        <td style="text-align: center;">
+        <td style="text-align: center; white-space: nowrap;">
           <button class="btn btn-primary btn-sm" onclick="openAssignCoursesModal('${student.id}')" style="padding: 4px 10px; font-size: 0.75rem;">
             <i class="fas fa-book-reader"></i> Asignar Cursos
+          </button>
+          <button class="btn ${isInstructor ? 'btn-secondary' : 'btn-success'} btn-sm" onclick="toggleUserRole('${student.id}', '${student.role || 'student'}', '${displayName.replace(/'/g, "\\'")}')" style="padding: 4px 10px; font-size: 0.75rem; margin-left: 4px;" title="Cambiar rol del usuario">
+            <i class="fas ${isInstructor ? 'fa-user' : 'fa-user-shield'}"></i> ${isInstructor ? 'Quitar Admin' : 'Hacer Admin'}
           </button>
         </td>
       </tr>
@@ -2660,6 +2667,26 @@ async function renderStudentsTableRows(studentsList) {
 
   DOM.studentsTableBody.innerHTML = rowsHtml;
 }
+
+window.toggleUserRole = async function(userId, currentRole, studentName) {
+  const newRole = currentRole === 'instructor' ? 'student' : 'instructor';
+  const roleLabel = newRole === 'instructor' ? 'Administrador / Instructor' : 'Estudiante';
+  
+  const confirmMsg = newRole === 'instructor'
+    ? `¿Estás seguro de que deseas promover a "${studentName}" a Administrador / Instructor?\n\nTendrá acceso completo a crear cursos, administrar temarios y gestionar alumnos.`
+    : `¿Deseas quitar los permisos de Administrador a "${studentName}" y cambiar su rol a Estudiante?`;
+
+  if (confirm(confirmMsg)) {
+    try {
+      await db.updateUserRole(userId, newRole);
+      alert(`¡Rol de "${studentName}" actualizado con éxito a ${roleLabel}!`);
+      await loadInstructorStudentsTable();
+    } catch (err) {
+      console.error('Error al cambiar rol:', err);
+      alert('Error al cambiar el rol: ' + err.message);
+    }
+  }
+};
 
 window.editStudentName = async function(userId, currentName) {
   const newName = prompt(`Corregir el nombre del alumno "${currentName}" a:`, currentName);
