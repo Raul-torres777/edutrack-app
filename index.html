@@ -30,6 +30,9 @@
         <button class="nav-tab" id="tab-instructor" data-role="instructor">
           <i class="fas fa-chalkboard-teacher"></i> Instructor
         </button>
+        <button class="nav-tab" id="tab-admin" data-role="admin" style="display:none;">
+          <i class="fas fa-shield-alt"></i> Admin
+        </button>
       </nav>
       
       <!-- Header Right Actions -->
@@ -315,6 +318,56 @@
                   <div class="cert-code" id="cert-display-code">EDUT-987654</div>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==================== PORTAL ADMINISTRADOR ==================== -->
+
+      <!-- VISTA: PANEL DE ADMINISTRADOR -->
+      <section class="view-panel" id="view-admin-panel">
+        <div class="section-header">
+          <h2><i class="fas fa-shield-alt" style="color: var(--accent-color);"></i> Panel de Administración</h2>
+        </div>
+
+        <!-- Stats Row -->
+        <div class="stats-grid" id="admin-stats-grid" style="margin-bottom: 30px;"></div>
+
+        <!-- Administradores Actuales -->
+        <div class="card" style="margin-bottom: 30px;">
+          <div class="card-header" style="display:flex; align-items:center; justify-content:space-between; padding: 20px 24px; border-bottom: 1px solid var(--border-color);">
+            <h3 style="margin:0; font-size:1.1rem;"><i class="fas fa-user-shield" style="color: var(--accent-color); margin-right:8px;"></i> Administradores Activos</h3>
+          </div>
+          <div class="card-body" style="padding:20px 24px;">
+            <div id="admin-admins-list">
+              <p style="color: var(--text-secondary);">Cargando administradores...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Todos los Usuarios -->
+        <div class="card">
+          <div class="card-header" style="display:flex; align-items:center; justify-content:space-between; padding: 20px 24px; border-bottom: 1px solid var(--border-color);">
+            <h3 style="margin:0; font-size:1.1rem;"><i class="fas fa-users" style="color: var(--primary-color); margin-right:8px;"></i> Gestión de Usuarios</h3>
+            <input type="text" id="admin-user-search" class="form-control" placeholder="Buscar usuario..." style="width:220px; padding: 6px 12px; font-size:0.875rem;">
+          </div>
+          <div class="card-body" style="padding:0;">
+            <div class="table-responsive">
+              <table class="students-table">
+                <thead>
+                  <tr>
+                    <th>Nombre</th>
+                    <th>Correo / Teléfono</th>
+                    <th>Rol Actual</th>
+                    <th>Registro</th>
+                    <th style="text-align:center;">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-users-table-body">
+                  <tr><td colspan="5" style="text-align:center; padding:20px; color: var(--text-secondary);">Cargando usuarios...</td></tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
@@ -835,6 +888,6 @@
   <canvas id="cert-canvas" style="display: none;" width="2000" height="1414"></canvas>
 
   <!-- Custom App Logic -->
-  <script type="module" src="app.js?v=800"></script>
+  <script type="module" src="app.js?v=900"></script>
 </body>
 </html>

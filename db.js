@@ -132,7 +132,7 @@ export const db = {
   },
 
   async updateUserRole(userId, newRole) {
-    if (!['instructor', 'student'].includes(newRole)) throw new Error('Rol no válido.');
+    if (!['instructor', 'student', 'admin'].includes(newRole)) throw new Error('Rol no válido.');
 
     const { data, error } = await supabase
       .from('users')
@@ -142,6 +142,16 @@ export const db = {
 
     if (error) throw error;
     return data;
+  },
+
+  async getAdmins() {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('role', 'admin')
+      .order('registered_at', { ascending: false });
+    if (error) throw error;
+    return (data || []).map(mapUser);
   },
 
   async registerStudent(userData) {

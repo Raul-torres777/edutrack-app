@@ -208,6 +208,7 @@ function populateDOM() {
   DOM.logoBtn = document.getElementById('logo-btn');
   DOM.tabStudent = document.getElementById('tab-student');
   DOM.tabInstructor = document.getElementById('tab-instructor');
+  DOM.tabAdmin = document.getElementById('tab-admin');
   DOM.navigationTabs = document.querySelector('.navigation-tabs');
   DOM.themeToggle = document.getElementById('theme-toggle');
   DOM.btnResetDb = document.getElementById('btn-reset-db');
@@ -390,6 +391,7 @@ function initApp() {
   // Roles de Usuario
   if (DOM.tabStudent) DOM.tabStudent.addEventListener('click', () => switchRole('student'));
   if (DOM.tabInstructor) DOM.tabInstructor.addEventListener('click', () => switchRole('instructor'));
+  if (DOM.tabAdmin) DOM.tabAdmin.addEventListener('click', () => switchRole('admin'));
   if (DOM.logoBtn) DOM.logoBtn.addEventListener('click', navigateToDashboard);
 
   // Formulario y Pestañas de Autenticación
@@ -763,13 +765,21 @@ function setupAuthenticatedUI() {
   if (DOM.userAvatarChar) DOM.userAvatarChar.textContent = displayName.charAt(0).toUpperCase();
   if (DOM.userProfileBadge) DOM.userProfileBadge.style.display = 'flex';
   if (DOM.btnLogout) DOM.btnLogout.style.display = 'flex';
-  
-  // Mostrar u ocultar pestañas de rol según permisos
-  if (currentUser.role === 'instructor') {
+
+  const isAdmin = currentUser.role === 'admin' || currentUser.id === 'admin';
+  const isInstructor = currentUser.role === 'instructor';
+
+  // Mostrar u ocultar pestañas según rol
+  if (isAdmin || isInstructor) {
     if (DOM.navigationTabs) DOM.navigationTabs.style.display = 'flex';
+    // Tab instructor: visible para instructores y admins
+    if (DOM.tabInstructor) DOM.tabInstructor.style.display = '';
+    // Tab admin: solo visible para admins
+    if (DOM.tabAdmin) DOM.tabAdmin.style.display = isAdmin ? '' : 'none';
   } else {
-    // Los estudiantes no pueden cambiar de rol ni ver el panel administrativo
+    // Estudiantes no ven navegación de rol
     if (DOM.navigationTabs) DOM.navigationTabs.style.display = 'none';
+    if (DOM.tabAdmin) DOM.tabAdmin.style.display = 'none';
   }
 }
 
@@ -791,26 +801,39 @@ function setupLoggedOutUI() {
 // === ENRUTAMIENTO DE ROL ===
 function switchRole(role) {
   if (!currentUser) return;
-  
-  // Prevenir hack de acceso al panel de instructor si es estudiante
-  if (role === 'instructor' && currentUser.role !== 'instructor') {
+
+  const isAdmin = currentUser.role === 'admin' || currentUser.id === 'admin';
+  const isInstructor = currentUser.role === 'instructor';
+
+  // Seguridad: verificar que el usuario tiene permiso para la vista solicitada
+  if (role === 'instructor' && !isInstructor && !isAdmin) {
     alert('Acceso no autorizado.');
+    switchRole('student');
+    return;
+  }
+  if (role === 'admin' && !isAdmin) {
+    alert('Acceso no autorizado. Solo administradores.');
     switchRole('student');
     return;
   }
 
   currentRole = role;
-  DOM.tabStudent.classList.toggle('active', role === 'student');
-  DOM.tabInstructor.classList.toggle('active', role === 'instructor');
-  
+  if (DOM.tabStudent) DOM.tabStudent.classList.toggle('active', role === 'student');
+  if (DOM.tabInstructor) DOM.tabInstructor.classList.toggle('active', role === 'instructor');
+  if (DOM.tabAdmin) DOM.tabAdmin.classList.toggle('active', role === 'admin');
+
   if (role === 'student') {
     showView('view-student-dashboard');
     loadStudentDashboard();
+  } else if (role === 'admin') {
+    showView('view-admin-panel');
+    loadAdminPanel();
   } else {
     showView('view-instructor-dashboard');
     loadInstructorDashboard();
   }
 }
+window.switchRole = switchRole;
 
 function navigateToDashboard() {
   if (!currentUser) return;
@@ -818,7 +841,16 @@ function navigateToDashboard() {
 }
 
 function navigateToDashboardInternal() {
-  if (currentRole === 'student') {
+  if (!currentUser) return;
+  const isAdmin = currentUser.role === 'admin' || currentUser.id === 'admin';
+  if (isAdmin) {
+    currentRole = 'admin';
+    if (DOM.tabAdmin) DOM.tabAdmin.classList.add('active');
+    if (DOM.tabStudent) DOM.tabStudent.classList.remove('active');
+    if (DOM.tabInstructor) DOM.tabInstructor.classList.remove('active');
+    showView('view-admin-panel');
+    loadAdminPanel();
+  } else if (currentRole === 'student' || currentUser.role === 'student') {
     showView('view-student-dashboard');
     loadStudentDashboard();
   } else {
@@ -897,12 +929,13 @@ async function submitLogin() {
     // Configurar interfaz y redirección
     setupAuthenticatedUI();
     
-    if (user.role === 'instructor') {
+    const isAdmin = user.role === 'admin' || user.id === 'admin';
+    if (isAdmin) {
+      switchRole('admin');
+    } else if (user.role === 'instructor') {
       switchRole('instructor');
-      showView('view-instructor-dashboard');
     } else {
       switchRole('student');
-      showView('view-student-dashboard');
     }
   } catch (err) {
     console.error('Error de login:', err);
@@ -2647,6 +2680,191 @@ window.filterInstructorCategory = function(category) {
 
 // ==================== PANEL INSTRUCTOR / ADMINISTRADOR ====================
 
+// ==================== PANEL DE ADMINISTRACIÓN ====================
+
+let allAdminUsers = [];
+
+async function loadAdminPanel() {
+  try {
+    allAdminUsers = await db.getUsers();
+  } catch (e) {
+    console.warn('Error cargando usuarios:', e);
+    allAdminUsers = [];
+  }
+
+  // --- Stats ---
+  const statsGrid = document.getElementById('admin-stats-grid');
+  if (statsGrid) {
+    const admins = allAdminUsers.filter(u => u.role === 'admin');
+    const instructors = allAdminUsers.filter(u => u.role === 'instructor');
+    const students = allAdminUsers.filter(u => u.role === 'student');
+    statsGrid.innerHTML = `
+      <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(99,102,241,0.15);"><i class="fas fa-shield-alt" style="color:#6366f1;"></i></div>
+        <div class="stat-value">${admins.length}</div>
+        <div class="stat-label">Administradores</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(16,185,129,0.15);"><i class="fas fa-chalkboard-teacher" style="color:#10b981;"></i></div>
+        <div class="stat-value">${instructors.length}</div>
+        <div class="stat-label">Instructores</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(245,158,11,0.15);"><i class="fas fa-user-graduate" style="color:#f59e0b;"></i></div>
+        <div class="stat-value">${students.length}</div>
+        <div class="stat-label">Estudiantes</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(59,130,246,0.15);"><i class="fas fa-users" style="color:#3b82f6;"></i></div>
+        <div class="stat-value">${allAdminUsers.length}</div>
+        <div class="stat-label">Total Usuarios</div>
+      </div>
+    `;
+  }
+
+  // --- Lista de administradores activos ---
+  renderAdminList(allAdminUsers.filter(u => u.role === 'admin'));
+
+  // --- Tabla de todos los usuarios ---
+  renderAdminUsersTable(allAdminUsers);
+
+  // --- Buscador ---
+  const searchInput = document.getElementById('admin-user-search');
+  if (searchInput) {
+    searchInput.oninput = function() {
+      const q = this.value.toLowerCase().trim();
+      const filtered = q
+        ? allAdminUsers.filter(u =>
+            (u.username || '').toLowerCase().includes(q) ||
+            (u.email || '').toLowerCase().includes(q) ||
+            (u.phone || '').includes(q)
+          )
+        : allAdminUsers;
+      renderAdminUsersTable(filtered);
+    };
+  }
+}
+
+function renderAdminList(admins) {
+  const container = document.getElementById('admin-admins-list');
+  if (!container) return;
+
+  if (!admins || admins.length === 0) {
+    container.innerHTML = '<p style="color: var(--text-secondary);">No hay administradores activos adicionales. Puedes promover a un usuario desde la tabla de abajo.</p>';
+    return;
+  }
+
+  let html = '<div style="display:flex; flex-wrap:wrap; gap:12px;">';
+  admins.forEach(admin => {
+    const name = admin.fullName || admin.username || 'Usuario';
+    const initial = name.charAt(0).toUpperCase();
+    html += `
+      <div style="display:flex; align-items:center; gap:10px; background: rgba(99,102,241,0.08); border:1px solid rgba(99,102,241,0.2); border-radius:10px; padding:10px 16px;">
+        <div class="avatar-circle" style="width:34px; height:34px; font-size:0.9rem; background: linear-gradient(135deg, #6366f1, #8b5cf6);">${initial}</div>
+        <div>
+          <div style="font-weight:600; color:var(--text-primary); font-size:0.9rem;">${name}</div>
+          <div style="font-size:0.75rem; color:var(--text-secondary);">${admin.email || 'Sin correo'}</div>
+        </div>
+        <button class="btn btn-danger btn-sm" onclick="adminDemoteUser('${admin.id}')" style="padding:4px 10px; font-size:0.75rem; margin-left:8px;" title="Quitar permisos de Admin">
+          <i class="fas fa-user-minus"></i> Quitar Admin
+        </button>
+      </div>
+    `;
+  });
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function renderAdminUsersTable(users) {
+  const tbody = document.getElementById('admin-users-table-body');
+  if (!tbody) return;
+
+  if (!users || users.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-secondary);">No se encontraron usuarios.</td></tr>';
+    return;
+  }
+
+  const ROLE_LABELS = {
+    admin: '<span class="badge" style="background:rgba(99,102,241,0.15);color:#6366f1;border:1px solid rgba(99,102,241,0.3);"><i class="fas fa-shield-alt"></i> Admin</span>',
+    instructor: '<span class="badge badge-success"><i class="fas fa-chalkboard-teacher"></i> Instructor</span>',
+    student: '<span class="badge" style="background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.3);"><i class="fas fa-user-graduate"></i> Estudiante</span>'
+  };
+
+  let rows = '';
+  users.forEach(user => {
+    const name = user.fullName || user.username || 'Sin nombre';
+    const roleLabel = ROLE_LABELS[user.role] || user.role;
+    const regDate = user.registeredAt ? new Date(user.registeredAt).toLocaleDateString('es-MX') : 'N/A';
+    const isProtected = user.id === 'admin';
+
+    let actions = '';
+    if (isProtected) {
+      actions = '<span style="color:var(--text-secondary);font-size:0.8rem;"><i class="fas fa-lock"></i> Super Admin</span>';
+    } else if (user.role === 'admin') {
+      actions = `
+        <button class="btn btn-danger btn-sm" onclick="adminDemoteUser('${user.id}')" style="padding:4px 10px;font-size:0.75rem;" title="Quitar Admin">
+          <i class="fas fa-user-minus"></i> Quitar Admin
+        </button>`;
+    } else {
+      actions = `
+        <button class="btn btn-success btn-sm" onclick="adminPromoteUser('${user.id}')" style="padding:4px 10px;font-size:0.75rem;" title="Hacer Admin">
+          <i class="fas fa-user-shield"></i> Hacer Admin
+        </button>`;
+    }
+
+    rows += `
+      <tr>
+        <td><strong style="color:var(--text-primary);">${name}</strong></td>
+        <td style="color:var(--text-secondary);font-size:0.875rem;">${user.email || '—'}<br>${user.phone || ''}</td>
+        <td>${roleLabel}</td>
+        <td style="color:var(--text-secondary);font-size:0.85rem;">${regDate}</td>
+        <td style="text-align:center;">${actions}</td>
+      </tr>`;
+  });
+  tbody.innerHTML = rows;
+}
+
+window.adminPromoteUser = async function(userId) {
+  const user = allAdminUsers.find(u => u.id === userId);
+  if (!user) return;
+  const name = user.fullName || user.username || 'Usuario';
+
+  if (!confirm(`¿Promover a "${name}" como Administrador?\n\nPodrá gestionar roles de usuario, crear cursos y ver todos los paneles.`)) return;
+
+  try {
+    await db.updateUserRole(userId, 'admin');
+    user.role = 'admin';
+    alert(`✅ "${name}" ahora es Administrador.`);
+    renderAdminList(allAdminUsers.filter(u => u.role === 'admin'));
+    renderAdminUsersTable(allAdminUsers);
+    // Actualizar también en el panel de instructor si está abierto
+    await loadAdminPanel();
+  } catch (err) {
+    alert('Error al promover usuario: ' + (err.message || err));
+  }
+};
+
+window.adminDemoteUser = async function(userId) {
+  if (userId === 'admin') {
+    alert('No se puede degradar al Super Administrador del sistema.');
+    return;
+  }
+  const user = allAdminUsers.find(u => u.id === userId);
+  if (!user) return;
+  const name = user.fullName || user.username || 'Usuario';
+
+  if (!confirm(`¿Quitar los permisos de Administrador a "${name}"?\n\nVolverá a ser Estudiante.`)) return;
+
+  try {
+    await db.updateUserRole(userId, 'student');
+    user.role = 'student';
+    alert(`ℹ️ "${name}" ya no tiene permisos de Administrador.`);
+    await loadAdminPanel();
+  } catch (err) {
+    alert('Error al quitar permisos: ' + (err.message || err));
+  }
+};
+
 async function loadInstructorDashboard() {
   switchInstructorTab('courses');
   try {
@@ -2876,6 +3094,19 @@ async function renderStudentsTableRows(studentsList) {
 }
 
 window.toggleUserRole = async function(userId) {
+  // Protección: solo admins pueden cambiar roles
+  const callerIsAdmin = currentUser && (currentUser.role === 'admin' || currentUser.id === 'admin');
+  if (!callerIsAdmin) {
+    alert('Solo los Administradores pueden cambiar roles de usuarios.');
+    return;
+  }
+
+  // Protección: no se puede degradar al super-admin
+  if (userId === 'admin') {
+    alert('No se puede modificar el rol del Super Administrador del sistema.');
+    return;
+  }
+
   let student = (allInstructorStudents || []).find(u => u.id === userId);
   if (!student) {
     try {
@@ -2890,13 +3121,13 @@ window.toggleUserRole = async function(userId) {
   }
 
   const studentName = student.fullName || student.username || student.email || 'Usuario';
-  const isCurrentlyAdmin = student.role === 'instructor';
+  const isCurrentlyAdmin = student.role === 'instructor' || student.role === 'admin';
   const newRole = isCurrentlyAdmin ? 'student' : 'instructor';
-  const roleLabel = newRole === 'instructor' ? 'Administrador / Instructor' : 'Estudiante';
+  const roleLabel = newRole === 'instructor' ? 'Instructor' : 'Estudiante';
   
   const confirmMsg = isCurrentlyAdmin
-    ? `¿Estás seguro de que deseas quitar los permisos de Administrador a "${studentName}"?\n\nVolverá a ser Estudiante y se le revocará el acceso al panel de administración.`
-    : `¿Estás seguro de que deseas promover a "${studentName}" a Administrador / Instructor?\n\nTendrá acceso completo a crear cursos, administrar temarios y gestionar alumnos.`;
+    ? `¿Estás seguro de que deseas quitar los permisos de Instructor a "${studentName}"?\n\nVolverá a ser Estudiante.`
+    : `¿Estás seguro de que deseas promover a "${studentName}" a Instructor?\n\nTendrá acceso completo a crear cursos y administrar temarios.`;
 
   if (confirm(confirmMsg)) {
     try {
