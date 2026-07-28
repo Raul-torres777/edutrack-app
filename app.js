@@ -205,9 +205,11 @@ const DOM = {
 };
 
 // === EVENT LISTENERS INICIALES ===
-document.addEventListener('DOMContentLoaded', () => {
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initApp);
+} else {
   initApp();
-});
+}
 
 function initApp() {
   // Configuración del Tema
@@ -684,15 +686,22 @@ window.switchAuthTab = switchAuthTab;
 
 // Ejecutar Login
 async function submitLogin() {
-  DOM.authErrorMsg.style.display = 'none';
-  DOM.authSuccessMsg.style.display = 'none';
+  const errContainer = DOM.authErrorMsg || document.getElementById('auth-error-msg');
+  const errText = DOM.authErrorText || document.getElementById('auth-error-text');
+  const succContainer = DOM.authSuccessMsg || document.getElementById('auth-success-msg');
+
+  if (errContainer) errContainer.style.display = 'none';
+  if (succContainer) succContainer.style.display = 'none';
   
-  const identifier = DOM.loginIdentifier ? DOM.loginIdentifier.value.trim() : '';
-  const password = DOM.loginPassword ? DOM.loginPassword.value.trim() : '';
+  const idEl = DOM.loginIdentifier || document.getElementById('login-identifier');
+  const passEl = DOM.loginPassword || document.getElementById('login-password');
+
+  const identifier = idEl ? idEl.value.trim() : '';
+  const password = passEl ? passEl.value.trim() : '';
   
   if (!identifier || !password) {
-    DOM.authErrorText.textContent = 'Por favor ingresa tu usuario y contraseña.';
-    DOM.authErrorMsg.style.display = 'flex';
+    if (errText) errText.textContent = 'Por favor ingresa tu usuario y contraseña.';
+    if (errContainer) errContainer.style.display = 'flex';
     return;
   }
 
@@ -711,8 +720,8 @@ async function submitLogin() {
     }
   } catch (err) {
     console.error('Error de login:', err);
-    DOM.authErrorText.textContent = err.message || 'Error al iniciar sesión.';
-    DOM.authErrorMsg.style.display = 'flex';
+    if (errText) errText.textContent = err.message || 'Error al iniciar sesión.';
+    if (errContainer) errContainer.style.display = 'flex';
   }
 }
 window.submitLogin = submitLogin;
