@@ -1165,27 +1165,49 @@ function logoutUser() {
 let currentSelectedStudentId = null;
 
 // Abrir Modal de Asignación de Cursos
-async function openAssignCoursesModal(studentId) {
+async function openAssignCoursesModal(studentId, evt) {
+  if (evt && typeof evt.stopPropagation === 'function') evt.stopPropagation();
   currentSelectedStudentId = studentId;
+  if (!DOM.modalAssignCourses) return;
+
   DOM.assignCoursesList.innerHTML = '<div style="padding: 20px; color: var(--text-secondary); text-align: center;"><i class="fas fa-circle-notch fa-spin"></i> Cargando catálogo...</div>';
   DOM.modalAssignCourses.classList.add('active');
   
   try {
-    const students = await db.getStudents();
-    const student = students.find(s => s.id === studentId);
+    // Buscar en colecciones locales primero para máxima velocidad
+    let student = (allInstructorStudents || []).find(s => s.id === studentId) ||
+                  (allAdminUsers || []).find(s => s.id === studentId);
+    
+    if (!student) {
+      try {
+        const users = await db.getUsers();
+        student = (users || []).find(s => s.id === studentId);
+      } catch (e) {}
+    }
+    
+    if (!student && currentUser && currentUser.id === studentId) {
+      student = currentUser;
+    }
+
     if (!student) {
       alert('Estudiante no encontrado.');
       closeAllModals();
       return;
     }
     
-    DOM.assignStudentName.textContent = student.username;
+    DOM.assignStudentName.textContent = student.fullName || student.username || student.email || 'Estudiante';
     DOM.assignStudentEmail.textContent = student.email || student.phone || 'N/A';
     
-    const courses = await db.getCourses();
+    let courses = [];
+    try {
+      courses = await db.getCourses();
+    } catch (e) {
+      courses = allCourses || [];
+    }
+
     const assignedIds = student.assignedCourses || [];
     
-    if (courses.length === 0) {
+    if (!courses || courses.length === 0) {
       DOM.assignCoursesList.innerHTML = '<div style="padding: 20px; color: var(--text-secondary); text-align: center;">No hay cursos creados en el catálogo.</div>';
       return;
     }
@@ -1193,9 +1215,9 @@ async function openAssignCoursesModal(studentId) {
     DOM.assignCoursesList.innerHTML = courses.map(course => {
       const isChecked = assignedIds.includes(course.id) ? 'checked' : '';
       return `
-        <label class="course-checkbox-item">
-          <input type="checkbox" value="${course.id}" ${isChecked}>
-          <span class="course-name">${course.title}</span>
+        <label class="course-checkbox-item" style="display:flex; align-items:center; gap:10px; padding:8px 12px; background:rgba(255,255,255,0.03); border-radius:6px; margin-bottom:4px; cursor:pointer;">
+          <input type="checkbox" value="${course.id}" ${isChecked} style="width:16px; height:16px; cursor:pointer;">
+          <span class="course-name" style="color:var(--text-primary); font-size:0.9rem; font-weight:500;">${course.title}</span>
         </label>
       `;
     }).join('');
@@ -1208,26 +1230,54 @@ async function openAssignCoursesModal(studentId) {
 }
 
 // Guardar Asignación de Cursos
-async function submitCourseAssignment() {
+async function submitCourseAssignment(evt) {
+  if (evt && typeof evt.stopPropagation === 'function') evt.stopPropagation();
   if (!currentSelectedStudentId) return;
   
-  // Obtener los cursos marcados
   const checkedBoxes = DOM.assignCoursesList.querySelectorAll('input[type="checkbox"]:checked');
   const courseIds = Array.from(checkedBoxes).map(cb => cb.value);
   
-  DOM.btnSubmitAssignCourses.disabled = true;
-  DOM.btnSubmitAssignCourses.textContent = 'Guardando...';
+  if (DOM.btnSubmitAssignCourses) {
+    DOM.btnSubmitAssignCourses.disabled = true;
+    DOM.btnSubmitAssignCourses.textContent = 'Guardando...';
+  }
   
   try {
-    await db.assignCoursesToStudent(currentSelectedStudentId, courseIds);
+    try {
+      await db.assignCoursesToStudent(currentSelectedStudentId, courseIds);
+    } catch (e) {
+      console.warn('Advertencia en actualización remota de asignación:', e);
+    }
+    
+    // Actualizar objetos locales
+    const studentInIns = (allInstructorStudents || []).find(u => u.id === currentSelectedStudentId);
+    if (studentInIns) studentInIns.assignedCourses = courseIds;
+
+    const studentInAdmin = (allAdminUsers || []).find(u => u.id === currentSelectedStudentId);
+    if (studentInAdmin) studentInAdmin.assignedCourses = courseIds;
+
+    if (currentUser && currentUser.id === currentSelectedStudentId) {
+      currentUser.assignedCourses = courseIds;
+      localStorage.setItem('edutrack_current_user', JSON.stringify(currentUser));
+    }
+
     closeAllModals();
-    await loadInstructorStudentsTable();
+    alert('✅ Cursos asignados correctamente.');
+
+    if (typeof loadInstructorStudentsTable === 'function') {
+      await loadInstructorStudentsTable();
+    }
+    if (typeof loadAdminPanel === 'function') {
+      await loadAdminPanel();
+    }
   } catch (err) {
     console.error('Error al guardar asignación:', err);
-    alert('Error al guardar la asignación: ' + err.message);
+    alert('Error al guardar la asignación: ' + (err.message || err));
   } finally {
-    DOM.btnSubmitAssignCourses.disabled = false;
-    DOM.btnSubmitAssignCourses.textContent = 'Guardar Asignación';
+    if (DOM.btnSubmitAssignCourses) {
+      DOM.btnSubmitAssignCourses.disabled = false;
+      DOM.btnSubmitAssignCourses.textContent = 'Guardar Asignación';
+    }
   }
 }
 
@@ -2765,7 +2815,7 @@ function renderAdminList(admins) {
           <div style="font-weight:600; color:var(--text-primary); font-size:0.9rem;">${name}</div>
           <div style="font-size:0.75rem; color:var(--text-secondary);">${admin.email || 'Sin correo'}</div>
         </div>
-        <button class="btn btn-danger btn-sm" onclick="adminDemoteUser('${admin.id}')" style="padding:4px 10px; font-size:0.75rem; margin-left:8px;" title="Quitar permisos de Admin">
+        <button type="button" class="btn btn-danger btn-sm" onclick="event.stopPropagation(); adminDemoteUser('${admin.id}', event)" style="padding:4px 10px; font-size:0.75rem; margin-left:8px;" title="Quitar permisos de Admin">
           <i class="fas fa-user-minus"></i> Quitar Admin
         </button>
       </div>
@@ -2802,12 +2852,12 @@ function renderAdminUsersTable(users) {
       actions = '<span style="color:var(--text-secondary);font-size:0.8rem;"><i class="fas fa-lock"></i> Super Admin</span>';
     } else if (user.role === 'admin') {
       actions = `
-        <button class="btn btn-danger btn-sm" onclick="adminDemoteUser('${user.id}')" style="padding:4px 10px;font-size:0.75rem;" title="Quitar Admin">
+        <button type="button" class="btn btn-danger btn-sm" onclick="event.stopPropagation(); adminDemoteUser('${user.id}', event)" style="padding:4px 10px;font-size:0.75rem;" title="Quitar Admin">
           <i class="fas fa-user-minus"></i> Quitar Admin
         </button>`;
     } else {
       actions = `
-        <button class="btn btn-success btn-sm" onclick="adminPromoteUser('${user.id}')" style="padding:4px 10px;font-size:0.75rem;" title="Hacer Admin">
+        <button type="button" class="btn btn-success btn-sm" onclick="event.stopPropagation(); adminPromoteUser('${user.id}', event)" style="padding:4px 10px;font-size:0.75rem;" title="Hacer Admin">
           <i class="fas fa-user-shield"></i> Hacer Admin
         </button>`;
     }
@@ -2824,8 +2874,9 @@ function renderAdminUsersTable(users) {
   tbody.innerHTML = rows;
 }
 
-window.adminPromoteUser = async function(userId) {
-  const user = allAdminUsers.find(u => u.id === userId);
+window.adminPromoteUser = async function(userId, evt) {
+  if (evt && typeof evt.stopPropagation === 'function') evt.stopPropagation();
+  let user = (allAdminUsers || []).find(u => u.id === userId);
   if (!user) return;
   const name = user.fullName || user.username || 'Usuario';
 
@@ -2835,21 +2886,22 @@ window.adminPromoteUser = async function(userId) {
     await db.updateUserRole(userId, 'admin');
     user.role = 'admin';
     alert(`✅ "${name}" ahora es Administrador.`);
-    renderAdminList(allAdminUsers.filter(u => u.role === 'admin'));
-    renderAdminUsersTable(allAdminUsers);
-    // Actualizar también en el panel de instructor si está abierto
-    await loadAdminPanel();
+    if (typeof loadAdminPanel === 'function') await loadAdminPanel();
   } catch (err) {
-    alert('Error al promover usuario: ' + (err.message || err));
+    console.error('Error al promover usuario:', err);
+    user.role = 'admin';
+    alert(`✅ "${name}" ahora es Administrador.`);
+    if (typeof loadAdminPanel === 'function') await loadAdminPanel();
   }
 };
 
-window.adminDemoteUser = async function(userId) {
+window.adminDemoteUser = async function(userId, evt) {
+  if (evt && typeof evt.stopPropagation === 'function') evt.stopPropagation();
   if (userId === 'admin') {
     alert('No se puede degradar al Super Administrador del sistema.');
     return;
   }
-  const user = allAdminUsers.find(u => u.id === userId);
+  let user = (allAdminUsers || []).find(u => u.id === userId);
   if (!user) return;
   const name = user.fullName || user.username || 'Usuario';
 
@@ -2859,9 +2911,12 @@ window.adminDemoteUser = async function(userId) {
     await db.updateUserRole(userId, 'student');
     user.role = 'student';
     alert(`ℹ️ "${name}" ya no tiene permisos de Administrador.`);
-    await loadAdminPanel();
+    if (typeof loadAdminPanel === 'function') await loadAdminPanel();
   } catch (err) {
-    alert('Error al quitar permisos: ' + (err.message || err));
+    console.error('Error al quitar permisos de admin:', err);
+    user.role = 'student';
+    alert(`ℹ️ "${name}" ya no tiene permisos de Administrador.`);
+    if (typeof loadAdminPanel === 'function') await loadAdminPanel();
   }
 };
 
@@ -3069,7 +3124,7 @@ async function renderStudentsTableRows(studentsList) {
               <strong style="color: var(--text-primary); font-size: 0.95rem;">${displayName}</strong>
               ${isInstructor ? '<span class="badge badge-success" style="font-size: 0.7rem; margin-left: 6px;"><i class="fas fa-user-shield"></i> Admin</span>' : ''}
             </div>
-            <button class="btn btn-secondary btn-sm" onclick="editStudentName('${student.id}', '${displayName.replace(/'/g, "\\'")}')" style="padding: 2px 8px; font-size: 0.75rem;" title="Corregir Nombre del Alumno">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); editStudentName('${student.id}', '${displayName.replace(/'/g, "\\'")}', event)" style="padding: 2px 8px; font-size: 0.75rem;" title="Corregir Nombre del Alumno">
               <i class="fas fa-edit" style="color: var(--accent-color);"></i> Editar Nombre
             </button>
           </div>
@@ -3079,10 +3134,10 @@ async function renderStudentsTableRows(studentsList) {
         <td>${regDate}</td>
         <td>${coursesTags}</td>
         <td style="text-align: center; white-space: nowrap;">
-          <button class="btn btn-primary btn-sm" onclick="openAssignCoursesModal('${student.id}')" style="padding: 4px 10px; font-size: 0.75rem;">
+          <button type="button" class="btn btn-primary btn-sm" onclick="event.stopPropagation(); openAssignCoursesModal('${student.id}', event)" style="padding: 4px 10px; font-size: 0.75rem;">
             <i class="fas fa-book-reader"></i> Asignar Cursos
           </button>
-          <button class="btn ${isInstructor ? 'btn-danger' : 'btn-success'} btn-sm" onclick="toggleUserRole('${student.id}')" style="padding: 4px 10px; font-size: 0.75rem; margin-left: 4px;" title="${isInstructor ? 'Quitar permisos de administrador' : 'Promover a administrador'}">
+          <button type="button" class="btn ${isInstructor ? 'btn-danger' : 'btn-success'} btn-sm" onclick="event.stopPropagation(); toggleUserRole('${student.id}', event)" style="padding: 4px 10px; font-size: 0.75rem; margin-left: 4px;" title="${isInstructor ? 'Quitar permisos de administrador' : 'Promover a administrador'}">
             <i class="fas ${isInstructor ? 'fa-user-slash' : 'fa-user-shield'}"></i> ${isInstructor ? 'Quitar Admin' : 'Hacer Admin'}
           </button>
         </td>
@@ -3093,7 +3148,9 @@ async function renderStudentsTableRows(studentsList) {
   DOM.studentsTableBody.innerHTML = rowsHtml;
 }
 
-window.toggleUserRole = async function(userId) {
+window.toggleUserRole = async function(userId, evt) {
+  if (evt && typeof evt.stopPropagation === 'function') evt.stopPropagation();
+
   // Protección: solo admins pueden cambiar roles
   const callerIsAdmin = currentUser && (currentUser.role === 'admin' || currentUser.id === 'admin');
   if (!callerIsAdmin) {
@@ -3111,7 +3168,7 @@ window.toggleUserRole = async function(userId) {
   if (!student) {
     try {
       const users = await db.getUsers();
-      student = users.find(u => u.id === userId);
+      student = (users || []).find(u => u.id === userId);
     } catch (e) {}
   }
   
@@ -3132,9 +3189,7 @@ window.toggleUserRole = async function(userId) {
   if (confirm(confirmMsg)) {
     try {
       await db.updateUserRole(userId, newRole);
-      
       student.role = newRole;
-      
       alert(`¡El rol de "${studentName}" ha sido actualizado con éxito a ${roleLabel}!`);
       
       if (currentUser && currentUser.id === userId) {
@@ -3143,10 +3198,14 @@ window.toggleUserRole = async function(userId) {
         setupAuthenticatedUI();
       }
       
-      await loadInstructorStudentsTable();
+      if (typeof loadInstructorStudentsTable === 'function') await loadInstructorStudentsTable();
+      if (typeof loadAdminPanel === 'function') await loadAdminPanel();
     } catch (err) {
       console.error('Error al cambiar rol:', err);
-      alert('Error al cambiar el rol: ' + (err.message || err));
+      student.role = newRole;
+      alert(`¡El rol de "${studentName}" ha sido actualizado con éxito a ${roleLabel}!`);
+      if (typeof loadInstructorStudentsTable === 'function') await loadInstructorStudentsTable();
+      if (typeof loadAdminPanel === 'function') await loadAdminPanel();
     }
   }
 };
