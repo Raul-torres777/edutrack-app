@@ -3106,7 +3106,13 @@ async function renderStudentsTableRows(studentsList) {
     const regDate = student.registeredAt ? new Date(student.registeredAt).toLocaleDateString() : 'N/A';
     const assignedIds = student.assignedCourses || [];
     const displayName = student.fullName || student.username || 'Usuario';
-    const isInstructor = student.role === 'instructor';
+    
+    let roleBadge = '';
+    if (student.role === 'admin') {
+      roleBadge = '<span class="badge" style="font-size: 0.7rem; margin-left: 6px; background:rgba(99,102,241,0.15); color:#6366f1; border:1px solid rgba(99,102,241,0.3);"><i class="fas fa-shield-alt"></i> Admin</span>';
+    } else if (student.role === 'instructor') {
+      roleBadge = '<span class="badge badge-success" style="font-size: 0.7rem; margin-left: 6px;"><i class="fas fa-chalkboard-teacher"></i> Instructor</span>';
+    }
     
     let coursesTags = '<span style="color: var(--text-secondary); font-size: 0.8rem; font-style: italic;">Sin cursos asignados</span>';
     if (assignedIds.length > 0) {
@@ -3122,7 +3128,7 @@ async function renderStudentsTableRows(studentsList) {
           <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
             <div>
               <strong style="color: var(--text-primary); font-size: 0.95rem;">${displayName}</strong>
-              ${isInstructor ? '<span class="badge badge-success" style="font-size: 0.7rem; margin-left: 6px;"><i class="fas fa-user-shield"></i> Admin</span>' : ''}
+              ${roleBadge}
             </div>
             <button type="button" class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); editStudentName('${student.id}', '${displayName.replace(/'/g, "\\'")}', event)" style="padding: 2px 8px; font-size: 0.75rem;" title="Corregir Nombre del Alumno">
               <i class="fas fa-edit" style="color: var(--accent-color);"></i> Editar Nombre
@@ -3136,9 +3142,6 @@ async function renderStudentsTableRows(studentsList) {
         <td style="text-align: center; white-space: nowrap;">
           <button type="button" class="btn btn-primary btn-sm" onclick="event.stopPropagation(); openAssignCoursesModal('${student.id}', event)" style="padding: 4px 10px; font-size: 0.75rem;">
             <i class="fas fa-book-reader"></i> Asignar Cursos
-          </button>
-          <button type="button" class="btn ${isInstructor ? 'btn-danger' : 'btn-success'} btn-sm" onclick="event.stopPropagation(); toggleUserRole('${student.id}', event)" style="padding: 4px 10px; font-size: 0.75rem; margin-left: 4px;" title="${isInstructor ? 'Quitar permisos de administrador' : 'Promover a administrador'}">
-            <i class="fas ${isInstructor ? 'fa-user-slash' : 'fa-user-shield'}"></i> ${isInstructor ? 'Quitar Admin' : 'Hacer Admin'}
           </button>
         </td>
       </tr>
