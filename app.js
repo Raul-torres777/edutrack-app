@@ -2830,7 +2830,7 @@ function renderAdminUsersTable(users) {
   if (!tbody) return;
 
   if (!users || users.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-secondary);">No se encontraron usuarios.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text-secondary);">No se encontraron usuarios.</td></tr>';
     return;
   }
 
@@ -2865,7 +2865,8 @@ function renderAdminUsersTable(users) {
     rows += `
       <tr>
         <td><strong style="color:var(--text-primary);">${name}</strong></td>
-        <td style="color:var(--text-secondary);font-size:0.875rem;">${user.email || '—'}<br>${user.phone || ''}</td>
+        <td style="color:var(--text-secondary);font-size:0.875rem;">${user.email || '—'}</td>
+        <td style="color:var(--text-secondary);font-size:0.875rem;">${user.phone || '—'}</td>
         <td>${roleLabel}</td>
         <td style="color:var(--text-secondary);font-size:0.85rem;">${regDate}</td>
         <td style="text-align:center;">${actions}</td>
