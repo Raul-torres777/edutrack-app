@@ -2864,12 +2864,12 @@ function renderAdminUsersTable(users) {
 
     rows += `
       <tr>
-        <td><strong style="color:var(--text-primary);">${name}</strong></td>
-        <td style="color:var(--text-secondary);font-size:0.875rem;">${user.email || '—'}</td>
-        <td style="color:var(--text-secondary);font-size:0.875rem;">${user.phone || '—'}</td>
-        <td>${roleLabel}</td>
-        <td style="color:var(--text-secondary);font-size:0.85rem;">${regDate}</td>
-        <td style="text-align:center;">${actions}</td>
+        <td style="padding: 16px 24px;"><strong style="color:var(--text-primary); font-size:0.95rem;">${name}</strong></td>
+        <td style="padding: 16px 24px; color:var(--text-secondary); font-size:0.9rem; white-space:nowrap;">${user.email || '—'}</td>
+        <td style="padding: 16px 24px; color:var(--text-secondary); font-size:0.9rem; white-space:nowrap;">${user.phone || '—'}</td>
+        <td style="padding: 16px 24px; white-space:nowrap;">${roleLabel}</td>
+        <td style="padding: 16px 24px; color:var(--text-secondary); font-size:0.875rem; white-space:nowrap;">${regDate}</td>
+        <td style="padding: 16px 24px; text-align:center; white-space:nowrap;">${actions}</td>
       </tr>`;
   });
   tbody.innerHTML = rows;

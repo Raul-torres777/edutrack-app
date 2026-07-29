@@ -1425,6 +1425,64 @@ textarea.form-control {
   border-bottom: none;
 }
 
+/* === ESTILOS AMPLIOS Y ESPACIOSOS PARA TABLAS === */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 12px;
+}
+
+.students-table {
+  width: 100%;
+  min-width: 920px;
+  border-collapse: separate;
+  border-spacing: 0;
+  text-align: left;
+}
+
+.students-table th {
+  background: rgba(255, 255, 255, 0.03);
+  padding: 16px 24px;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+}
+
+.students-table td {
+  padding: 18px 24px;
+  font-size: 0.9rem;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary);
+  vertical-align: middle;
+  line-height: 1.5;
+}
+
+.students-table tbody tr {
+  transition: background-color 0.2s ease;
+}
+
+.students-table tbody tr:hover td {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.students-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+body.light-theme .students-table th {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+body.light-theme .students-table tbody tr:hover td {
+  background: rgba(0, 0, 0, 0.03);
+}
+
 .badge {
   display: inline-flex;
   align-items: center;
