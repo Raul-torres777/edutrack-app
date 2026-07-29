@@ -257,7 +257,7 @@ export const db = {
         username: 'Administrador',
         email: 'raul20centavos@gmail.com',
         phone: '',
-        role: 'instructor',
+        role: 'admin',
         assignedCourses: []
       };
     }
