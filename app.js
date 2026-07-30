@@ -1,5 +1,16 @@
 import { db } from './db.js';
 
+// === REGISTRO DE PWA SERVICE WORKER ===
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').then(reg => {
+      console.log('✅ EduTrack PWA Service Worker activo con scope:', reg.scope);
+    }).catch(err => {
+      console.warn('⚠️ EduTrack PWA Service Worker aviso:', err);
+    });
+  });
+}
+
 // === ESTADO GLOBAL DE LA APP ===
 let currentUser = null; // Almacenará el usuario logueado en la sesión
 let currentRole = 'student'; // 'student' o 'instructor'
