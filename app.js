@@ -3206,11 +3206,6 @@ async function renderStudentsTableRows(studentsList) {
           <button type="button" class="btn btn-primary btn-sm" onclick="event.stopPropagation(); openAssignCoursesModal('${student.id}', event)" style="padding: 4px 10px; font-size: 0.75rem;">
             <i class="fas fa-book-reader"></i> Asignar Cursos
           </button>
-          ${currentRole === 'admin' || currentUser?.role === 'admin' ? `
-            <button type="button" class="btn btn-warning btn-sm" onclick="event.stopPropagation(); adminResetStudentProgress('${student.id}', '${displayName.replace(/'/g, "\\'")}')" style="padding: 4px 10px; font-size: 0.75rem; margin-left: 6px;" title="Reiniciar avance para realizar pruebas">
-              <i class="fas fa-undo"></i> Reiniciar Avance
-            </button>
-          ` : ''}
         </td>
       </tr>
     `;
