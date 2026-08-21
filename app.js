@@ -489,16 +489,6 @@ function initApp() {
   if (DOM.btnQuizNext) DOM.btnQuizNext.addEventListener('click', handleQuizNext);
   if (DOM.btnQuizExit) DOM.btnQuizExit.addEventListener('click', exitQuiz);
   if (DOM.btnStartQuiz) DOM.btnStartQuiz.addEventListener('click', () => startQuiz(activeCourse ? activeCourse.id : null));
-  if (DOM.btnResetCourseProgress) {
-    DOM.btnResetCourseProgress.addEventListener('click', async () => {
-      if (!currentUser || !activeCourse) return;
-      if (confirm(`¿Deseas reiniciar tu avance en el curso "${activeCourse.title}" para realizar pruebas?`)) {
-        await db.resetUserCourseProgress(currentUser.id, activeCourse.id);
-        alert('✅ Tu avance en este curso ha sido reiniciado a 0%.');
-        await loadPlayerCourseData(activeCourse.id);
-      }
-    });
-  }
   
   // Impresión y Descarga de Certificado
   if (DOM.btnPrintCertificate) DOM.btnPrintCertificate.addEventListener('click', () => window.print());
@@ -2949,6 +2939,10 @@ window.adminDemoteUser = async function(userId, evt) {
 };
 
 window.adminResetStudentProgress = async function(userId, userName) {
+  if (currentRole !== 'admin' && currentUser?.role !== 'admin') {
+    alert('Acceso restringido: Únicamente los administradores pueden reiniciar el avance de un estudiante.');
+    return;
+  }
   if (confirm(`¿Estás seguro de reiniciar todo el avance y evaluaciones del estudiante "${userName}" para realizar pruebas?`)) {
     await db.resetUserCourseProgress(userId);
     alert(`✅ El avance de "${userName}" ha sido reiniciado a 0%.`);
@@ -2958,6 +2952,10 @@ window.adminResetStudentProgress = async function(userId, userName) {
 };
 
 window.adminResetAllStudentsProgress = async function() {
+  if (currentRole !== 'admin' && currentUser?.role !== 'admin') {
+    alert('Acceso restringido: Únicamente los administradores pueden reiniciar el avance global.');
+    return;
+  }
   if (confirm('⚠️ ATENCIÓN DE PRUEBAS:\n\n¿Estás seguro de reiniciar el avance de TODOS los estudiantes en el sistema? Esto dejará el progreso de todos los cursos a 0% para poder realizar pruebas nuevamente.')) {
     await db.resetAllStudentsProgress();
     alert('✅ Todo el avance de los estudiantes ha sido reiniciado a 0%.');
@@ -3193,9 +3191,11 @@ async function renderStudentsTableRows(studentsList) {
           <button type="button" class="btn btn-primary btn-sm" onclick="event.stopPropagation(); openAssignCoursesModal('${student.id}', event)" style="padding: 4px 10px; font-size: 0.75rem;">
             <i class="fas fa-book-reader"></i> Asignar Cursos
           </button>
-          <button type="button" class="btn btn-warning btn-sm" onclick="event.stopPropagation(); adminResetStudentProgress('${student.id}', '${displayName.replace(/'/g, "\\'")}')" style="padding: 4px 10px; font-size: 0.75rem; margin-left: 6px;" title="Reiniciar avance para realizar pruebas">
-            <i class="fas fa-undo"></i> Reiniciar Avance
-          </button>
+          ${currentRole === 'admin' || currentUser?.role === 'admin' ? `
+            <button type="button" class="btn btn-warning btn-sm" onclick="event.stopPropagation(); adminResetStudentProgress('${student.id}', '${displayName.replace(/'/g, "\\'")}')" style="padding: 4px 10px; font-size: 0.75rem; margin-left: 6px;" title="Reiniciar avance para realizar pruebas">
+              <i class="fas fa-undo"></i> Reiniciar Avance
+            </button>
+          ` : ''}
         </td>
       </tr>
     `;
