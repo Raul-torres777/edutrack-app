@@ -2943,9 +2943,9 @@ window.adminResetStudentProgress = async function(userId, userName) {
     alert('Acceso restringido: Únicamente los administradores pueden reiniciar el avance de un estudiante.');
     return;
   }
-  if (confirm(`¿Estás seguro de reiniciar todo el avance y evaluaciones del estudiante "${userName}" para realizar pruebas?`)) {
+  if (confirm(`¿Deseas reiniciar ÚNICAMENTE las lecciones vistas, formularios respondidos y notas del estudiante "${userName}"?\n\n(Su cuenta de usuario, contraseña y cursos asignados NO se borrarán).`)) {
     await db.resetUserCourseProgress(userId);
-    alert(`✅ El avance de "${userName}" ha sido reiniciado a 0%.`);
+    alert(`✅ El avance de "${userName}" ha sido reiniciado a 0%. Su cuenta sigue activa.`);
     
     if (currentUser && (currentUser.id === userId || currentUser.email === userId || currentUser.email === 'raultorresrios@hotmail.com')) {
       if (activeCourse) {
