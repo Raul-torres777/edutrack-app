@@ -662,6 +662,104 @@ export const db = {
     return this.getCourseProgress(courseId, userId);
   },
 
+  // --- REINICIAR AVANCE Y PRUEBAS ---
+
+  async resetUserCourseProgress(userId, courseId = null) {
+    if (!userId) return { percent: 0, completedLessons: [], quizUnlocked: false };
+
+    // 1. Limpiar registros en Supabase (progress, quiz_results, lesson_feedbacks)
+    try {
+      let qProg = supabase.from('progress').delete().eq('user_id', userId);
+      let qQuiz = supabase.from('quiz_results').delete().eq('user_id', userId);
+      let qFeed = supabase.from('lesson_feedbacks').delete().eq('user_id', userId);
+
+      if (courseId) {
+        qProg = qProg.eq('course_id', courseId);
+        qQuiz = qQuiz.eq('course_id', courseId);
+        qFeed = qFeed.eq('course_id', courseId);
+      }
+
+      await Promise.all([
+        qProg.catch(e => console.warn('Supabase delete progress warning:', e)),
+        qQuiz.catch(e => console.warn('Supabase delete quiz_results warning:', e)),
+        qFeed.catch(e => console.warn('Supabase delete lesson_feedbacks warning:', e))
+      ]);
+    } catch (e) {
+      console.warn('Error borrando datos en Supabase:', e);
+    }
+
+    // 2. Limpiar LocalStorage para este usuario
+    try {
+      const progressKey = `edutrack_progress_${userId}`;
+      const feedbackKey = `edutrack_feedbacks_${userId}`;
+      
+      if (courseId) {
+        const allUserProgress = JSON.parse(localStorage.getItem(progressKey)) || {};
+        delete allUserProgress[courseId];
+        localStorage.setItem(progressKey, JSON.stringify(allUserProgress));
+
+        const localFeedbacks = JSON.parse(localStorage.getItem(feedbackKey)) || [];
+        const filteredFeedbacks = localFeedbacks.filter(f => f.course_id !== courseId);
+        localStorage.setItem(feedbackKey, JSON.stringify(filteredFeedbacks));
+      } else {
+        localStorage.removeItem(progressKey);
+        localStorage.removeItem(feedbackKey);
+      }
+
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i);
+        if (key && (
+          key.startsWith(`edutrack_video_time_${userId}_`) ||
+          key.startsWith(`edutrack_iframe_timer_${userId}_`) ||
+          key.startsWith(`edutrack_active_course_${userId}`) ||
+          key.startsWith(`edutrack_active_module_idx_${userId}`) ||
+          key.startsWith(`edutrack_active_lesson_idx_${userId}`)
+        )) {
+          localStorage.removeItem(key);
+        }
+      }
+    } catch (err) {
+      console.warn('Error al limpiar localStorage de usuario:', err);
+    }
+
+    return { percent: 0, completedLessons: [], quizUnlocked: false };
+  },
+
+  async resetAllStudentsProgress() {
+    // 1. Limpiar todo en Supabase
+    try {
+      await Promise.all([
+        supabase.from('progress').delete().neq('user_id', '00000000-0000-0000-0000-000000000000').catch(e => console.warn(e)),
+        supabase.from('quiz_results').delete().neq('user_id', '00000000-0000-0000-0000-000000000000').catch(e => console.warn(e)),
+        supabase.from('lesson_feedbacks').delete().neq('user_id', '00000000-0000-0000-0000-000000000000').catch(e => console.warn(e))
+      ]);
+    } catch (e) {
+      console.warn('Error al borrar todo el progreso en Supabase:', e);
+    }
+
+    // 2. Limpiar todo el progreso y feedbacks en localStorage
+    try {
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i);
+        if (key && (
+          key.startsWith('edutrack_progress_') ||
+          key.startsWith('edutrack_feedbacks_') ||
+          key.startsWith('edutrack_video_time_') ||
+          key.startsWith('edutrack_iframe_timer_') ||
+          key.startsWith('edutrack_active_course_') ||
+          key.startsWith('edutrack_active_module_idx_') ||
+          key.startsWith('edutrack_active_lesson_idx_')
+        )) {
+          localStorage.removeItem(key);
+        }
+      }
+    } catch (err) {
+      console.warn('Error al limpiar localStorage general:', err);
+    }
+
+    return true;
+  },
+
   // --- RETROALIMENTACIÓN DE CLASES (FEEDBACK POST-VIDEO) ---
 
   async saveLessonFeedback(courseId, lessonId, userId, rating, summary, comments) {

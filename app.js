@@ -112,6 +112,7 @@ const DOM = {
   playerProgressFill: document.getElementById('player-progress-fill'),
   playerSyllabusList: document.getElementById('player-syllabus-list'),
   btnStartQuiz: document.getElementById('btn-start-quiz'),
+  btnResetCourseProgress: document.getElementById('btn-reset-course-progress'),
   btnPlayerBack: document.getElementById('btn-player-back'),
   videoCompletionContainer: document.getElementById('video-completion-container'),
   videoCompletionText: document.getElementById('video-completion-text'),
@@ -488,6 +489,16 @@ function initApp() {
   if (DOM.btnQuizNext) DOM.btnQuizNext.addEventListener('click', handleQuizNext);
   if (DOM.btnQuizExit) DOM.btnQuizExit.addEventListener('click', exitQuiz);
   if (DOM.btnStartQuiz) DOM.btnStartQuiz.addEventListener('click', () => startQuiz(activeCourse ? activeCourse.id : null));
+  if (DOM.btnResetCourseProgress) {
+    DOM.btnResetCourseProgress.addEventListener('click', async () => {
+      if (!currentUser || !activeCourse) return;
+      if (confirm(`¿Deseas reiniciar tu avance en el curso "${activeCourse.title}" para realizar pruebas?`)) {
+        await db.resetUserCourseProgress(currentUser.id, activeCourse.id);
+        alert('✅ Tu avance en este curso ha sido reiniciado a 0%.');
+        await loadPlayerCourseData(activeCourse.id);
+      }
+    });
+  }
   
   // Impresión y Descarga de Certificado
   if (DOM.btnPrintCertificate) DOM.btnPrintCertificate.addEventListener('click', () => window.print());
@@ -2865,11 +2876,17 @@ function renderAdminUsersTable(users) {
       actions = `
         <button type="button" class="btn btn-danger btn-sm" onclick="event.stopPropagation(); adminDemoteUser('${user.id}', event)" style="padding:4px 10px;font-size:0.75rem;" title="Quitar Admin">
           <i class="fas fa-user-minus"></i> Quitar Admin
+        </button>
+        <button type="button" class="btn btn-warning btn-sm" onclick="event.stopPropagation(); adminResetStudentProgress('${user.id}', '${name.replace(/'/g, "\\'")}')" style="padding:4px 8px;font-size:0.75rem;margin-left:6px;" title="Reiniciar Avance para pruebas">
+          <i class="fas fa-undo"></i> Avance
         </button>`;
     } else {
       actions = `
         <button type="button" class="btn btn-success btn-sm" onclick="event.stopPropagation(); adminPromoteUser('${user.id}', event)" style="padding:4px 10px;font-size:0.75rem;" title="Hacer Admin">
           <i class="fas fa-user-shield"></i> Hacer Admin
+        </button>
+        <button type="button" class="btn btn-warning btn-sm" onclick="event.stopPropagation(); adminResetStudentProgress('${user.id}', '${name.replace(/'/g, "\\'")}')" style="padding:4px 8px;font-size:0.75rem;margin-left:6px;" title="Reiniciar Avance para pruebas">
+          <i class="fas fa-undo"></i> Avance
         </button>`;
     }
 
@@ -2928,7 +2945,28 @@ window.adminDemoteUser = async function(userId, evt) {
     console.error('Error al quitar permisos de admin:', err);
     user.role = 'student';
     alert(`ℹ️ "${name}" ya no tiene permisos de Administrador.`);
-    if (typeof loadAdminPanel === 'function') await loadAdminPanel();
+  }
+};
+
+window.adminResetStudentProgress = async function(userId, userName) {
+  if (confirm(`¿Estás seguro de reiniciar todo el avance y evaluaciones del estudiante "${userName}" para realizar pruebas?`)) {
+    await db.resetUserCourseProgress(userId);
+    alert(`✅ El avance de "${userName}" ha sido reiniciado a 0%.`);
+    if (typeof loadAdminPanel === 'function' && currentRole === 'admin') await loadAdminPanel();
+    if (typeof loadInstructorStudentsTable === 'function' && currentRole === 'instructor') await loadInstructorStudentsTable();
+  }
+};
+
+window.adminResetAllStudentsProgress = async function() {
+  if (confirm('⚠️ ATENCIÓN DE PRUEBAS:\n\n¿Estás seguro de reiniciar el avance de TODOS los estudiantes en el sistema? Esto dejará el progreso de todos los cursos a 0% para poder realizar pruebas nuevamente.')) {
+    await db.resetAllStudentsProgress();
+    alert('✅ Todo el avance de los estudiantes ha sido reiniciado a 0%.');
+    if (activeCourse) {
+      await loadPlayerCourseData(activeCourse.id);
+    }
+    if (typeof loadStudentDashboard === 'function' && currentRole === 'student') await loadStudentDashboard();
+    if (typeof loadAdminPanel === 'function' && currentRole === 'admin') await loadAdminPanel();
+    if (typeof loadInstructorStudentsTable === 'function' && currentRole === 'instructor') await loadInstructorStudentsTable();
   }
 };
 
@@ -3154,6 +3192,9 @@ async function renderStudentsTableRows(studentsList) {
         <td style="text-align: center; white-space: nowrap;">
           <button type="button" class="btn btn-primary btn-sm" onclick="event.stopPropagation(); openAssignCoursesModal('${student.id}', event)" style="padding: 4px 10px; font-size: 0.75rem;">
             <i class="fas fa-book-reader"></i> Asignar Cursos
+          </button>
+          <button type="button" class="btn btn-warning btn-sm" onclick="event.stopPropagation(); adminResetStudentProgress('${student.id}', '${displayName.replace(/'/g, "\\'")}')" style="padding: 4px 10px; font-size: 0.75rem; margin-left: 6px;" title="Reiniciar avance para realizar pruebas">
+            <i class="fas fa-undo"></i> Reiniciar Avance
           </button>
         </td>
       </tr>
