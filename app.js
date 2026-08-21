@@ -2946,8 +2946,16 @@ window.adminResetStudentProgress = async function(userId, userName) {
   if (confirm(`¿Estás seguro de reiniciar todo el avance y evaluaciones del estudiante "${userName}" para realizar pruebas?`)) {
     await db.resetUserCourseProgress(userId);
     alert(`✅ El avance de "${userName}" ha sido reiniciado a 0%.`);
+    
+    if (currentUser && (currentUser.id === userId || currentUser.email === userId || currentUser.email === 'raultorresrios@hotmail.com')) {
+      if (activeCourse) {
+        await loadPlayerCourseData(activeCourse.id);
+      }
+    }
+
     if (typeof loadAdminPanel === 'function' && currentRole === 'admin') await loadAdminPanel();
     if (typeof loadInstructorStudentsTable === 'function' && currentRole === 'instructor') await loadInstructorStudentsTable();
+    if (typeof loadStudentDashboard === 'function' && currentRole === 'student') await loadStudentDashboard();
   }
 };
 

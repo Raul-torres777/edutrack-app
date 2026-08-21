@@ -667,55 +667,100 @@ export const db = {
   async resetUserCourseProgress(userId, courseId = null) {
     if (!userId) return { percent: 0, completedLessons: [], quizUnlocked: false };
 
-    // 1. Limpiar registros en Supabase (progress, quiz_results, lesson_feedbacks)
+    // 1. Recopilar todos los identificadores posibles para este usuario (ID, Email, Username)
+    const userIds = [userId];
     try {
-      let qProg = supabase.from('progress').delete().eq('user_id', userId);
-      let qQuiz = supabase.from('quiz_results').delete().eq('user_id', userId);
-      let qFeed = supabase.from('lesson_feedbacks').delete().eq('user_id', userId);
-
-      if (courseId) {
-        qProg = qProg.eq('course_id', courseId);
-        qQuiz = qQuiz.eq('course_id', courseId);
-        qFeed = qFeed.eq('course_id', courseId);
+      const { data: userRecords } = await supabase.from('users').select('*');
+      if (userRecords) {
+        const matchingUser = userRecords.find(u => 
+          u.id === userId || 
+          (u.email && u.email.toLowerCase() === userId.toLowerCase()) ||
+          (u.username && u.username.toLowerCase() === userId.toLowerCase())
+        );
+        if (matchingUser) {
+          if (matchingUser.id && !userIds.includes(matchingUser.id)) userIds.push(matchingUser.id);
+          if (matchingUser.email && !userIds.includes(matchingUser.email)) userIds.push(matchingUser.email);
+          if (matchingUser.email && !userIds.includes(matchingUser.email.toLowerCase())) userIds.push(matchingUser.email.toLowerCase());
+          if (matchingUser.username && !userIds.includes(matchingUser.username)) userIds.push(matchingUser.username);
+        }
       }
-
-      await Promise.all([
-        qProg.catch(e => console.warn('Supabase delete progress warning:', e)),
-        qQuiz.catch(e => console.warn('Supabase delete quiz_results warning:', e)),
-        qFeed.catch(e => console.warn('Supabase delete lesson_feedbacks warning:', e))
-      ]);
     } catch (e) {
-      console.warn('Error borrando datos en Supabase:', e);
+      console.warn('Error resolviendo identificadores de usuario:', e);
     }
 
-    // 2. Limpiar LocalStorage para este usuario
-    try {
-      const progressKey = `edutrack_progress_${userId}`;
-      const feedbackKey = `edutrack_feedbacks_${userId}`;
-      
-      if (courseId) {
-        const allUserProgress = JSON.parse(localStorage.getItem(progressKey)) || {};
-        delete allUserProgress[courseId];
-        localStorage.setItem(progressKey, JSON.stringify(allUserProgress));
+    // 2. Limpiar registros en Supabase para cada identificador del usuario
+    for (const uid of userIds) {
+      try {
+        // A) Intentar DELETE en progress, quiz_results, lesson_feedbacks, certificates
+        let qProg = supabase.from('progress').delete().eq('user_id', uid);
+        let qQuiz = supabase.from('quiz_results').delete().eq('user_id', uid);
+        let qFeed = supabase.from('lesson_feedbacks').delete().eq('user_id', uid);
+        let qCert = supabase.from('certificates').delete().eq('user_id', uid);
 
-        const localFeedbacks = JSON.parse(localStorage.getItem(feedbackKey)) || [];
-        const filteredFeedbacks = localFeedbacks.filter(f => f.course_id !== courseId);
-        localStorage.setItem(feedbackKey, JSON.stringify(filteredFeedbacks));
-      } else {
-        localStorage.removeItem(progressKey);
-        localStorage.removeItem(feedbackKey);
+        if (courseId) {
+          qProg = qProg.eq('course_id', courseId);
+          qQuiz = qQuiz.eq('course_id', courseId);
+          qFeed = qFeed.eq('course_id', courseId);
+          qCert = qCert.eq('course_id', courseId);
+        }
+
+        await Promise.all([
+          qProg.catch(e => console.warn('Supabase delete progress warning:', e)),
+          qQuiz.catch(e => console.warn('Supabase delete quiz_results warning:', e)),
+          qFeed.catch(e => console.warn('Supabase delete lesson_feedbacks warning:', e)),
+          qCert.catch(e => console.warn('Supabase delete certificates warning:', e))
+        ]);
+
+        // B) Backup UPDATE por si RLS bloquea DELETE directo
+        let uProg = supabase.from('progress').update({ completed_lessons: [], completed: false, updated_at: new Date().toISOString() }).eq('user_id', uid);
+        let uQuiz = supabase.from('quiz_results').update({ score: 0, passed: false }).eq('user_id', uid);
+        if (courseId) {
+          uProg = uProg.eq('course_id', courseId);
+          uQuiz = uQuiz.eq('course_id', courseId);
+        }
+        await Promise.all([
+          uProg.catch(() => {}),
+          uQuiz.catch(() => {})
+        ]);
+      } catch (e) {
+        console.warn('Error procesando borrado en Supabase para UID:', uid, e);
       }
+    }
 
-      for (let i = localStorage.length - 1; i >= 0; i--) {
-        const key = localStorage.key(i);
-        if (key && (
-          key.startsWith(`edutrack_video_time_${userId}_`) ||
-          key.startsWith(`edutrack_iframe_timer_${userId}_`) ||
-          key.startsWith(`edutrack_active_course_${userId}`) ||
-          key.startsWith(`edutrack_active_module_idx_${userId}`) ||
-          key.startsWith(`edutrack_active_lesson_idx_${userId}`)
-        )) {
-          localStorage.removeItem(key);
+    // 3. Limpiar LocalStorage para todos los identificadores del usuario
+    try {
+      for (const uid of userIds) {
+        const progressKey = `edutrack_progress_${uid}`;
+        const feedbackKey = `edutrack_feedbacks_${uid}`;
+        
+        if (courseId) {
+          const allUserProgress = JSON.parse(localStorage.getItem(progressKey)) || {};
+          delete allUserProgress[courseId];
+          localStorage.setItem(progressKey, JSON.stringify(allUserProgress));
+
+          const localFeedbacks = JSON.parse(localStorage.getItem(feedbackKey)) || [];
+          const filteredFeedbacks = localFeedbacks.filter(f => f.course_id !== courseId);
+          localStorage.setItem(feedbackKey, JSON.stringify(filteredFeedbacks));
+        } else {
+          localStorage.removeItem(progressKey);
+          localStorage.removeItem(feedbackKey);
+        }
+
+        for (let i = localStorage.length - 1; i >= 0; i--) {
+          const key = localStorage.key(i);
+          if (key && key.includes(uid)) {
+            if (
+              key.startsWith('edutrack_video_time_') ||
+              key.startsWith('edutrack_iframe_timer_') ||
+              key.startsWith('edutrack_active_course_') ||
+              key.startsWith('edutrack_active_module_idx_') ||
+              key.startsWith('edutrack_active_lesson_idx_') ||
+              key.startsWith('edutrack_progress_') ||
+              key.startsWith('edutrack_feedbacks_')
+            ) {
+              localStorage.removeItem(key);
+            }
+          }
         }
       }
     } catch (err) {
@@ -731,7 +776,10 @@ export const db = {
       await Promise.all([
         supabase.from('progress').delete().neq('user_id', '00000000-0000-0000-0000-000000000000').catch(e => console.warn(e)),
         supabase.from('quiz_results').delete().neq('user_id', '00000000-0000-0000-0000-000000000000').catch(e => console.warn(e)),
-        supabase.from('lesson_feedbacks').delete().neq('user_id', '00000000-0000-0000-0000-000000000000').catch(e => console.warn(e))
+        supabase.from('lesson_feedbacks').delete().neq('user_id', '00000000-0000-0000-0000-000000000000').catch(e => console.warn(e)),
+        supabase.from('certificates').delete().neq('user_id', '00000000-0000-0000-0000-000000000000').catch(e => console.warn(e)),
+        supabase.from('progress').update({ completed_lessons: [], completed: false }).neq('user_id', '00000000-0000-0000-0000-000000000000').catch(() => {}),
+        supabase.from('quiz_results').update({ score: 0, passed: false }).neq('user_id', '00000000-0000-0000-0000-000000000000').catch(() => {})
       ]);
     } catch (e) {
       console.warn('Error al borrar todo el progreso en Supabase:', e);
