@@ -2944,8 +2944,15 @@ window.adminResetStudentProgress = async function(userId, userName) {
     return;
   }
   if (confirm(`¿Deseas reiniciar ÚNICAMENTE las lecciones vistas, formularios respondidos y notas del estudiante "${userName}"?\n\n(Su cuenta de usuario, contraseña y cursos asignados NO se borrarán).`)) {
-    await db.resetUserCourseProgress(userId);
-    alert(`✅ El avance de "${userName}" ha sido reiniciado a 0%. Su cuenta sigue activa.`);
+    try {
+      console.log('[ADMIN RESET] Iniciando reset para userId:', userId, 'userName:', userName);
+      await db.resetUserCourseProgress(userId);
+      console.log('[ADMIN RESET] ✅ Reset completado exitosamente');
+      alert(`✅ El avance de "${userName}" ha sido reiniciado a 0%. Su cuenta sigue activa.`);
+    } catch (resetError) {
+      console.error('[ADMIN RESET] ❌ Error durante el reset:', resetError);
+      alert(`❌ Hubo un error al reiniciar el avance: ${resetError.message || resetError}`);
+    }
     
     if (currentUser && (currentUser.id === userId || currentUser.email === userId || currentUser.email === 'raultorresrios@hotmail.com')) {
       if (activeCourse) {
