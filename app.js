@@ -1739,6 +1739,11 @@ function selectPlayerLesson(lesson, mIdx, lIdx) {
     clearInterval(iframeCompletionTimer);
     iframeCompletionTimer = null;
   }
+  // Limpiar el listener de postMessage del video anterior (si existe)
+  if (window._currentVideoMessageHandler) {
+    window.removeEventListener('message', window._currentVideoMessageHandler);
+    window._currentVideoMessageHandler = null;
+  }
   maxTimeWatched = 0;
   lastActiveVideoTime = 0;
   
@@ -1802,32 +1807,29 @@ function selectPlayerLesson(lesson, mIdx, lIdx) {
           const parseDurationToSeconds = (durStr) => {
             if (!durStr) return 60;
             const s = durStr.toString().trim();
-            // Formato HH:MM:SS o MM:SS
             const colonMatch = s.match(/^(\d+):(\d+)(?::(\d+))?$/);
             if (colonMatch) {
               if (colonMatch[3] !== undefined) {
-                // HH:MM:SS
                 return parseInt(colonMatch[1]) * 3600 + parseInt(colonMatch[2]) * 60 + parseInt(colonMatch[3]);
               } else {
-                // MM:SS
                 return parseInt(colonMatch[1]) * 60 + parseInt(colonMatch[2]);
               }
             }
-            // Formato "15 min", "1.5 hr", "90 segundos", etc.
             const numMatch = s.match(/(\d+(?:\.\d+)?)\s*(h|hr|hora|horas|m|min|minuto|minutos|s|seg|segundo|segundos)?/i);
             if (numMatch) {
               const val = parseFloat(numMatch[1]);
               const unit = (numMatch[2] || 'min').toLowerCase();
               if (unit.startsWith('h')) return Math.round(val * 3600);
               if (unit.startsWith('s')) return Math.round(val);
-              return Math.round(val * 60); // default: minutos
+              return Math.round(val * 60);
             }
-            return 60; // fallback: 1 minuto
+            return 60;
           };
 
           const totalDurationSeconds = parseDurationToSeconds(lesson.duration);
-
           const iframeStorageKey = `edutrack_iframe_timer_${currentUser.id}_${lesson.id}`;
+          
+          // Recuperar tiempo restante guardado (si el alumno ya había avanzado)
           let secondsLeft = totalDurationSeconds;
           const cachedSeconds = localStorage.getItem(iframeStorageKey);
           if (cachedSeconds !== null) {
@@ -1846,34 +1848,128 @@ function selectPlayerLesson(lesson, mIdx, lIdx) {
             }
             return `${mins}:${secs.toString().padStart(2, '0')}`;
           };
-          
+
+          // Mostrar el timer pausado — espera a que el alumno presione play
           if (DOM.btnCompleteIframeVideo) {
-            DOM.btnCompleteIframeVideo.innerHTML = `<i class="fas fa-lock"></i> Habilitando en ${formatSeconds(secondsLeft)}...`;
+            DOM.btnCompleteIframeVideo.innerHTML = `<i class="fas fa-play-circle"></i> Da Play al video — ${formatSeconds(secondsLeft)} restantes`;
           }
           if (DOM.videoCompletionText) {
-            DOM.videoCompletionText.innerHTML = '<i class="fas fa-play-circle" style="color: var(--primary-color);"></i> Mira el video completo para habilitar la siguiente clase.';
+            DOM.videoCompletionText.innerHTML = '<i class="fas fa-play-circle" style="color: var(--primary-color);"></i> Presiona Play para comenzar a contar tu tiempo de clase.';
           }
 
-          iframeCompletionTimer = setInterval(() => {
+          // Función para terminar el contador cuando llega a 0
+          const completeTimer = () => {
+            clearInterval(iframeCompletionTimer);
+            iframeCompletionTimer = null;
+            localStorage.removeItem(iframeStorageKey);
+            if (DOM.btnCompleteIframeVideo) {
+              DOM.btnCompleteIframeVideo.disabled = false;
+              DOM.btnCompleteIframeVideo.innerHTML = '<i class="fas fa-check-circle"></i> Marcar como Completado';
+            }
+            if (DOM.videoCompletionText) {
+              DOM.videoCompletionText.innerHTML = '<i class="fas fa-check-circle" style="color: var(--success-color);"></i> ¡Video completado! Ya puedes continuar con la siguiente clase.';
+            }
+            // Limpiar el listener de postMessage
+            window.removeEventListener('message', videoMessageHandler);
+          };
+
+          // Función para avanzar el contador (se llama cada segundo mientras juega)
+          const tickTimer = () => {
             secondsLeft--;
             localStorage.setItem(iframeStorageKey, secondsLeft);
             if (secondsLeft <= 0) {
-              clearInterval(iframeCompletionTimer);
-              iframeCompletionTimer = null;
-              localStorage.removeItem(iframeStorageKey);
-              if (DOM.btnCompleteIframeVideo) {
-                DOM.btnCompleteIframeVideo.disabled = false;
-                DOM.btnCompleteIframeVideo.innerHTML = '<i class="fas fa-check-circle"></i> Marcar como Completado';
-              }
-              if (DOM.videoCompletionText) {
-                DOM.videoCompletionText.innerHTML = '<i class="fas fa-check-circle" style="color: var(--success-color);"></i> ¡Video completado! Ya puedes continuar con la siguiente clase.';
-              }
+              completeTimer();
             } else {
               if (DOM.btnCompleteIframeVideo) {
                 DOM.btnCompleteIframeVideo.innerHTML = `<i class="fas fa-lock"></i> Habilitando en ${formatSeconds(secondsLeft)}...`;
               }
             }
-          }, 1000);
+          };
+
+          // Listener de postMessage para YouTube y Vimeo
+          const videoMessageHandler = (event) => {
+            try {
+              const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+              
+              // --- YouTube API ---
+              // playerState: 1 = playing, 2 = paused, 0 = ended, 3 = buffering
+              if (data && data.event === 'infoDelivery' && data.info && data.info.playerState !== undefined) {
+                const state = data.info.playerState;
+                if (state === 1 || state === 3) {
+                  // Reproduciendo o bufferando → arrancar/mantener timer
+                  if (!iframeCompletionTimer) {
+                    iframeCompletionTimer = setInterval(tickTimer, 1000);
+                    if (DOM.videoCompletionText) {
+                      DOM.videoCompletionText.innerHTML = '<i class="fas fa-clock" style="color: var(--primary-color);"></i> Mira el video completo para habilitar la siguiente clase.';
+                    }
+                  }
+                } else if (state === 2) {
+                  // Pausado → detener timer
+                  if (iframeCompletionTimer) {
+                    clearInterval(iframeCompletionTimer);
+                    iframeCompletionTimer = null;
+                    if (DOM.btnCompleteIframeVideo) {
+                      DOM.btnCompleteIframeVideo.innerHTML = `<i class="fas fa-pause-circle"></i> Pausado — ${formatSeconds(secondsLeft)} restantes`;
+                    }
+                    if (DOM.videoCompletionText) {
+                      DOM.videoCompletionText.innerHTML = '<i class="fas fa-pause-circle" style="color: var(--warning-color);"></i> Video en pausa. Reanuda para continuar.';
+                    }
+                  }
+                } else if (state === 0) {
+                  // Video terminó → asegurarse de que el timer también termine
+                  if (iframeCompletionTimer) {
+                    clearInterval(iframeCompletionTimer);
+                    iframeCompletionTimer = null;
+                  }
+                  if (secondsLeft > 0) {
+                    secondsLeft = 0;
+                    completeTimer();
+                  }
+                }
+              }
+
+              // --- Vimeo API ---
+              if (data && data.event === 'play') {
+                if (!iframeCompletionTimer) {
+                  iframeCompletionTimer = setInterval(tickTimer, 1000);
+                  if (DOM.videoCompletionText) {
+                    DOM.videoCompletionText.innerHTML = '<i class="fas fa-clock" style="color: var(--primary-color);"></i> Mira el video completo para habilitar la siguiente clase.';
+                  }
+                }
+              }
+              if (data && data.event === 'pause') {
+                if (iframeCompletionTimer) {
+                  clearInterval(iframeCompletionTimer);
+                  iframeCompletionTimer = null;
+                  if (DOM.btnCompleteIframeVideo) {
+                    DOM.btnCompleteIframeVideo.innerHTML = `<i class="fas fa-pause-circle"></i> Pausado — ${formatSeconds(secondsLeft)} restantes`;
+                  }
+                  if (DOM.videoCompletionText) {
+                    DOM.videoCompletionText.innerHTML = '<i class="fas fa-pause-circle" style="color: var(--warning-color);"></i> Video en pausa. Reanuda para continuar.';
+                  }
+                }
+              }
+              if (data && data.event === 'finish') {
+                if (iframeCompletionTimer) {
+                  clearInterval(iframeCompletionTimer);
+                  iframeCompletionTimer = null;
+                }
+                if (secondsLeft > 0) {
+                  secondsLeft = 0;
+                  completeTimer();
+                }
+              }
+            } catch (e) {
+              // Ignorar mensajes no JSON o de otros orígenes
+            }
+          };
+
+          // Registrar el listener — se limpiará al completar o cambiar de clase
+          window.removeEventListener('message', videoMessageHandler); // evitar duplicados
+          window.addEventListener('message', videoMessageHandler);
+
+          // Guardar referencia para poder limpiarlo al cambiar de clase
+          window._currentVideoMessageHandler = videoMessageHandler;
         }
       }
     } else {
