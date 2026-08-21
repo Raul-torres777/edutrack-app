@@ -1798,13 +1798,42 @@ function selectPlayerLesson(lesson, mIdx, lIdx) {
             DOM.btnCompleteIframeVideo.disabled = true;
           }
           
+          // Convertir la duración de la lección (ej: "10:30", "1:05:20", "15 min") a segundos
+          const parseDurationToSeconds = (durStr) => {
+            if (!durStr) return 60;
+            const s = durStr.toString().trim();
+            // Formato HH:MM:SS o MM:SS
+            const colonMatch = s.match(/^(\d+):(\d+)(?::(\d+))?$/);
+            if (colonMatch) {
+              if (colonMatch[3] !== undefined) {
+                // HH:MM:SS
+                return parseInt(colonMatch[1]) * 3600 + parseInt(colonMatch[2]) * 60 + parseInt(colonMatch[3]);
+              } else {
+                // MM:SS
+                return parseInt(colonMatch[1]) * 60 + parseInt(colonMatch[2]);
+              }
+            }
+            // Formato "15 min", "1.5 hr", "90 segundos", etc.
+            const numMatch = s.match(/(\d+(?:\.\d+)?)\s*(h|hr|hora|horas|m|min|minuto|minutos|s|seg|segundo|segundos)?/i);
+            if (numMatch) {
+              const val = parseFloat(numMatch[1]);
+              const unit = (numMatch[2] || 'min').toLowerCase();
+              if (unit.startsWith('h')) return Math.round(val * 3600);
+              if (unit.startsWith('s')) return Math.round(val);
+              return Math.round(val * 60); // default: minutos
+            }
+            return 60; // fallback: 1 minuto
+          };
+
+          const totalDurationSeconds = parseDurationToSeconds(lesson.duration);
+
           const iframeStorageKey = `edutrack_iframe_timer_${currentUser.id}_${lesson.id}`;
-          let secondsLeft = 60; // Fijado a 1 minuto (60 segundos) por requerimiento
+          let secondsLeft = totalDurationSeconds;
           const cachedSeconds = localStorage.getItem(iframeStorageKey);
           if (cachedSeconds !== null) {
             const parsedSeconds = parseInt(cachedSeconds, 10);
             if (!isNaN(parsedSeconds) && parsedSeconds > 0) {
-              secondsLeft = Math.min(parsedSeconds, 60);
+              secondsLeft = Math.min(parsedSeconds, totalDurationSeconds);
             }
           }
 
@@ -1822,7 +1851,7 @@ function selectPlayerLesson(lesson, mIdx, lIdx) {
             DOM.btnCompleteIframeVideo.innerHTML = `<i class="fas fa-lock"></i> Habilitando en ${formatSeconds(secondsLeft)}...`;
           }
           if (DOM.videoCompletionText) {
-            DOM.videoCompletionText.innerHTML = '<i class="fas fa-clock" style="color: var(--primary-color);"></i> Reproduce el video para habilitar la finalización.';
+            DOM.videoCompletionText.innerHTML = '<i class="fas fa-play-circle" style="color: var(--primary-color);"></i> Mira el video completo para habilitar la siguiente clase.';
           }
 
           iframeCompletionTimer = setInterval(() => {
@@ -1837,7 +1866,7 @@ function selectPlayerLesson(lesson, mIdx, lIdx) {
                 DOM.btnCompleteIframeVideo.innerHTML = '<i class="fas fa-check-circle"></i> Marcar como Completado';
               }
               if (DOM.videoCompletionText) {
-                DOM.videoCompletionText.innerHTML = '<i class="fas fa-info-circle" style="color: var(--primary-color);"></i> Ya puedes marcar esta clase como completada.';
+                DOM.videoCompletionText.innerHTML = '<i class="fas fa-check-circle" style="color: var(--success-color);"></i> ¡Video completado! Ya puedes continuar con la siguiente clase.';
               }
             } else {
               if (DOM.btnCompleteIframeVideo) {
