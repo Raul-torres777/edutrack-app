@@ -692,93 +692,42 @@ export const db = {
 
     console.log('[RESET] IDs encontrados para el usuario:', userIds);
 
-    // 2. Limpiar registros en Supabase para cada identificador del usuario
-    // ESTRATEGIA: Primero UPDATE (más permisivo con RLS), luego DELETE
+    // 2. Borrar registros en Supabase usando fetch REST API directo (método más confiable)
+    const tables = ['progress', 'quiz_results', 'certificates'];
+    const headers = {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=minimal'
+    };
+
     for (const uid of userIds) {
       console.log('[RESET] Procesando UID:', uid);
-      try {
-        // A) Primero intentar UPDATE (resetear datos a valores vacíos/cero)
-        // Esto es más probable que funcione con políticas RLS restrictivas
-        let uProg = supabase.from('progress').update({ 
-          completed_lessons: [], 
-          completed: false, 
-          updated_at: new Date().toISOString() 
-        }).eq('user_id', uid);
-        
-        let uQuiz = supabase.from('quiz_results').update({ 
-          score: 0, 
-          passed: false 
-        }).eq('user_id', uid);
-        
-        if (courseId) {
-          uProg = uProg.eq('course_id', courseId);
-          uQuiz = uQuiz.eq('course_id', courseId);
-        }
-        
-        const [updateProgRes, updateQuizRes] = await Promise.all([
-          uProg.then(r => { console.log('[RESET] UPDATE progress result:', r); return r; }).catch(e => { console.error('[RESET] UPDATE progress error:', e); return { error: e }; }),
-          uQuiz.then(r => { console.log('[RESET] UPDATE quiz_results result:', r); return r; }).catch(e => { console.error('[RESET] UPDATE quiz_results error:', e); return { error: e }; })
-        ]);
-
-        // B) Luego intentar DELETE como respaldo
-        let qProg = supabase.from('progress').delete().eq('user_id', uid);
-        let qQuiz = supabase.from('quiz_results').delete().eq('user_id', uid);
-        let qFeed = supabase.from('lesson_feedbacks').delete().eq('user_id', uid);
-        let qCert = supabase.from('certificates').delete().eq('user_id', uid);
-
-        if (courseId) {
-          qProg = qProg.eq('course_id', courseId);
-          qQuiz = qQuiz.eq('course_id', courseId);
-          qFeed = qFeed.eq('course_id', courseId);
-          qCert = qCert.eq('course_id', courseId);
-        }
-
-        const [delProgRes, delQuizRes, delFeedRes, delCertRes] = await Promise.all([
-          qProg.then(r => { console.log('[RESET] DELETE progress result:', r); return r; }).catch(e => { console.error('[RESET] DELETE progress error:', e); return { error: e }; }),
-          qQuiz.then(r => { console.log('[RESET] DELETE quiz_results result:', r); return r; }).catch(e => { console.error('[RESET] DELETE quiz_results error:', e); return { error: e }; }),
-          qFeed.then(r => { console.log('[RESET] DELETE lesson_feedbacks result:', r); return r; }).catch(e => { console.error('[RESET] DELETE lesson_feedbacks error:', e); return { error: e }; }),
-          qCert.then(r => { console.log('[RESET] DELETE certificates result:', r); return r; }).catch(e => { console.error('[RESET] DELETE certificates error:', e); return { error: e }; })
-        ]);
-
-        // C) Si tanto UPDATE como DELETE fallaron, intentar vía fetch directo a la REST API de Supabase
-        const bothFailed = (updateProgRes?.error && delProgRes?.error);
-        if (bothFailed) {
-          console.warn('[RESET] Ambos métodos fallaron para progress, intentando REST API directo...');
-          try {
-            // Intentar DELETE directo vía fetch con headers del service
-            const url = `${SUPABASE_URL}/rest/v1/progress?user_id=eq.${encodeURIComponent(uid)}`;
-            const response = await fetch(url, {
-              method: 'DELETE',
-              headers: {
-                'apikey': SUPABASE_KEY,
-                'Authorization': `Bearer ${SUPABASE_KEY}`,
-                'Content-Type': 'application/json',
-                'Prefer': 'return=minimal'
-              }
-            });
-            console.log('[RESET] REST API DELETE progress status:', response.status);
-          } catch (fetchErr) {
-            console.error('[RESET] REST API DELETE progress error:', fetchErr);
+      for (const table of tables) {
+        try {
+          let url = `${SUPABASE_URL}/rest/v1/${table}?user_id=eq.${encodeURIComponent(uid)}`;
+          if (courseId) {
+            url += `&course_id=eq.${encodeURIComponent(courseId)}`;
           }
-          
+          const response = await fetch(url, { method: 'DELETE', headers });
+          console.log(`[RESET] DELETE ${table} para UID ${uid}: status ${response.status}`);
+          if (!response.ok && response.status !== 404) {
+            const errText = await response.text();
+            console.warn(`[RESET] DELETE ${table} respuesta no-OK:`, errText);
+          }
+        } catch (fetchErr) {
+          console.warn(`[RESET] Error fetch DELETE ${table}:`, fetchErr);
+          // Fallback: intentar vía cliente Supabase
           try {
-            const url2 = `${SUPABASE_URL}/rest/v1/quiz_results?user_id=eq.${encodeURIComponent(uid)}`;
-            const response2 = await fetch(url2, {
-              method: 'DELETE',
-              headers: {
-                'apikey': SUPABASE_KEY,
-                'Authorization': `Bearer ${SUPABASE_KEY}`,
-                'Content-Type': 'application/json',
-                'Prefer': 'return=minimal'
-              }
-            });
-            console.log('[RESET] REST API DELETE quiz_results status:', response2.status);
-          } catch (fetchErr) {
-            console.error('[RESET] REST API DELETE quiz_results error:', fetchErr);
+            let q = supabase.from(table).delete().eq('user_id', uid);
+            if (courseId) q = q.eq('course_id', courseId);
+            const { error } = await q;
+            if (error) console.warn(`[RESET] Supabase client DELETE ${table} error:`, error);
+            else console.log(`[RESET] Supabase client DELETE ${table} OK (fallback)`);
+          } catch (subErr) {
+            console.warn(`[RESET] Fallback Supabase client ${table} también falló:`, subErr);
           }
         }
-      } catch (e) {
-        console.error('[RESET] Error procesando borrado en Supabase para UID:', uid, e);
       }
     }
 
@@ -819,19 +768,16 @@ export const db = {
           }
         }
       }
-      // Limpiar también cualquier clave genérica de progreso que pueda existir
+      // Limpiar también cualquier clave genérica de progreso
       for (let i = localStorage.length - 1; i >= 0; i--) {
         const key = localStorage.key(i);
-        if (key && key.startsWith('edutrack_')) {
-          // Solo eliminar claves de progreso/feedbacks/video, NO las de sesión
-          if (
-            key.startsWith('edutrack_progress_') ||
-            key.startsWith('edutrack_feedbacks_') ||
-            key.startsWith('edutrack_video_time_') ||
-            key.startsWith('edutrack_iframe_timer_')
-          ) {
-            localStorage.removeItem(key);
-          }
+        if (key && (
+          key.startsWith('edutrack_progress_') ||
+          key.startsWith('edutrack_feedbacks_') ||
+          key.startsWith('edutrack_video_time_') ||
+          key.startsWith('edutrack_iframe_timer_')
+        )) {
+          localStorage.removeItem(key);
         }
       }
     } catch (err) {
@@ -843,18 +789,30 @@ export const db = {
   },
 
   async resetAllStudentsProgress() {
-    // 1. Limpiar todo en Supabase
-    try {
-      await Promise.all([
-        supabase.from('progress').delete().neq('user_id', '00000000-0000-0000-0000-000000000000').catch(e => console.warn(e)),
-        supabase.from('quiz_results').delete().neq('user_id', '00000000-0000-0000-0000-000000000000').catch(e => console.warn(e)),
-        supabase.from('lesson_feedbacks').delete().neq('user_id', '00000000-0000-0000-0000-000000000000').catch(e => console.warn(e)),
-        supabase.from('certificates').delete().neq('user_id', '00000000-0000-0000-0000-000000000000').catch(e => console.warn(e)),
-        supabase.from('progress').update({ completed_lessons: [], completed: false }).neq('user_id', '00000000-0000-0000-0000-000000000000').catch(() => {}),
-        supabase.from('quiz_results').update({ score: 0, passed: false }).neq('user_id', '00000000-0000-0000-0000-000000000000').catch(() => {})
-      ]);
-    } catch (e) {
-      console.warn('Error al borrar todo el progreso en Supabase:', e);
+    console.log('[RESET ALL] Iniciando reinicio global de avance...');
+    // 1. Limpiar todo en Supabase usando REST API directo
+    const tables = ['progress', 'quiz_results', 'certificates'];
+    const headers = {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=minimal'
+    };
+
+    for (const table of tables) {
+      try {
+        const url = `${SUPABASE_URL}/rest/v1/${table}?user_id=neq.00000000-0000-0000-0000-000000000000`;
+        const response = await fetch(url, { method: 'DELETE', headers });
+        console.log(`[RESET ALL] DELETE ${table}: status ${response.status}`);
+      } catch (e) {
+        console.warn(`[RESET ALL] Error al borrar ${table}:`, e);
+        // Fallback: intentar con cliente Supabase
+        try {
+          await supabase.from(table).delete().neq('user_id', '00000000-0000-0000-0000-000000000000');
+        } catch (subErr) {
+          console.warn(`[RESET ALL] Fallback ${table} también falló:`, subErr);
+        }
+      }
     }
 
     // 2. Limpiar todo el progreso y feedbacks en localStorage
@@ -874,9 +832,10 @@ export const db = {
         }
       }
     } catch (err) {
-      console.warn('Error al limpiar localStorage general:', err);
+      console.warn('[RESET ALL] Error al limpiar localStorage general:', err);
     }
 
+    console.log('[RESET ALL] ✅ Reinicio global completado');
     return true;
   },
 
