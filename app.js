@@ -1739,10 +1739,19 @@ function selectPlayerLesson(lesson, mIdx, lIdx) {
     clearInterval(iframeCompletionTimer);
     iframeCompletionTimer = null;
   }
-  // Limpiar el listener de postMessage del video anterior (si existe)
+  // Limpiar el listener de postMessage del video anterior (YouTube/Vimeo)
   if (window._currentVideoMessageHandler) {
     window.removeEventListener('message', window._currentVideoMessageHandler);
     window._currentVideoMessageHandler = null;
+  }
+  // Limpiar listeners blur/focus del video anterior (Google Drive)
+  if (window._currentDriveBlurHandler) {
+    window.removeEventListener('blur', window._currentDriveBlurHandler);
+    window._currentDriveBlurHandler = null;
+  }
+  if (window._currentDriveFocusHandler) {
+    window.removeEventListener('focus', window._currentDriveFocusHandler);
+    window._currentDriveFocusHandler = null;
   }
   maxTimeWatched = 0;
   lastActiveVideoTime = 0;
@@ -1849,13 +1858,8 @@ function selectPlayerLesson(lesson, mIdx, lIdx) {
             return `${mins}:${secs.toString().padStart(2, '0')}`;
           };
 
-          // Mostrar el timer pausado — espera a que el alumno presione play
-          if (DOM.btnCompleteIframeVideo) {
-            DOM.btnCompleteIframeVideo.innerHTML = `<i class="fas fa-play-circle"></i> Da Play al video — ${formatSeconds(secondsLeft)} restantes`;
-          }
-          if (DOM.videoCompletionText) {
-            DOM.videoCompletionText.innerHTML = '<i class="fas fa-play-circle" style="color: var(--primary-color);"></i> Presiona Play para comenzar a contar tu tiempo de clase.';
-          }
+          // Detectar si el video es de Google Drive (iframe sandboxed, sin postMessage)
+          const isGoogleDrive = lesson.url && (lesson.url.includes('drive.google.com') || lesson.url.includes('docs.google.com'));
 
           // Función para terminar el contador cuando llega a 0
           const completeTimer = () => {
@@ -1869,8 +1873,13 @@ function selectPlayerLesson(lesson, mIdx, lIdx) {
             if (DOM.videoCompletionText) {
               DOM.videoCompletionText.innerHTML = '<i class="fas fa-check-circle" style="color: var(--success-color);"></i> ¡Video completado! Ya puedes continuar con la siguiente clase.';
             }
-            // Limpiar el listener de postMessage
-            window.removeEventListener('message', videoMessageHandler);
+            // Limpiar listeners según tipo de video
+            if (isGoogleDrive) {
+              window.removeEventListener('blur', driveBlurHandler);
+              window.removeEventListener('focus', driveFocusHandler);
+            } else {
+              window.removeEventListener('message', videoMessageHandler);
+            }
           };
 
           // Función para avanzar el contador (se llama cada segundo mientras juega)
@@ -1886,25 +1895,122 @@ function selectPlayerLesson(lesson, mIdx, lIdx) {
             }
           };
 
-          // Listener de postMessage para YouTube y Vimeo
-          const videoMessageHandler = (event) => {
-            try {
-              const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
-              
-              // --- YouTube API ---
-              // playerState: 1 = playing, 2 = paused, 0 = ended, 3 = buffering
-              if (data && data.event === 'infoDelivery' && data.info && data.info.playerState !== undefined) {
-                const state = data.info.playerState;
-                if (state === 1 || state === 3) {
-                  // Reproduciendo o bufferando → arrancar/mantener timer
+          if (isGoogleDrive) {
+            // ── GOOGLE DRIVE: usar blur/focus de la ventana ──────────────────────────
+            // Cuando el alumno hace clic en el iframe pierde el foco la ventana (blur)
+            // → asumimos que empezó a ver el video → arrancar timer
+            // Cuando regresa el foco a la ventana (focus)
+            // → asumimos que pausó o salió del video → detener timer
+
+            // Estado inicial: esperando que el alumno haga clic en el iframe
+            if (DOM.btnCompleteIframeVideo) {
+              DOM.btnCompleteIframeVideo.innerHTML = `<i class="fas fa-play-circle"></i> Da Play al video — ${formatSeconds(secondsLeft)} restantes`;
+            }
+            if (DOM.videoCompletionText) {
+              DOM.videoCompletionText.innerHTML = '<i class="fas fa-play-circle" style="color: var(--primary-color);"></i> Haz clic en el video y presiona Play para comenzar a contar tu tiempo.';
+            }
+
+            const driveBlurHandler = () => {
+              // La ventana perdió el foco → alumno entró al iframe (play)
+              if (!iframeCompletionTimer && secondsLeft > 0) {
+                iframeCompletionTimer = setInterval(tickTimer, 1000);
+                if (DOM.videoCompletionText) {
+                  DOM.videoCompletionText.innerHTML = '<i class="fas fa-clock" style="color: var(--primary-color);"></i> Contando tiempo de clase... No salgas de la ventana.';
+                }
+                if (DOM.btnCompleteIframeVideo) {
+                  DOM.btnCompleteIframeVideo.innerHTML = `<i class="fas fa-lock"></i> Habilitando en ${formatSeconds(secondsLeft)}...`;
+                }
+              }
+            };
+
+            const driveFocusHandler = () => {
+              // La ventana recuperó el foco → alumno salió del iframe (posible pausa)
+              if (iframeCompletionTimer) {
+                clearInterval(iframeCompletionTimer);
+                iframeCompletionTimer = null;
+                if (DOM.btnCompleteIframeVideo) {
+                  DOM.btnCompleteIframeVideo.innerHTML = `<i class="fas fa-pause-circle"></i> Pausado — ${formatSeconds(secondsLeft)} restantes`;
+                }
+                if (DOM.videoCompletionText) {
+                  DOM.videoCompletionText.innerHTML = '<i class="fas fa-pause-circle" style="color: var(--warning-color);"></i> Video en pausa. Haz clic en el video y reanuda para continuar.';
+                }
+              }
+            };
+
+            // Limpiar listeners anteriores y registrar los nuevos
+            window.removeEventListener('blur', window._currentDriveBlurHandler);
+            window.removeEventListener('focus', window._currentDriveFocusHandler);
+            window.addEventListener('blur', driveBlurHandler);
+            window.addEventListener('focus', driveFocusHandler);
+
+            // Guardar referencias para limpiar al cambiar de clase
+            window._currentDriveBlurHandler = driveBlurHandler;
+            window._currentDriveFocusHandler = driveFocusHandler;
+            window._currentVideoMessageHandler = null;
+
+          } else {
+            // ── YOUTUBE / VIMEO: usar postMessage API ────────────────────────────────
+
+            // Mostrar el timer pausado — espera a que el alumno presione play
+            if (DOM.btnCompleteIframeVideo) {
+              DOM.btnCompleteIframeVideo.innerHTML = `<i class="fas fa-play-circle"></i> Da Play al video — ${formatSeconds(secondsLeft)} restantes`;
+            }
+            if (DOM.videoCompletionText) {
+              DOM.videoCompletionText.innerHTML = '<i class="fas fa-play-circle" style="color: var(--primary-color);"></i> Presiona Play para comenzar a contar tu tiempo de clase.';
+            }
+
+            // Listener de postMessage para YouTube y Vimeo
+            const videoMessageHandler = (event) => {
+              try {
+                const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+                
+                // --- YouTube API ---
+                // playerState: 1 = playing, 2 = paused, 0 = ended, 3 = buffering
+                if (data && data.event === 'infoDelivery' && data.info && data.info.playerState !== undefined) {
+                  const state = data.info.playerState;
+                  if (state === 1 || state === 3) {
+                    // Reproduciendo o bufferando → arrancar/mantener timer
+                    if (!iframeCompletionTimer) {
+                      iframeCompletionTimer = setInterval(tickTimer, 1000);
+                      if (DOM.videoCompletionText) {
+                        DOM.videoCompletionText.innerHTML = '<i class="fas fa-clock" style="color: var(--primary-color);"></i> Mira el video completo para habilitar la siguiente clase.';
+                      }
+                    }
+                  } else if (state === 2) {
+                    // Pausado → detener timer
+                    if (iframeCompletionTimer) {
+                      clearInterval(iframeCompletionTimer);
+                      iframeCompletionTimer = null;
+                      if (DOM.btnCompleteIframeVideo) {
+                        DOM.btnCompleteIframeVideo.innerHTML = `<i class="fas fa-pause-circle"></i> Pausado — ${formatSeconds(secondsLeft)} restantes`;
+                      }
+                      if (DOM.videoCompletionText) {
+                        DOM.videoCompletionText.innerHTML = '<i class="fas fa-pause-circle" style="color: var(--warning-color);"></i> Video en pausa. Reanuda para continuar.';
+                      }
+                    }
+                  } else if (state === 0) {
+                    // Video terminó → asegurarse de que el timer también termine
+                    if (iframeCompletionTimer) {
+                      clearInterval(iframeCompletionTimer);
+                      iframeCompletionTimer = null;
+                    }
+                    if (secondsLeft > 0) {
+                      secondsLeft = 0;
+                      completeTimer();
+                    }
+                  }
+                }
+
+                // --- Vimeo API ---
+                if (data && data.event === 'play') {
                   if (!iframeCompletionTimer) {
                     iframeCompletionTimer = setInterval(tickTimer, 1000);
                     if (DOM.videoCompletionText) {
                       DOM.videoCompletionText.innerHTML = '<i class="fas fa-clock" style="color: var(--primary-color);"></i> Mira el video completo para habilitar la siguiente clase.';
                     }
                   }
-                } else if (state === 2) {
-                  // Pausado → detener timer
+                }
+                if (data && data.event === 'pause') {
                   if (iframeCompletionTimer) {
                     clearInterval(iframeCompletionTimer);
                     iframeCompletionTimer = null;
@@ -1915,8 +2021,8 @@ function selectPlayerLesson(lesson, mIdx, lIdx) {
                       DOM.videoCompletionText.innerHTML = '<i class="fas fa-pause-circle" style="color: var(--warning-color);"></i> Video en pausa. Reanuda para continuar.';
                     }
                   }
-                } else if (state === 0) {
-                  // Video terminó → asegurarse de que el timer también termine
+                }
+                if (data && data.event === 'finish') {
                   if (iframeCompletionTimer) {
                     clearInterval(iframeCompletionTimer);
                     iframeCompletionTimer = null;
@@ -1926,50 +2032,20 @@ function selectPlayerLesson(lesson, mIdx, lIdx) {
                     completeTimer();
                   }
                 }
+              } catch (e) {
+                // Ignorar mensajes no JSON o de otros orígenes
               }
+            };
 
-              // --- Vimeo API ---
-              if (data && data.event === 'play') {
-                if (!iframeCompletionTimer) {
-                  iframeCompletionTimer = setInterval(tickTimer, 1000);
-                  if (DOM.videoCompletionText) {
-                    DOM.videoCompletionText.innerHTML = '<i class="fas fa-clock" style="color: var(--primary-color);"></i> Mira el video completo para habilitar la siguiente clase.';
-                  }
-                }
-              }
-              if (data && data.event === 'pause') {
-                if (iframeCompletionTimer) {
-                  clearInterval(iframeCompletionTimer);
-                  iframeCompletionTimer = null;
-                  if (DOM.btnCompleteIframeVideo) {
-                    DOM.btnCompleteIframeVideo.innerHTML = `<i class="fas fa-pause-circle"></i> Pausado — ${formatSeconds(secondsLeft)} restantes`;
-                  }
-                  if (DOM.videoCompletionText) {
-                    DOM.videoCompletionText.innerHTML = '<i class="fas fa-pause-circle" style="color: var(--warning-color);"></i> Video en pausa. Reanuda para continuar.';
-                  }
-                }
-              }
-              if (data && data.event === 'finish') {
-                if (iframeCompletionTimer) {
-                  clearInterval(iframeCompletionTimer);
-                  iframeCompletionTimer = null;
-                }
-                if (secondsLeft > 0) {
-                  secondsLeft = 0;
-                  completeTimer();
-                }
-              }
-            } catch (e) {
-              // Ignorar mensajes no JSON o de otros orígenes
-            }
-          };
+            // Registrar el listener — se limpiará al completar o cambiar de clase
+            window.removeEventListener('message', videoMessageHandler); // evitar duplicados
+            window.addEventListener('message', videoMessageHandler);
 
-          // Registrar el listener — se limpiará al completar o cambiar de clase
-          window.removeEventListener('message', videoMessageHandler); // evitar duplicados
-          window.addEventListener('message', videoMessageHandler);
-
-          // Guardar referencia para poder limpiarlo al cambiar de clase
-          window._currentVideoMessageHandler = videoMessageHandler;
+            // Guardar referencia para poder limpiarlo al cambiar de clase
+            window._currentVideoMessageHandler = videoMessageHandler;
+            window._currentDriveBlurHandler = null;
+            window._currentDriveFocusHandler = null;
+          }
         }
       }
     } else {
