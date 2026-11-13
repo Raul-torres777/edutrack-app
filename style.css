@@ -86,6 +86,11 @@ h1, h2, h3, h4, h5, h6 {
   min-height: 100vh;
 }
 
+/* Clase dinámica: cuando el admin tab es visible el header necesita 2 filas en móvil */
+body.admin-mode-active .app-shell {
+  /* se actualiza vía JS con la clase en mobile */
+}
+
 /* Header Styles */
 .header-nav {
   grid-row: 1;
@@ -1225,6 +1230,39 @@ body.light-theme .stat-icon {
   font-weight: 500;
 }
 
+/* Admin Panel stat values (different structure from instructor) */
+.stat-value {
+  font-size: 1.8rem;
+  font-weight: 800;
+  margin-bottom: 2px;
+  line-height: 1;
+}
+
+.stat-label {
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+/* Button warning variant */
+.btn-warning {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.25);
+}
+
+.btn-warning:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.4);
+}
+
+/* Button size variants */
+.btn-sm {
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  border-radius: 8px;
+}
+
 /* Modals & Dialog Boxes */
 .modal-overlay {
   position: fixed;
@@ -2107,50 +2145,89 @@ body.light-theme .assigned-course-badge {
     padding: 16px 12px;
   }
 
-  /* Barra de Navegación (Header) */
+  /* ── Header Móvil: layout 2 filas compactas ── */
   .header-nav {
-    flex-direction: column;
+    flex-wrap: wrap;
     height: auto;
-    padding: 12px 16px;
-    gap: 12px;
+    padding: 8px 14px;
+    gap: 0;
     align-items: center;
-    text-align: center;
+    row-gap: 6px;
   }
 
+  /* Fila 1: logo a la izquierda, acciones a la derecha */
   .logo-area {
-    font-size: 1.3rem;
+    font-size: 1.15rem;
+    flex: 1;
+    gap: 7px;
   }
 
+  .logo-area i {
+    padding: 6px;
+    font-size: 0.9rem;
+  }
+
+  .logo-area span {
+    display: inline;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  /* Avatar: solo el círculo, ocultar el nombre en móvil */
+  .user-profile {
+    padding: 4px;
+    background: transparent;
+    border: none;
+    gap: 0;
+    min-width: 0;
+  }
+
+  .user-profile #user-display-name {
+    display: none;
+  }
+
+  .avatar-circle {
+    width: 30px;
+    height: 30px;
+    font-size: 0.85rem;
+  }
+
+  .btn-icon {
+    width: 34px;
+    height: 34px;
+    font-size: 0.85rem;
+  }
+
+  /* Fila 2: tabs a ancho completo */
   .navigation-tabs {
     width: 100%;
     flex-wrap: nowrap;
     overflow-x: auto;
-    justify-content: flex-start;
-    padding-bottom: 6px;
-    gap: 6px;
+    justify-content: stretch;
+    padding: 3px;
+    gap: 4px;
     -webkit-overflow-scrolling: touch;
+    border-radius: 10px;
+    order: 10; /* siempre al final */
   }
 
   .nav-tab {
-    flex-shrink: 0;
+    flex: 1;
     justify-content: center;
-    padding: 8px 14px;
-    font-size: 0.85rem;
-  }
-
-  .header-actions {
-    width: 100%;
-    justify-content: space-between;
-    gap: 10px;
-  }
-
-  .user-profile {
-    padding: 6px 12px;
-    font-size: 0.8rem;
-    max-width: 220px;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    padding: 7px 8px;
+    font-size: 0.78rem;
+    gap: 5px;
+    border-radius: 7px;
     white-space: nowrap;
+  }
+
+  .nav-tab i {
+    font-size: 0.8rem;
   }
 
   /* Encabezados de Sección y Buscadores */
@@ -2372,16 +2449,231 @@ body.light-theme .assigned-course-badge {
     gap: 0;
   }
 
-  /* Vista de Instructor y Admin */
-  .instructor-tabs {
+  /* ── Instructor Panel Header ── */
+  .instructor-panel-header {
     flex-direction: column;
-    gap: 5px;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .instructor-panel-header .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* ── Tabs instructor: pills horizontales ── */
+  .instructor-tabs {
+    flex-direction: row;
+    gap: 8px;
     border-bottom: none;
+    background: var(--bg-tertiary);
+    border-radius: 12px;
+    padding: 5px;
+    border: 1px solid var(--border-color);
   }
 
   .instructor-tab {
-    width: 100%;
+    flex: 1;
     justify-content: center;
+    padding: 10px 8px;
+    font-size: 0.82rem;
+    border-radius: 8px;
+    gap: 6px;
+  }
+
+  .instructor-tab i {
+    font-size: 0.85rem;
+  }
+
+  /* ── Ocultar/mostrar según dispositivo ── */
+  .instructor-table-desktop {
+    display: none !important;
+  }
+
+  .instructor-cards-mobile {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 15px;
+  }
+
+  /* ── Cards de Estudiantes ── */
+  .ins-student-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: border-color 0.2s ease;
+  }
+
+  .ins-student-card:hover {
+    border-color: var(--accent-color);
+  }
+
+  .ins-student-card-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .ins-student-card-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--accent-gradient);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .ins-student-card-name {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .ins-student-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-bottom: 2px;
+    word-break: break-all;
+  }
+
+  .ins-student-card-date {
+    flex-shrink: 0;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    background: var(--bg-tertiary);
+    padding: 4px 8px;
+    border-radius: 8px;
+    white-space: nowrap;
+    align-self: flex-start;
+  }
+
+  .ins-student-card-courses {
+    background: var(--bg-tertiary);
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+
+  .ins-student-card-courses-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .ins-student-card-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .ins-student-card-actions .btn {
+    flex: 1;
+    justify-content: center;
+    padding: 10px 8px;
+    font-size: 0.82rem;
+  }
+
+  /* ── Cards de Certificados ── */
+  .ins-cert-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: border-color 0.2s ease;
+  }
+
+  .ins-cert-card:hover {
+    border-color: var(--success-color);
+  }
+
+  .ins-cert-card-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .ins-cert-card-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--success-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+  }
+
+  .ins-cert-card-name {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    margin-bottom: 2px;
+  }
+
+  .ins-cert-card-course {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .ins-cert-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+    padding: 8px 10px;
+    gap: 8px;
+  }
+
+  .ins-cert-code {
+    font-family: monospace;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .ins-cert-date {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
   }
 
   .stats-grid {
@@ -2391,6 +2683,146 @@ body.light-theme .assigned-course-badge {
 
   .stat-card {
     padding: 14px;
+    gap: 12px;
+  }
+
+  .stat-icon {
+    width: 42px;
+    height: 42px;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+  }
+
+  .stat-details h3 {
+    font-size: 1.5rem;
+  }
+
+  /* ── Admin Panel: header móvil ── */
+  #view-admin-panel .section-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  #view-admin-panel .section-header > div {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  #view-admin-panel .section-header .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* ── Admin Panel: Lista de admins activos ── */
+  #admin-admins-list > div {
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
+
+  #admin-admins-list .admin-chip {
+    width: 100%;
+  }
+
+  /* ── Admin Panel: User Cards (móvil) ── */
+  .admin-user-cards-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .admin-user-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: border-color 0.2s ease;
+  }
+
+  .admin-user-card:hover {
+    border-color: var(--accent-color);
+  }
+
+  .admin-user-card-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .admin-user-card-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    background: var(--accent-gradient);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-size: 1rem;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .admin-user-card-name {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    margin-bottom: 2px;
+  }
+
+  .admin-user-card-role {
+    font-size: 0.8rem;
+  }
+
+  .admin-user-card-info {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .admin-user-card-field {
+    background: var(--bg-tertiary);
+    border-radius: 10px;
+    padding: 8px 10px;
+    font-size: 0.78rem;
+  }
+
+  .admin-user-card-field-label {
+    color: var(--text-secondary);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    font-size: 0.7rem;
+    margin-bottom: 3px;
+  }
+
+  .admin-user-card-field-value {
+    color: var(--text-primary);
+    font-weight: 500;
+    word-break: break-all;
+    line-height: 1.3;
+  }
+
+  .admin-user-card-actions {
+    display: flex;
+    gap: 8px;
+  }
+
+  .admin-user-card-actions .btn {
+    flex: 1;
+    justify-content: center;
+    padding: 10px 8px;
+    font-size: 0.82rem;
+  }
+
+  /* Ocultar tabla en móvil cuando se usan cards */
+  .admin-table-desktop {
+    display: none !important;
   }
 
   /* Creador/Editor de Cursos (Instructor) */
@@ -2407,6 +2839,26 @@ body.light-theme .assigned-course-badge {
 
   .editor-main {
     padding: 15px;
+  }
+}
+
+@media (min-width: 769px) {
+  /* En escritorio: ocultar cards, mostrar tablas */
+  .admin-user-cards-list {
+    display: none !important;
+  }
+
+  .admin-table-desktop {
+    display: block !important;
+  }
+
+  /* Instructor: tablas visibles, cards ocultos en escritorio */
+  .instructor-table-desktop {
+    display: block !important;
+  }
+
+  .instructor-cards-mobile {
+    display: none !important;
   }
 }
 

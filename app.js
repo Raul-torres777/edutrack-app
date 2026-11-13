@@ -1875,10 +1875,19 @@ function selectPlayerLesson(lesson, mIdx, lIdx) {
             }
             // Limpiar listeners según tipo de video
             if (isGoogleDrive) {
-              window.removeEventListener('blur', driveBlurHandler);
-              window.removeEventListener('focus', driveFocusHandler);
+              if (window._currentDriveBlurHandler) {
+                window.removeEventListener('blur', window._currentDriveBlurHandler);
+                window._currentDriveBlurHandler = null;
+              }
+              if (window._currentDriveFocusHandler) {
+                window.removeEventListener('focus', window._currentDriveFocusHandler);
+                window._currentDriveFocusHandler = null;
+              }
             } else {
-              window.removeEventListener('message', videoMessageHandler);
+              if (window._currentVideoMessageHandler) {
+                window.removeEventListener('message', window._currentVideoMessageHandler);
+                window._currentVideoMessageHandler = null;
+              }
             }
           };
 
@@ -3040,12 +3049,7 @@ function renderAdminList(admins) {
 
 function renderAdminUsersTable(users) {
   const tbody = document.getElementById('admin-users-table-body');
-  if (!tbody) return;
-
-  if (!users || users.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text-secondary);">No se encontraron usuarios.</td></tr>';
-    return;
-  }
+  const cardsList = document.getElementById('admin-users-cards-list');
 
   const ROLE_LABELS = {
     admin: '<span class="badge" style="background:rgba(99,102,241,0.15);color:#6366f1;border:1px solid rgba(99,102,241,0.3);"><i class="fas fa-shield-alt"></i> Admin</span>',
@@ -3053,22 +3057,42 @@ function renderAdminUsersTable(users) {
     student: '<span class="badge" style="background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.3);"><i class="fas fa-user-graduate"></i> Estudiante</span>'
   };
 
+  if (!users || users.length === 0) {
+    if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text-secondary);">No se encontraron usuarios.</td></tr>';
+    if (cardsList) cardsList.innerHTML = '<p style="color:var(--text-secondary);text-align:center;padding:20px;">No se encontraron usuarios.</p>';
+    return;
+  }
+
   let rows = '';
+  let cards = '';
+
   users.forEach(user => {
     const name = user.fullName || user.username || 'Sin nombre';
+    const initial = name.charAt(0).toUpperCase();
     const roleLabel = ROLE_LABELS[user.role] || user.role;
     const regDate = user.registeredAt ? new Date(user.registeredAt).toLocaleDateString('es-MX') : 'N/A';
     const isProtected = user.id === 'admin';
+    const safeName = name.replace(/'/g, "\\'");
 
     let actions = '';
+    let cardActions = '';
+
     if (isProtected) {
       actions = '<span style="color:var(--text-secondary);font-size:0.8rem;"><i class="fas fa-lock"></i> Super Admin</span>';
+      cardActions = '<span style="color:var(--text-secondary);font-size:0.8rem;"><i class="fas fa-lock"></i> Super Admin protegido</span>';
     } else if (user.role === 'admin') {
       actions = `
         <button type="button" class="btn btn-danger btn-sm" onclick="event.stopPropagation(); adminDemoteUser('${user.id}', event)" style="padding:4px 10px;font-size:0.75rem;" title="Quitar Admin">
           <i class="fas fa-user-minus"></i> Quitar Admin
         </button>
-        <button type="button" class="btn btn-warning btn-sm" onclick="event.stopPropagation(); adminResetStudentProgress('${user.id}', '${name.replace(/'/g, "\\'")}')" style="padding:4px 8px;font-size:0.75rem;margin-left:6px;" title="Reiniciar Avance para pruebas">
+        <button type="button" class="btn btn-warning btn-sm" onclick="event.stopPropagation(); adminResetStudentProgress('${user.id}', '${safeName}')" style="padding:4px 8px;font-size:0.75rem;margin-left:6px;" title="Reiniciar Avance para pruebas">
+          <i class="fas fa-undo"></i> Avance
+        </button>`;
+      cardActions = `
+        <button type="button" class="btn btn-danger btn-sm" onclick="event.stopPropagation(); adminDemoteUser('${user.id}', event)">
+          <i class="fas fa-user-minus"></i> Quitar Admin
+        </button>
+        <button type="button" class="btn btn-warning btn-sm" onclick="event.stopPropagation(); adminResetStudentProgress('${user.id}', '${safeName}')">
           <i class="fas fa-undo"></i> Avance
         </button>`;
     } else {
@@ -3076,11 +3100,19 @@ function renderAdminUsersTable(users) {
         <button type="button" class="btn btn-success btn-sm" onclick="event.stopPropagation(); adminPromoteUser('${user.id}', event)" style="padding:4px 10px;font-size:0.75rem;" title="Hacer Admin">
           <i class="fas fa-user-shield"></i> Hacer Admin
         </button>
-        <button type="button" class="btn btn-warning btn-sm" onclick="event.stopPropagation(); adminResetStudentProgress('${user.id}', '${name.replace(/'/g, "\\'")}')" style="padding:4px 8px;font-size:0.75rem;margin-left:6px;" title="Reiniciar Avance para pruebas">
+        <button type="button" class="btn btn-warning btn-sm" onclick="event.stopPropagation(); adminResetStudentProgress('${user.id}', '${safeName}')" style="padding:4px 8px;font-size:0.75rem;margin-left:6px;" title="Reiniciar Avance para pruebas">
+          <i class="fas fa-undo"></i> Avance
+        </button>`;
+      cardActions = `
+        <button type="button" class="btn btn-success btn-sm" onclick="event.stopPropagation(); adminPromoteUser('${user.id}', event)">
+          <i class="fas fa-user-shield"></i> Hacer Admin
+        </button>
+        <button type="button" class="btn btn-warning btn-sm" onclick="event.stopPropagation(); adminResetStudentProgress('${user.id}', '${safeName}')">
           <i class="fas fa-undo"></i> Avance
         </button>`;
     }
 
+    // ── Fila de tabla (desktop) ──
     rows += `
       <tr>
         <td style="padding: 16px 24px;"><strong style="color:var(--text-primary); font-size:0.95rem;">${name}</strong></td>
@@ -3090,8 +3122,37 @@ function renderAdminUsersTable(users) {
         <td style="padding: 16px 24px; color:var(--text-secondary); font-size:0.875rem; white-space:nowrap;">${regDate}</td>
         <td style="padding: 16px 24px; text-align:center; white-space:nowrap;">${actions}</td>
       </tr>`;
+
+    // ── Card (móvil) ──
+    cards += `
+      <div class="admin-user-card">
+        <div class="admin-user-card-top">
+          <div class="admin-user-card-avatar">${initial}</div>
+          <div style="flex:1; min-width:0;">
+            <div class="admin-user-card-name">${name}</div>
+            <div class="admin-user-card-role">${roleLabel}</div>
+          </div>
+        </div>
+        <div class="admin-user-card-info">
+          <div class="admin-user-card-field" style="grid-column: 1 / -1;">
+            <div class="admin-user-card-field-label"><i class="fas fa-envelope" style="margin-right:4px;"></i>Correo</div>
+            <div class="admin-user-card-field-value">${user.email || '—'}</div>
+          </div>
+          <div class="admin-user-card-field">
+            <div class="admin-user-card-field-label"><i class="fas fa-phone" style="margin-right:4px;"></i>Teléfono</div>
+            <div class="admin-user-card-field-value">${user.phone || '—'}</div>
+          </div>
+          <div class="admin-user-card-field">
+            <div class="admin-user-card-field-label"><i class="fas fa-calendar" style="margin-right:4px;"></i>Registro</div>
+            <div class="admin-user-card-field-value">${regDate}</div>
+          </div>
+        </div>
+        <div class="admin-user-card-actions">${cardActions}</div>
+      </div>`;
   });
-  tbody.innerHTML = rows;
+
+  if (tbody) tbody.innerHTML = rows;
+  if (cardsList) cardsList.innerHTML = cards;
 }
 
 window.adminPromoteUser = async function(userId, evt) {
@@ -3260,6 +3321,7 @@ async function loadInstructorDashboard() {
       DOM.instructorCoursesGrid.innerHTML = coursesHtml;
     }
     
+    const certCardsMobile = document.getElementById('cert-cards-mobile');
     if (certificates.length === 0) {
       DOM.studentRegistryRows.innerHTML = `
         <tr>
@@ -3268,8 +3330,10 @@ async function loadInstructorDashboard() {
           </td>
         </tr>
       `;
+      if (certCardsMobile) certCardsMobile.innerHTML = `<p style="color:var(--text-secondary);text-align:center;padding:20px;">Aún no se han emitido certificados.</p>`;
     } else {
       let tableRows = '';
+      let certCards = '';
       certificates.forEach(cert => {
         tableRows += `
           <tr>
@@ -3280,8 +3344,24 @@ async function loadInstructorDashboard() {
             <td><span class="badge badge-success">Aprobado / Certificado</span></td>
           </tr>
         `;
+        certCards += `
+          <div class="ins-cert-card">
+            <div class="ins-cert-card-top">
+              <div class="ins-cert-card-icon"><i class="fas fa-graduation-cap"></i></div>
+              <div style="flex:1;min-width:0;">
+                <div class="ins-cert-card-name">${cert.studentName}</div>
+                <div class="ins-cert-card-course">${cert.courseTitle}</div>
+              </div>
+              <span class="badge badge-success" style="flex-shrink:0;">Certificado</span>
+            </div>
+            <div class="ins-cert-card-footer">
+              <span class="ins-cert-code"><i class="fas fa-qrcode"></i> ${cert.verificationCode}</span>
+              <span class="ins-cert-date"><i class="fas fa-calendar-check"></i> ${cert.issueDate}</span>
+            </div>
+          </div>`;
       });
       DOM.studentRegistryRows.innerHTML = tableRows;
+      if (certCardsMobile) certCardsMobile.innerHTML = certCards;
     }
   } catch (error) {
     console.error(error);
@@ -3346,56 +3426,60 @@ function filterStudentsTable() {
 }
 
 async function renderStudentsTableRows(studentsList) {
-  if (!DOM.studentsTableBody) return;
+  const tbody = DOM.studentsTableBody;
+  const cardsMobile = document.getElementById('students-cards-mobile');
+
   if (!studentsList || studentsList.length === 0) {
-    DOM.studentsTableBody.innerHTML = `
-      <tr>
-        <td colspan="6" style="text-align: center; color: var(--text-secondary); padding: 30px;">
-          No se encontraron usuarios registrados.
-        </td>
-      </tr>
-    `;
+    const emptyMsg = `<tr><td colspan="6" style="text-align:center;color:var(--text-secondary);padding:30px;">No se encontraron usuarios registrados.</td></tr>`;
+    const emptyCard = `<p style="color:var(--text-secondary);text-align:center;padding:20px;">No se encontraron usuarios registrados.</p>`;
+    if (tbody) tbody.innerHTML = emptyMsg;
+    if (cardsMobile) cardsMobile.innerHTML = emptyCard;
     return;
   }
 
   const courses = await db.getCourses();
   const courseMap = {};
-  courses.forEach(c => {
-    courseMap[c.id] = c.title;
-  });
+  courses.forEach(c => { courseMap[c.id] = c.title; });
 
   let rowsHtml = '';
+  let cardsHtml = '';
 
   studentsList.forEach(student => {
     const regDate = student.registeredAt ? new Date(student.registeredAt).toLocaleDateString() : 'N/A';
     const assignedIds = student.assignedCourses || [];
     const displayName = student.fullName || student.username || 'Usuario';
-    
+    const initial = displayName.charAt(0).toUpperCase();
+    const safeName = displayName.replace(/'/g, "\\'");
+
     let roleBadge = '';
     if (student.role === 'admin') {
-      roleBadge = '<span class="badge" style="font-size: 0.7rem; margin-left: 6px; background:rgba(99,102,241,0.15); color:#6366f1; border:1px solid rgba(99,102,241,0.3);"><i class="fas fa-shield-alt"></i> Admin</span>';
+      roleBadge = '<span class="badge" style="font-size:0.7rem;margin-left:6px;background:rgba(99,102,241,0.15);color:#6366f1;border:1px solid rgba(99,102,241,0.3);"><i class="fas fa-shield-alt"></i> Admin</span>';
     } else if (student.role === 'instructor') {
-      roleBadge = '<span class="badge badge-success" style="font-size: 0.7rem; margin-left: 6px;"><i class="fas fa-chalkboard-teacher"></i> Instructor</span>';
-    }
-    
-    let coursesTags = '<span style="color: var(--text-secondary); font-size: 0.8rem; font-style: italic;">Sin cursos asignados</span>';
-    if (assignedIds.length > 0) {
-      coursesTags = assignedIds.map(id => {
-        const title = courseMap[id] || id;
-        return `<span class="badge" style="background: rgba(99, 102, 241, 0.15); color: var(--primary-color); border: 1px solid rgba(99, 102, 241, 0.3); font-size: 0.75rem; margin-right: 4px; margin-bottom: 4px; display: inline-block;">${title}</span>`;
-      }).join('');
+      roleBadge = '<span class="badge badge-success" style="font-size:0.7rem;margin-left:6px;"><i class="fas fa-chalkboard-teacher"></i> Instructor</span>';
     }
 
+    let coursesTags = '<span style="color:var(--text-secondary);font-size:0.8rem;font-style:italic;">Sin cursos asignados</span>';
+    let coursesBadgesMobile = '<span style="color:var(--text-secondary);font-size:0.78rem;font-style:italic;">Sin cursos asignados</span>';
+    if (assignedIds.length > 0) {
+      const tags = assignedIds.map(id => {
+        const title = courseMap[id] || id;
+        return `<span class="badge" style="background:rgba(99,102,241,0.15);color:var(--accent-color);border:1px solid rgba(99,102,241,0.3);font-size:0.75rem;margin-right:4px;margin-bottom:4px;display:inline-block;">${title}</span>`;
+      }).join('');
+      coursesTags = tags;
+      coursesBadgesMobile = tags;
+    }
+
+    // ── Fila tabla (desktop) ──
     rowsHtml += `
       <tr>
         <td>
-          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
             <div>
-              <strong style="color: var(--text-primary); font-size: 0.95rem;">${displayName}</strong>
+              <strong style="color:var(--text-primary);font-size:0.95rem;">${displayName}</strong>
               ${roleBadge}
             </div>
-            <button type="button" class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); editStudentName('${student.id}', '${displayName.replace(/'/g, "\\'")}', event)" style="padding: 2px 8px; font-size: 0.75rem;" title="Corregir Nombre del Alumno">
-              <i class="fas fa-edit" style="color: var(--accent-color);"></i> Editar Nombre
+            <button type="button" class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); editStudentName('${student.id}', '${safeName}', event)" style="padding:2px 8px;font-size:0.75rem;" title="Corregir Nombre del Alumno">
+              <i class="fas fa-edit" style="color:var(--accent-color);"></i> Editar Nombre
             </button>
           </div>
         </td>
@@ -3403,16 +3487,51 @@ async function renderStudentsTableRows(studentsList) {
         <td>${student.phone || 'N/A'}</td>
         <td>${regDate}</td>
         <td>${coursesTags}</td>
-        <td style="text-align: center; white-space: nowrap;">
-          <button type="button" class="btn btn-primary btn-sm" onclick="event.stopPropagation(); openAssignCoursesModal('${student.id}', event)" style="padding: 4px 10px; font-size: 0.75rem;">
+        <td style="text-align:center;white-space:nowrap;">
+          <button type="button" class="btn btn-primary btn-sm" onclick="event.stopPropagation(); openAssignCoursesModal('${student.id}', event)" style="padding:4px 10px;font-size:0.75rem;">
             <i class="fas fa-book-reader"></i> Asignar Cursos
           </button>
         </td>
-      </tr>
-    `;
+      </tr>`;
+
+    // ── Card (móvil) ──
+    cardsHtml += `
+      <div class="ins-student-card">
+        <div class="ins-student-card-top">
+          <div class="ins-student-card-avatar">${initial}</div>
+          <div style="flex:1;min-width:0;">
+            <div class="ins-student-card-name">${displayName} ${roleBadge}</div>
+            <div class="ins-student-card-meta">
+              <i class="fas fa-envelope"></i> ${student.email || 'Sin correo'}
+            </div>
+            ${student.phone ? `<div class="ins-student-card-meta"><i class="fas fa-phone"></i> ${student.phone}</div>` : ''}
+          </div>
+          <div class="ins-student-card-date">
+            <span>${regDate}</span>
+          </div>
+        </div>
+        ${assignedIds.length > 0 ? `
+        <div class="ins-student-card-courses">
+          <div class="ins-student-card-courses-label"><i class="fas fa-book"></i> Cursos asignados</div>
+          <div>${coursesBadgesMobile}</div>
+        </div>` : `
+        <div class="ins-student-card-courses">
+          <div class="ins-student-card-courses-label"><i class="fas fa-book"></i> Cursos asignados</div>
+          <span style="color:var(--text-secondary);font-size:0.78rem;font-style:italic;">Sin cursos asignados</span>
+        </div>`}
+        <div class="ins-student-card-actions">
+          <button type="button" class="btn btn-primary btn-sm" onclick="event.stopPropagation(); openAssignCoursesModal('${student.id}', event)">
+            <i class="fas fa-book-reader"></i> Asignar Cursos
+          </button>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); editStudentName('${student.id}', '${safeName}', event)">
+            <i class="fas fa-edit" style="color:var(--accent-color);"></i> Editar Nombre
+          </button>
+        </div>
+      </div>`;
   });
 
-  DOM.studentsTableBody.innerHTML = rowsHtml;
+  if (tbody) tbody.innerHTML = rowsHtml;
+  if (cardsMobile) cardsMobile.innerHTML = cardsHtml;
 }
 
 window.toggleUserRole = async function(userId, evt) {

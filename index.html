@@ -369,30 +369,36 @@
           </div>
         </div>
 
-        <div class="table-container">
-          <table class="custom-table">
-            <thead>
-              <tr>
-                <th>Nombre</th>
-                <th>Correo Electrónico</th>
-                <th>Teléfono</th>
-                <th>Rol Actual</th>
-                <th>Fecha Registro</th>
-                <th style="text-align: center;">Acciones</th>
-              </tr>
-            </thead>
-            <tbody id="admin-users-table-body">
-              <tr><td colspan="6" style="text-align: center; padding: 30px; color: var(--text-secondary);">Cargando usuarios...</td></tr>
-            </tbody>
-          </table>
+        <div class="admin-table-desktop">
+          <div class="table-container">
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Correo Electrónico</th>
+                  <th>Teléfono</th>
+                  <th>Rol Actual</th>
+                  <th>Fecha Registro</th>
+                  <th style="text-align: center;">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="admin-users-table-body">
+                <tr><td colspan="6" style="text-align: center; padding: 30px; color: var(--text-secondary);">Cargando usuarios...</td></tr>
+              </tbody>
+            </table>
+          </div>
         </div>
+
+        <!-- Vista de cards para móvil -->
+        <div class="admin-user-cards-list" id="admin-users-cards-list"></div>
+
       </section>
 
       <!-- ==================== PORTAL INSTRUCTOR ==================== -->
       
       <!-- VISTA: DASHBOARD INSTRUCTOR -->
       <section class="view-panel" id="view-instructor-dashboard">
-        <div class="section-header">
+        <div class="section-header instructor-panel-header">
           <h2>Panel del Instructor</h2>
           <button class="btn btn-primary" id="btn-new-course">
             <i class="fas fa-plus"></i> Crear Nuevo Curso
@@ -448,22 +454,26 @@
           <div class="section-header" style="margin-top: 50px;">
             <h3>Registro de Alumnos Aprobados</h3>
           </div>
-          <div class="table-container">
-            <table class="custom-table">
-              <thead>
-                <tr>
-                  <th>Código Certificado</th>
-                  <th>Nombre del Alumno</th>
-                  <th>Curso Aprobado</th>
-                  <th>Fecha de Emisión</th>
-                  <th>Estado</th>
-                </tr>
-              </thead>
-              <tbody id="student-registry-rows">
-                <!-- Dinámico: Tabla de certificados emitidos -->
-              </tbody>
-            </table>
+          <div class="instructor-table-desktop">
+            <div class="table-container">
+              <table class="custom-table">
+                <thead>
+                  <tr>
+                    <th>Código Certificado</th>
+                    <th>Nombre del Alumno</th>
+                    <th>Curso Aprobado</th>
+                    <th>Fecha de Emisión</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody id="student-registry-rows">
+                  <!-- Dinámico: Tabla de certificados emitidos -->
+                </tbody>
+              </table>
+            </div>
           </div>
+          <!-- Cards móvil: certificados -->
+          <div class="instructor-cards-mobile" id="cert-cards-mobile"></div>
         </div>
 
         <!-- Sección 2: Control de Estudiantes -->
@@ -476,23 +486,27 @@
             </div>
           </div>
           
-          <div class="table-container">
-            <table class="custom-table">
-              <thead>
-                <tr>
-                  <th>Estudiante</th>
-                  <th>Correo Electrónico</th>
-                  <th>Teléfono</th>
-                  <th>Fecha Registro</th>
-                  <th>Cursos Asignados</th>
-                  <th style="text-align: center;">Acciones</th>
-                </tr>
-              </thead>
-              <tbody id="students-table-body">
-                <!-- Se poblará dinámicamente con JavaScript -->
-              </tbody>
-            </table>
+          <div class="instructor-table-desktop">
+            <div class="table-container">
+              <table class="custom-table">
+                <thead>
+                  <tr>
+                    <th>Estudiante</th>
+                    <th>Correo Electrónico</th>
+                    <th>Teléfono</th>
+                    <th>Fecha Registro</th>
+                    <th>Cursos Asignados</th>
+                    <th style="text-align: center;">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="students-table-body">
+                  <!-- Se poblará dinámicamente con JavaScript -->
+                </tbody>
+              </table>
+            </div>
           </div>
+          <!-- Cards móvil: estudiantes -->
+          <div class="instructor-cards-mobile" id="students-cards-mobile"></div>
         </div>
       </section>
 
