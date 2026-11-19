@@ -1,4 +1,81 @@
-import { db } from './db.js';
+import { db } from './db.js?v=2000';
+
+// Asegurar que las funciones de live_sessions existan en db aún si el navegador cacheó db.js
+if (!db.saveLiveSession) {
+  db.saveLiveSession = async function(session) {
+    const record = {
+      id: session.id || ('live-' + Date.now()),
+      title: (session.title || '').trim(),
+      course_id: session.courseId || session.course_id || '',
+      course_title: session.courseTitle || session.course_title || '',
+      instructor_name: session.instructorName || session.instructor_name || 'Instructor',
+      start_time: session.startTime || session.start_time,
+      duration_minutes: parseInt(session.durationMinutes || session.duration_minutes || 60, 10),
+      zoom_url: (session.zoomUrl || session.zoom_url || '').trim(),
+      meeting_id: (session.meetingId || session.meeting_id || '').trim(),
+      passcode: (session.passcode || '').trim(),
+      description: (session.description || '').trim(),
+      created_at: session.createdAt || session.created_at || new Date().toISOString()
+    };
+    try {
+      const local = localStorage.getItem('edutrack_live_sessions_cache');
+      let list = local ? JSON.parse(local) : [];
+      const idx = list.findIndex(s => s.id === record.id);
+      if (idx >= 0) list[idx] = record;
+      else list.push(record);
+      list.sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
+      localStorage.setItem('edutrack_live_sessions_cache', JSON.stringify(list));
+    } catch (e) {
+      console.warn('Error en fallback localStorage saveLiveSession:', e);
+    }
+    try {
+      if (db.supabase) {
+        await db.supabase.from('live_sessions').upsert(record);
+      }
+    } catch (e) {}
+    return record;
+  };
+}
+
+if (!db.getLiveSessions) {
+  db.getLiveSessions = async function() {
+    try {
+      if (db.supabase) {
+        const { data, error } = await db.supabase
+          .from('live_sessions')
+          .select('*')
+          .order('start_time', { ascending: true });
+        if (!error && data && data.length > 0) {
+          localStorage.setItem('edutrack_live_sessions_cache', JSON.stringify(data));
+          return data;
+        }
+      }
+    } catch (e) {}
+    try {
+      const local = localStorage.getItem('edutrack_live_sessions_cache');
+      if (local) return JSON.parse(local);
+    } catch (e) {}
+    return [];
+  };
+}
+
+if (!db.deleteLiveSession) {
+  db.deleteLiveSession = async function(id) {
+    try {
+      const local = localStorage.getItem('edutrack_live_sessions_cache');
+      if (local) {
+        const list = JSON.parse(local).filter(s => s.id !== id);
+        localStorage.setItem('edutrack_live_sessions_cache', JSON.stringify(list));
+      }
+    } catch (e) {}
+    try {
+      if (db.supabase) {
+        await db.supabase.from('live_sessions').delete().eq('id', id);
+      }
+    } catch (e) {}
+    return true;
+  };
+}
 
 // === REGISTRO DE PWA SERVICE WORKER ===
 if ('serviceWorker' in navigator) {
