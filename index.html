@@ -18,7 +18,7 @@
   <link rel="apple-touch-icon" href="icon-192.png">
 
   <!-- Custom Styling -->
-  <link rel="stylesheet" href="style.css?v=5">
+  <link rel="stylesheet" href="style.css?v=10">
 </head>
 <body>
 
@@ -82,10 +82,10 @@
 
         <!-- Subtabs del Portal Estudiante -->
         <div class="student-subtabs">
-          <button class="student-subtab active" id="btn-subtab-courses">
+          <button class="student-subtab active" id="btn-subtab-courses" onclick="switchStudentSubtab('courses')">
             <i class="fas fa-book-open"></i> Mis Cursos
           </button>
-          <button class="student-subtab" id="btn-subtab-calendar">
+          <button class="student-subtab" id="btn-subtab-calendar" onclick="switchStudentSubtab('calendar')">
             <i class="fas fa-calendar-alt"></i> Clases en Vivo & Calendario
             <span class="live-pill-dot" id="student-calendar-live-dot" style="display: none;">● EN VIVO</span>
           </button>
@@ -149,9 +149,14 @@
               <div class="agenda-header">
                 <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
                   <h3 id="agenda-section-title"><i class="fas fa-video" style="color: #2D8CFF;"></i> Próximas Clases en Vivo</h3>
-                  <div class="agenda-filter-buttons">
-                    <button class="filter-pill active" data-agenda-filter="upcoming" id="btn-filter-upcoming">Próximas</button>
-                    <button class="filter-pill" data-agenda-filter="all" id="btn-filter-all">Todas</button>
+                  <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                    <button class="btn btn-primary btn-sm" id="btn-quick-schedule-live" onclick="openLiveSessionModal()" style="background: #2D8CFF; border-color: #2D8CFF; font-size: 0.8rem; padding: 6px 14px; font-weight: 600;">
+                      <i class="fas fa-plus"></i> Programar Clase
+                    </button>
+                    <div class="agenda-filter-buttons">
+                      <button class="filter-pill active" data-agenda-filter="upcoming" id="btn-filter-upcoming" onclick="setAgendaFilter('upcoming')">Próximas</button>
+                      <button class="filter-pill" data-agenda-filter="all" id="btn-filter-all" onclick="setAgendaFilter('all')">Todas</button>
+                    </div>
                   </div>
                 </div>
                 <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 5px;">
@@ -489,13 +494,13 @@
 
         <!-- Pestañas de Navegación del Panel de Instructor -->
         <div class="instructor-tabs">
-          <button class="instructor-tab active" id="btn-ins-courses-tab">
+          <button class="instructor-tab active" id="btn-ins-courses-tab" onclick="switchInstructorTab('courses')">
             <i class="fas fa-book"></i> Mis Cursos
           </button>
-          <button class="instructor-tab" id="btn-ins-students-tab">
+          <button class="instructor-tab" id="btn-ins-students-tab" onclick="switchInstructorTab('students')">
             <i class="fas fa-users"></i> Control de Estudiantes
           </button>
-          <button class="instructor-tab" id="btn-ins-live-tab">
+          <button class="instructor-tab" id="btn-ins-live-tab" onclick="switchInstructorTab('live')">
             <i class="fas fa-video"></i> Clases en Vivo (Zoom)
           </button>
         </div>
@@ -603,7 +608,7 @@
                 Programa sesiones de Zoom, comparte las invitaciones y coordina las fechas de tus clases en vivo.
               </p>
             </div>
-            <button class="btn btn-primary" id="btn-new-live-session" style="background: #2D8CFF; border-color: #2D8CFF;">
+            <button class="btn btn-primary" id="btn-new-live-session" onclick="openLiveSessionModal()" style="background: #2D8CFF; border-color: #2D8CFF;">
               <i class="fas fa-video"></i> Programar Clase en Vivo
             </button>
           </div>
@@ -1111,6 +1116,6 @@
   <canvas id="cert-canvas" style="display: none;" width="2000" height="1414"></canvas>
 
   <!-- Custom App Logic -->
-  <script type="module" src="app.js?v=1500"></script>
+  <script type="module" src="app.js?v=2000"></script>
 </body>
 </html>

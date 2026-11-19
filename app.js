@@ -5217,4 +5217,6 @@ window.goToCalendarToday = goToCalendarToday;
 window.setAgendaFilter = setAgendaFilter;
 window.openLiveSessionModal = openLiveSessionModal;
 window.closeLiveSessionModal = closeLiveSessionModal;
+window.switchInstructorTab = switchInstructorTab;
+window.loadInstructorLiveSessions = loadInstructorLiveSessions;
 
