@@ -149,14 +149,9 @@
               <div class="agenda-header">
                 <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
                   <h3 id="agenda-section-title"><i class="fas fa-video" style="color: #2D8CFF;"></i> Próximas Clases en Vivo</h3>
-                  <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                    <button class="btn btn-primary btn-sm" id="btn-quick-schedule-live" onclick="openLiveSessionModal()" style="background: #2D8CFF; border-color: #2D8CFF; font-size: 0.8rem; padding: 6px 14px; font-weight: 600;">
-                      <i class="fas fa-plus"></i> Programar Clase
-                    </button>
-                    <div class="agenda-filter-buttons">
-                      <button class="filter-pill active" data-agenda-filter="upcoming" id="btn-filter-upcoming" onclick="setAgendaFilter('upcoming')">Próximas</button>
-                      <button class="filter-pill" data-agenda-filter="all" id="btn-filter-all" onclick="setAgendaFilter('all')">Todas</button>
-                    </div>
+                  <div class="agenda-filter-buttons">
+                    <button class="filter-pill active" data-agenda-filter="upcoming" id="btn-filter-upcoming" onclick="setAgendaFilter('upcoming')">Próximas</button>
+                    <button class="filter-pill" data-agenda-filter="all" id="btn-filter-all" onclick="setAgendaFilter('all')">Todas</button>
                   </div>
                 </div>
                 <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 5px;">
@@ -1116,6 +1111,6 @@
   <canvas id="cert-canvas" style="display: none;" width="2000" height="1414"></canvas>
 
   <!-- Custom App Logic -->
-  <script type="module" src="app.js?v=2000"></script>
+  <script type="module" src="app.js?v=2001"></script>
 </body>
 </html>
