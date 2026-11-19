@@ -45,7 +45,7 @@ if (!db.getLiveSessions) {
           .from('live_sessions')
           .select('*')
           .order('start_time', { ascending: true });
-        if (!error && data && data.length > 0) {
+        if (!error && Array.isArray(data)) {
           localStorage.setItem('edutrack_live_sessions_cache', JSON.stringify(data));
           return data;
         }
@@ -53,7 +53,7 @@ if (!db.getLiveSessions) {
     } catch (e) {}
     try {
       const local = localStorage.getItem('edutrack_live_sessions_cache');
-      if (local) return JSON.parse(local);
+      if (local !== null) return JSON.parse(local);
     } catch (e) {}
     return [];
   };

@@ -1121,65 +1121,24 @@ export const db = {
         .from('live_sessions')
         .select('*')
         .order('start_time', { ascending: true });
-      if (!error && data && data.length > 0) {
+      if (!error && Array.isArray(data)) {
         localStorage.setItem('edutrack_live_sessions_cache', JSON.stringify(data));
         return data;
       }
     } catch (e) {
-      console.warn('Consulta a Supabase live_sessions falló o tabla pendiente, usando caché local:', e);
+      console.warn('Consulta a Supabase live_sessions falló o tabla pendiente, usando almacenamiento local:', e);
     }
 
     // Fallback con localStorage
     try {
       const local = localStorage.getItem('edutrack_live_sessions_cache');
-      if (local) {
+      if (local !== null) {
         const parsed = JSON.parse(local);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) return parsed;
       }
     } catch (e) {}
 
-    // Sesiones iniciales de ejemplo si no hay nada guardado
-    const defaultDate = new Date();
-    defaultDate.setDate(defaultDate.getDate() + 1);
-    defaultDate.setHours(19, 0, 0, 0);
-
-    const nextWeekDate = new Date();
-    nextWeekDate.setDate(nextWeekDate.getDate() + 4);
-    nextWeekDate.setHours(18, 30, 0, 0);
-
-    const initialSessions = [
-      {
-        id: 'live-sample-1',
-        title: 'Masterclass: Preguntas y Respuestas en Vivo',
-        course_id: 'course-1787333637515',
-        course_title: 'Principios del creyente',
-        instructor_name: 'Profesor Titular',
-        start_time: defaultDate.toISOString(),
-        duration_minutes: 60,
-        zoom_url: 'https://zoom.us/join',
-        meeting_id: '824 5910 4321',
-        passcode: 'EDU2026',
-        description: 'Sesión interactiva en vivo por Zoom para resolver dudas del Módulo 1 y casos prácticos.',
-        created_at: new Date().toISOString()
-      },
-      {
-        id: 'live-sample-2',
-        title: 'Taller de Profundización y Aplicación Práctica',
-        course_id: 'course-1784909522025',
-        course_title: 'Seminario Principios Basicos para la vida',
-        instructor_name: 'Profesor Titular',
-        start_time: nextWeekDate.toISOString(),
-        duration_minutes: 90,
-        zoom_url: 'https://zoom.us/join',
-        meeting_id: '915 2043 8812',
-        passcode: 'VIDA77',
-        description: 'Revisión grupal en vivo con ejercicios y retroalimentación directa.',
-        created_at: new Date().toISOString()
-      }
-    ];
-
-    localStorage.setItem('edutrack_live_sessions_cache', JSON.stringify(initialSessions));
-    return initialSessions;
+    return [];
   },
 
   async saveLiveSession(session) {
