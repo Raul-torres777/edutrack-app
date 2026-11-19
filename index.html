@@ -677,12 +677,16 @@
                   </div>
                 </div>
                 <div class="form-group">
-                  <label for="edit-course-difficulty">Dificultad</label>
+                  <label for="edit-course-difficulty">Nivel / Dificultad</label>
                   <select class="form-control" id="edit-course-difficulty">
-                    <option value="Principiante">Principiante</option>
-                    <option value="Intermedio">Intermedio</option>
-                    <option value="Avanzado">Avanzado</option>
+                    <option value="Principiante">🟢 Principiante (Acceso automático a nuevos alumnos)</option>
+                    <option value="Intermedio">🟡 Intermedio (Requiere asignación del instructor)</option>
+                    <option value="Avanzado">🟣 Avanzado (Requiere asignación del instructor)</option>
                   </select>
+                  <small style="color: var(--text-secondary); font-size: 0.78rem; margin-top: 4px; display: block; line-height: 1.3;">
+                    * <strong>Principiante:</strong> Todo alumno nuevo lo verá al registrarse.<br>
+                    * <strong>Intermedio / Avanzado:</strong> Ocultos hasta que los asignes en "Control de Estudiantes".
+                  </small>
                 </div>
               </div>
               <div class="form-group">
@@ -839,9 +843,11 @@
         <button class="btn-icon modal-close-btn"><i class="fas fa-times"></i></button>
       </div>
       <div class="modal-body">
-        <p class="modal-desc" style="margin-bottom: 15px; color: var(--text-secondary); font-size: 0.9rem;">
-          Selecciona los cursos a los que este estudiante tendrá acceso. Los cursos no seleccionados se ocultarán de su portal de estudio.
-        </p>
+        <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 8px; padding: 12px 14px; margin-bottom: 16px; font-size: 0.85rem; color: #34d399; line-height: 1.45;">
+          <i class="fas fa-info-circle"></i> <strong>Reglas de acceso a los cursos:</strong><br>
+          • 🟢 <strong>Principiante:</strong> Disponibles automáticamente para todos los alumnos registrados.<br>
+          • 🟡 <strong>Intermedio</strong> y 🟣 <strong>Avanzado:</strong> Marca las casillas de los cursos que deseas desbloquear específicamente para este estudiante.
+        </div>
         
         <div class="student-info-summary" style="background: rgba(255, 255, 255, 0.05); padding: 12px 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid var(--border-color);">
           <div class="summary-item" style="margin-bottom: 5px; display: flex; justify-content: space-between;">
@@ -1117,6 +1123,6 @@
   <canvas id="cert-canvas" style="display: none;" width="2000" height="1414"></canvas>
 
   <!-- Custom App Logic -->
-  <script type="module" src="app.js?v=2002"></script>
+  <script type="module" src="app.js?v=2004"></script>
 </body>
 </html>

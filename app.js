@@ -1307,6 +1307,37 @@ function logoutUser() {
   showView('view-auth');
 }
 
+// === HELPER: NIVELES Y DIFICULTAD DE CURSOS ===
+function getCourseDifficultyInfo(difficulty) {
+  const diff = (difficulty || 'Principiante').toLowerCase().trim();
+  if (diff === 'intermedio') {
+    return {
+      name: 'Intermedio',
+      className: 'diff-intermedio',
+      icon: 'fas fa-layer-group',
+      color: '#fbbf24',
+      isBeginner: false
+    };
+  }
+  if (diff === 'avanzado') {
+    return {
+      name: 'Avanzado',
+      className: 'diff-avanzado',
+      icon: 'fas fa-fire',
+      color: '#c084fc',
+      isBeginner: false
+    };
+  }
+  return {
+    name: 'Principiante',
+    className: 'diff-principiante',
+    icon: 'fas fa-seedling',
+    color: '#34d399',
+    isBeginner: true
+  };
+}
+window.getCourseDifficultyInfo = getCourseDifficultyInfo;
+
 // === INSTRUCTOR: CONTROL DE ESTUDIANTES ===
 let currentSelectedStudentId = null;
 
@@ -1359,11 +1390,35 @@ async function openAssignCoursesModal(studentId, evt) {
     }
     
     DOM.assignCoursesList.innerHTML = courses.map(course => {
-      const isChecked = assignedIds.includes(course.id) ? 'checked' : '';
+      const diffInfo = getCourseDifficultyInfo(course.difficulty);
+      const isAssigned = assignedIds.includes(course.id);
+      const isChecked = isAssigned ? 'checked' : '';
+      
+      if (diffInfo.isBeginner) {
+        return `
+          <label class="course-checkbox-item" style="display:flex; align-items:flex-start; gap:12px; padding:10px 14px; background:rgba(16,185,129,0.06); border:1px solid rgba(16,185,129,0.25); border-radius:8px; margin-bottom:8px;">
+            <input type="checkbox" checked disabled style="width:18px; height:18px; cursor:not-allowed; accent-color:#10b981; margin-top:3px;">
+            <div style="flex:1;">
+              <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                <span class="course-name" style="color:var(--text-primary); font-size:0.92rem; font-weight:600;">${course.title}</span>
+                <span class="badge" style="background:rgba(16,185,129,0.18); color:#34d399; border:1px solid rgba(52,211,153,0.35); font-size:0.75rem; padding:2px 8px; border-radius:12px; font-weight:600;"><i class="fas fa-seedling"></i> Principiante</span>
+              </div>
+              <div style="font-size:0.75rem; color:#34d399; margin-top:2px;"><i class="fas fa-check-circle"></i> Acceso automático a todos los alumnos registrados</div>
+            </div>
+          </label>
+        `;
+      }
+
       return `
-        <label class="course-checkbox-item" style="display:flex; align-items:center; gap:10px; padding:8px 12px; background:rgba(255,255,255,0.03); border-radius:6px; margin-bottom:4px; cursor:pointer;">
-          <input type="checkbox" value="${course.id}" ${isChecked} style="width:16px; height:16px; cursor:pointer;">
-          <span class="course-name" style="color:var(--text-primary); font-size:0.9rem; font-weight:500;">${course.title}</span>
+        <label class="course-checkbox-item" style="display:flex; align-items:flex-start; gap:12px; padding:10px 14px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:8px; margin-bottom:8px; cursor:pointer;">
+          <input type="checkbox" value="${course.id}" ${isChecked} style="width:18px; height:18px; cursor:pointer; margin-top:3px; accent-color:var(--accent-color);">
+          <div style="flex:1;">
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+              <span class="course-name" style="color:var(--text-primary); font-size:0.92rem; font-weight:600;">${course.title}</span>
+              <span class="badge" style="background:${diffInfo.name === 'Intermedio' ? 'rgba(245,158,11,0.18)' : 'rgba(168,85,247,0.18)'}; color:${diffInfo.color}; border:1px solid ${diffInfo.name === 'Intermedio' ? 'rgba(251,191,36,0.35)' : 'rgba(192,132,252,0.35)'}; font-size:0.75rem; padding:2px 8px; border-radius:12px; font-weight:600;"><i class="${diffInfo.icon}"></i> ${diffInfo.name}</span>
+            </div>
+            <div style="font-size:0.75rem; color:var(--text-secondary); margin-top:2px;">Marca la casilla para desbloquear el curso a este alumno</div>
+          </div>
         </label>
       `;
     }).join('');
@@ -1380,8 +1435,8 @@ async function submitCourseAssignment(evt) {
   if (evt && typeof evt.stopPropagation === 'function') evt.stopPropagation();
   if (!currentSelectedStudentId) return;
   
-  const checkedBoxes = DOM.assignCoursesList.querySelectorAll('input[type="checkbox"]:checked');
-  const courseIds = Array.from(checkedBoxes).map(cb => cb.value);
+  const checkedBoxes = DOM.assignCoursesList.querySelectorAll('input[type="checkbox"][value]:checked');
+  const courseIds = Array.from(checkedBoxes).map(cb => cb.value).filter(Boolean);
   
   if (DOM.btnSubmitAssignCourses) {
     DOM.btnSubmitAssignCourses.disabled = true;
@@ -1447,8 +1502,13 @@ async function loadStudentDashboard() {
     const allCourses = await db.getCourses();
     const assignedIds = currentUser.assignedCourses || [];
     
-    // Filtrar para mostrar sólo los asignados
-    const studentCourses = allCourses.filter(c => assignedIds.includes(c.id));
+    // Filtrar: Los cursos "Principiante" están disponibles automáticamente para todos los alumnos al registrarse.
+    // Los cursos "Intermedio" y "Avanzado" sólo se muestran si el instructor se los ha asignado explícitamente.
+    const studentCourses = allCourses.filter(c => {
+      const diffInfo = getCourseDifficultyInfo(c.difficulty);
+      if (diffInfo.isBeginner) return true;
+      return assignedIds.includes(c.id);
+    });
     
     // Renderizar los filtros de categorías
     renderCategoryFilters('student-category-filters', studentCourses, activeStudentCategory, 'filterStudentCategory');
@@ -1462,8 +1522,8 @@ async function loadStudentDashboard() {
       DOM.studentCoursesGrid.innerHTML = `
         <div class="empty-state" style="grid-column: 1/-1;">
           <i class="fas fa-graduation-cap"></i>
-          <h3>No tienes cursos asignados</h3>
-          <p>Actualmente no tienes cursos asignados. Ponte en contacto con tu instructor para que te asigne a tus cursos correspondientes.</p>
+          <h3>No hay cursos disponibles</h3>
+          <p>Actualmente no tienes cursos habilitados. Ponte en contacto con tu instructor para que te asigne a los cursos correspondientes.</p>
         </div>
       `;
       return;
@@ -1520,6 +1580,7 @@ async function loadStudentDashboard() {
         `;
       }
       
+      const diffInfo = getCourseDifficultyInfo(course.difficulty);
       let lessonCount = 0;
       course.modules.forEach(m => lessonCount += m.lessons.length);
       
@@ -1527,6 +1588,7 @@ async function loadStudentDashboard() {
         <div class="course-card">
           <div class="course-card-header" style="background: ${course.thumbnail || 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)'}">
             <span class="course-card-tag">${course.category}</span>
+            <span class="course-difficulty-badge ${diffInfo.className}"><i class="${diffInfo.icon}"></i> ${diffInfo.name}</span>
             <h3>${course.title}</h3>
           </div>
           <div class="course-card-body">
@@ -1534,6 +1596,7 @@ async function loadStudentDashboard() {
             
             <div class="course-meta">
               <span><i class="fas fa-user"></i> ${course.instructor}</span>
+              <span style="color:${diffInfo.color}; font-weight:600;"><i class="${diffInfo.icon}"></i> ${diffInfo.name}</span>
               <span><i class="fas fa-clock"></i> ${course.duration}</span>
             </div>
             
@@ -1576,6 +1639,16 @@ async function startCourse(courseId) {
   try {
     const course = await db.getCourseById(courseId);
     if (!course) return;
+    
+    // Validar nivel de acceso para estudiantes
+    if (currentUser && currentUser.role === 'student') {
+      const diffInfo = getCourseDifficultyInfo(course.difficulty);
+      const assignedIds = currentUser.assignedCourses || [];
+      if (!diffInfo.isBeginner && !assignedIds.includes(course.id)) {
+        alert('Este curso es de nivel ' + diffInfo.name + ' y requiere que tu instructor te lo asigne previamente.');
+        return;
+      }
+    }
     
     activeCourse = course;
     DOM.playerCourseTitle.textContent = course.title;
@@ -3434,6 +3507,7 @@ async function loadInstructorDashboard() {
     } else {
       let coursesHtml = '';
       coursesToRender.forEach(course => {
+        const diffInfo = getCourseDifficultyInfo(course.difficulty);
         let lessonCount = 0;
         course.modules.forEach(m => lessonCount += m.lessons.length);
         
@@ -3441,11 +3515,13 @@ async function loadInstructorDashboard() {
           <div class="course-card">
             <div class="course-card-header" style="background: ${course.thumbnail || 'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)'}">
               <span class="course-card-tag">${course.category}</span>
+              <span class="course-difficulty-badge ${diffInfo.className}"><i class="${diffInfo.icon}"></i> ${diffInfo.name}</span>
               <h3>${course.title}</h3>
             </div>
             <div class="course-card-body">
               <p>${course.description}</p>
               <div class="course-meta">
+                <span style="color:${diffInfo.color}; font-weight:600;"><i class="${diffInfo.icon}"></i> ${diffInfo.name} ${diffInfo.isBeginner ? '(Libre)' : '(Asignado)'}</span>
                 <span><i class="fas fa-list"></i> ${course.modules.length} Módulos</span>
                 <span><i class="fas fa-video"></i> ${lessonCount} Clases</span>
               </div>
@@ -3591,7 +3667,7 @@ async function renderStudentsTableRows(studentsList) {
 
   const courses = await db.getCourses();
   const courseMap = {};
-  courses.forEach(c => { courseMap[c.id] = c.title; });
+  courses.forEach(c => { courseMap[c.id] = c; });
 
   let rowsHtml = '';
   let cardsHtml = '';
@@ -3610,15 +3686,17 @@ async function renderStudentsTableRows(studentsList) {
       roleBadge = '<span class="badge badge-success" style="font-size:0.7rem;margin-left:6px;"><i class="fas fa-chalkboard-teacher"></i> Instructor</span>';
     }
 
-    let coursesTags = '<span style="color:var(--text-secondary);font-size:0.8rem;font-style:italic;">Sin cursos asignados</span>';
-    let coursesBadgesMobile = '<span style="color:var(--text-secondary);font-size:0.78rem;font-style:italic;">Sin cursos asignados</span>';
+    let coursesTags = '<span class="badge" style="background:rgba(16,185,129,0.15);color:#34d399;border:1px solid rgba(52,211,153,0.3);font-size:0.75rem;"><i class="fas fa-seedling"></i> Principiante (Todos)</span>';
+    let coursesBadgesMobile = '<span class="badge" style="background:rgba(16,185,129,0.15);color:#34d399;border:1px solid rgba(52,211,153,0.3);font-size:0.75rem;"><i class="fas fa-seedling"></i> Principiante (Todos)</span>';
     if (assignedIds.length > 0) {
-      const tags = assignedIds.map(id => {
-        const title = courseMap[id] || id;
-        return `<span class="badge" style="background:rgba(99,102,241,0.15);color:var(--accent-color);border:1px solid rgba(99,102,241,0.3);font-size:0.75rem;margin-right:4px;margin-bottom:4px;display:inline-block;">${title}</span>`;
+      const extraTags = assignedIds.map(id => {
+        const c = courseMap[id];
+        const title = c ? c.title : id;
+        const diffInfo = c ? getCourseDifficultyInfo(c.difficulty) : { name: 'Asignado', icon: 'fas fa-book', color: 'var(--accent-color)' };
+        return `<span class="badge" style="background:rgba(99,102,241,0.15);color:${diffInfo.color};border:1px solid rgba(99,102,241,0.3);font-size:0.75rem;margin-right:4px;margin-bottom:4px;display:inline-block;"><i class="${diffInfo.icon}" style="margin-right:4px;"></i>${title}</span>`;
       }).join('');
-      coursesTags = tags;
-      coursesBadgesMobile = tags;
+      coursesTags += ' ' + extraTags;
+      coursesBadgesMobile += ' ' + extraTags;
     }
 
     // ── Fila tabla (desktop) ──
@@ -4527,7 +4605,12 @@ async function openStudentProfileModal() {
       </div>
     `;
     try {
-      const courses = await db.getCourses();
+      const allCourses = await db.getCourses();
+      const assignedIds = currentUser.assignedCourses || [];
+      const courses = allCourses.filter(c => {
+        const diffInfo = getCourseDifficultyInfo(c.difficulty);
+        return diffInfo.isBeginner || assignedIds.includes(c.id);
+      });
       let userCertificates = [];
       try {
         userCertificates = await db.getUserCertificates(currentUser.id);
