@@ -275,6 +275,7 @@ const DOM = {
   newLessonUrl: document.getElementById('new-lesson-url'),
   newLessonFileInput: document.getElementById('new-lesson-file-input'),
   newLessonNotes: document.getElementById('new-lesson-notes'),
+  newLessonMaterialUrl: document.getElementById('new-lesson-material-url'),
   btnSubmitAddLesson: document.getElementById('btn-submit-add-lesson'),
   fileUploadStatus: document.getElementById('file-upload-status'),
   filenamePreview: document.getElementById('filename-preview'),
@@ -438,6 +439,7 @@ function populateDOM() {
   DOM.newLessonUrl = document.getElementById('new-lesson-url');
   DOM.newLessonFileInput = document.getElementById('new-lesson-file-input');
   DOM.newLessonNotes = document.getElementById('new-lesson-notes');
+  DOM.newLessonMaterialUrl = document.getElementById('new-lesson-material-url');
   DOM.btnSubmitAddLesson = document.getElementById('btn-submit-add-lesson');
   DOM.fileUploadStatus = document.getElementById('file-upload-status');
   DOM.filenamePreview = document.getElementById('filename-preview');
@@ -1828,45 +1830,51 @@ function selectPlayerLesson(lesson, mIdx, lIdx) {
   // Limpiar recursos
   DOM.playerResourcesList.innerHTML = '';
   
-  // Configurar recursos/documentos
-  if (lesson.type === 'document' || (activeCourse.modules[mIdx].lessons.some(l => l.type === 'document'))) {
-    let resourcesHtml = '';
-    
-    if (lesson.type === 'document') {
-      resourcesHtml += `
-        <div class="resource-item">
-          <div class="resource-info">
-            <div class="resource-icon"><i class="fas fa-file-pdf"></i></div>
-            <div class="resource-details">
-              <h4>${lesson.title} (Documento Principal)</h4>
-              <span>Descargar recurso para lectura</span>
-            </div>
-          </div>
-          <a class="btn btn-secondary" href="${lesson.url}" target="_blank" download="${lesson.title}.pdf">
-            <i class="fas fa-download"></i> Descargar
-          </a>
-        </div>
-      `;
-    }
-    
+  // Configurar recursos/documentos de apoyo
+  let resourcesHtml = '';
+
+  // 1. Si la clase tiene material de apoyo adjunto (enlace, PDF, Google Drive)
+  if (lesson.materialUrl) {
+    const isPdf = lesson.materialUrl.toLowerCase().includes('.pdf');
+    const iconClass = isPdf ? 'fa-file-pdf' : 'fa-paperclip';
     resourcesHtml += `
       <div class="resource-item">
         <div class="resource-info">
-          <div class="resource-icon"><i class="fas fa-link"></i></div>
+          <div class="resource-icon" style="color: var(--accent-color);"><i class="fas ${iconClass}"></i></div>
           <div class="resource-details">
-            <h4>Lectura Complementaria de Apoyo</h4>
-            <span>Enlace web recomendado por el docente</span>
+            <h4>Material de Apoyo: ${lesson.title}</h4>
+            <span>Archivo o enlace complementario para estudio</span>
           </div>
         </div>
-        <a class="btn btn-secondary" href="https://developer.mozilla.org/es/" target="_blank">
-          <i class="fas fa-external-link-alt"></i> Visitar
+        <a class="btn btn-secondary btn-sm" href="${lesson.materialUrl}" target="_blank" rel="noopener noreferrer">
+          <i class="fas fa-external-link-alt"></i> Ver / Descargar
         </a>
       </div>
     `;
-    
+  }
+
+  // 2. Si la clase en sí es de tipo Documento
+  if (lesson.type === 'document' && lesson.url) {
+    resourcesHtml += `
+      <div class="resource-item">
+        <div class="resource-info">
+          <div class="resource-icon"><i class="fas fa-file-pdf"></i></div>
+          <div class="resource-details">
+            <h4>${lesson.title} (Documento Principal)</h4>
+            <span>Descargar recurso para lectura</span>
+          </div>
+        </div>
+        <a class="btn btn-secondary btn-sm" href="${lesson.url}" target="_blank" download="${lesson.title}.pdf">
+          <i class="fas fa-download"></i> Descargar
+        </a>
+      </div>
+    `;
+  }
+
+  if (resourcesHtml) {
     DOM.playerResourcesList.innerHTML = resourcesHtml;
   } else {
-    DOM.playerResourcesList.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 20px;">No se han adjuntado archivos o lecturas para esta clase en específico.</p>';
+    DOM.playerResourcesList.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 25px;"><i class="fas fa-folder-open fa-2x" style="opacity: 0.3; margin-bottom: 8px; display: block;"></i> No se ha adjuntado material de apoyo para esta clase en específico.</p>';
   }
 
   // Limpiar cualquier temporizador activo previo y reiniciar variables de progreso de video nativo
@@ -4089,6 +4097,7 @@ window.openAddLessonModal = function(moduleIndex) {
   DOM.newLessonUrl.value = '';
   DOM.newLessonFileInput.value = '';
   DOM.newLessonNotes.value = '';
+  if (DOM.newLessonMaterialUrl) DOM.newLessonMaterialUrl.value = '';
   DOM.fileUploadStatus.textContent = 'Arrastra o selecciona un video o PDF';
   DOM.filenamePreview.style.display = 'none';
   selectedLocalFile = null;
@@ -4111,6 +4120,7 @@ window.openEditLessonModal = function(moduleIndex, lessonIndex) {
   DOM.newLessonType.value = lesson.type;
   DOM.newLessonDuration.value = lesson.duration || '';
   DOM.newLessonNotes.value = lesson.notes || '';
+  if (DOM.newLessonMaterialUrl) DOM.newLessonMaterialUrl.value = lesson.materialUrl || '';
   
   if (lesson.url && (lesson.url.startsWith('http') || lesson.url.startsWith('https') || lesson.url.startsWith('blob:'))) {
     DOM.newLessonSourceType.value = 'url';
@@ -4168,6 +4178,7 @@ function submitAddLesson() {
   const duration = DOM.newLessonDuration.value.trim();
   const sourceType = DOM.newLessonSourceType.value;
   const notes = DOM.newLessonNotes.value.trim();
+  const materialUrl = DOM.newLessonMaterialUrl ? DOM.newLessonMaterialUrl.value.trim() : '';
   
   if (!title) {
     alert('Ingresa el título de la clase.');
@@ -4204,6 +4215,7 @@ function submitAddLesson() {
     lesson.url = targetUrl;
     lesson.duration = duration || (type === 'video' ? '10:00' : '10 min de lectura');
     lesson.notes = notes;
+    lesson.materialUrl = materialUrl;
   } else {
     // Agregar nueva lección
     const newLesson = {
@@ -4212,7 +4224,8 @@ function submitAddLesson() {
       type,
       url: targetUrl,
       duration: duration || (type === 'video' ? '10:00' : '10 min de lectura'),
-      notes
+      notes,
+      materialUrl
     };
     editingCourse.modules[activeEditingModuleIndex].lessons.push(newLesson);
   }

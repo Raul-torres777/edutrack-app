@@ -817,6 +817,12 @@
           <label for="new-lesson-notes">Apuntes / Notas de la Clase</label>
           <textarea class="form-control" id="new-lesson-notes" placeholder="Agrega notas clave, enlaces de interés o instrucciones para tus alumnos..."></textarea>
         </div>
+
+        <div class="form-group">
+          <label for="new-lesson-material-url"><i class="fas fa-paperclip" style="color: var(--accent-color);"></i> Material de Apoyo (PDF, Guía o Enlace)</label>
+          <input type="url" class="form-control" id="new-lesson-material-url" placeholder="https://drive.google.com/... o enlace directo a tu PDF">
+          <small style="color: var(--text-secondary); font-size: 0.78rem;">Opcional: Pega el enlace de tus diapositivas, guía en PDF o recursos en Google Drive para que tus alumnos los descarguen.</small>
+        </div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary modal-close-btn">Cancelar</button>
@@ -1111,6 +1117,6 @@
   <canvas id="cert-canvas" style="display: none;" width="2000" height="1414"></canvas>
 
   <!-- Custom App Logic -->
-  <script type="module" src="app.js?v=2001"></script>
+  <script type="module" src="app.js?v=2002"></script>
 </body>
 </html>
