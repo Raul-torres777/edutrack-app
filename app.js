@@ -376,6 +376,44 @@ function populateDOM() {
   DOM.assignStudentEmail = document.getElementById('assign-student-email');
   DOM.assignCoursesList = document.getElementById('assign-courses-list');
   DOM.btnSubmitAssignCourses = document.getElementById('btn-submit-assign-courses');
+
+  // Elementos de Clases en Vivo / Calendario (Zoom)
+  DOM.btnInsLiveTab = document.getElementById('btn-ins-live-tab');
+  DOM.insLiveSection = document.getElementById('ins-live-section');
+  DOM.insLiveSessionsTableBody = document.getElementById('ins-live-sessions-table-body');
+  DOM.insLiveCardsMobile = document.getElementById('ins-live-cards-mobile');
+  DOM.btnNewLiveSession = document.getElementById('btn-new-live-session');
+
+  DOM.btnSubtabCourses = document.getElementById('btn-subtab-courses');
+  DOM.btnSubtabCalendar = document.getElementById('btn-subtab-calendar');
+  DOM.subviewStudentCourses = document.getElementById('subview-student-courses');
+  DOM.subviewStudentCalendar = document.getElementById('subview-student-calendar');
+  DOM.studentCalendarLiveDot = document.getElementById('student-calendar-live-dot');
+  DOM.studentLiveAlertBanner = document.getElementById('student-live-alert-banner');
+
+  DOM.calendarMonthLabel = document.getElementById('calendar-month-label');
+  DOM.btnCalPrev = document.getElementById('btn-cal-prev');
+  DOM.btnCalNext = document.getElementById('btn-cal-next');
+  DOM.btnCalToday = document.getElementById('btn-cal-today');
+  DOM.calendarDaysGrid = document.getElementById('calendar-days-grid');
+  DOM.studentLiveSessionsList = document.getElementById('student-live-sessions-list');
+  DOM.btnFilterUpcoming = document.getElementById('btn-filter-upcoming');
+  DOM.btnFilterAll = document.getElementById('btn-filter-all');
+
+  DOM.modalLiveSession = document.getElementById('modal-live-session');
+  DOM.modalLiveSessionTitle = document.getElementById('modal-live-session-title');
+  DOM.liveSessionId = document.getElementById('live-session-id');
+  DOM.liveSessionTitle = document.getElementById('live-session-title');
+  DOM.liveSessionCourse = document.getElementById('live-session-course');
+  DOM.liveSessionDatetime = document.getElementById('live-session-datetime');
+  DOM.liveSessionDuration = document.getElementById('live-session-duration');
+  DOM.liveSessionZoomUrl = document.getElementById('live-session-zoom-url');
+  DOM.liveSessionMeetingId = document.getElementById('live-session-meeting-id');
+  DOM.liveSessionPasscode = document.getElementById('live-session-passcode');
+  DOM.liveSessionDesc = document.getElementById('live-session-desc');
+  DOM.btnSubmitLiveSession = document.getElementById('btn-submit-live-session');
+  DOM.btnCancelLiveSession = document.getElementById('btn-cancel-live-session');
+  DOM.btnCloseModalLive = document.getElementById('btn-close-modal-live');
 }
 
 // === EVENT LISTENERS INICIALES ===
@@ -436,6 +474,23 @@ function initApp() {
   // Pestañas del Panel de Instructor
   if (DOM.btnInsCoursesTab) DOM.btnInsCoursesTab.addEventListener('click', () => switchInstructorTab('courses'));
   if (DOM.btnInsStudentsTab) DOM.btnInsStudentsTab.addEventListener('click', () => switchInstructorTab('students'));
+  if (DOM.btnInsLiveTab) DOM.btnInsLiveTab.addEventListener('click', () => switchInstructorTab('live'));
+  if (DOM.btnNewLiveSession) DOM.btnNewLiveSession.addEventListener('click', () => openLiveSessionModal());
+  if (DOM.btnSubmitLiveSession) DOM.btnSubmitLiveSession.addEventListener('click', submitLiveSession);
+  if (DOM.btnCancelLiveSession) DOM.btnCancelLiveSession.addEventListener('click', closeLiveSessionModal);
+  if (DOM.btnCloseModalLive) DOM.btnCloseModalLive.addEventListener('click', closeLiveSessionModal);
+
+  // Subtabs del Estudiante (Mis Cursos vs Clases en Vivo & Calendario)
+  if (DOM.btnSubtabCourses) DOM.btnSubtabCourses.addEventListener('click', () => switchStudentSubtab('courses'));
+  if (DOM.btnSubtabCalendar) DOM.btnSubtabCalendar.addEventListener('click', () => switchStudentSubtab('calendar'));
+
+  // Controles del Calendario y Filtros de Agenda
+  if (DOM.btnCalPrev) DOM.btnCalPrev.addEventListener('click', () => changeCalendarMonth(-1));
+  if (DOM.btnCalNext) DOM.btnCalNext.addEventListener('click', () => changeCalendarMonth(1));
+  if (DOM.btnCalToday) DOM.btnCalToday.addEventListener('click', () => goToCalendarToday());
+  if (DOM.btnFilterUpcoming) DOM.btnFilterUpcoming.addEventListener('click', () => setAgendaFilter('upcoming'));
+  if (DOM.btnFilterAll) DOM.btnFilterAll.addEventListener('click', () => setAgendaFilter('all'));
+
   if (DOM.studentSearchInput) DOM.studentSearchInput.addEventListener('input', filterStudentsTable);
   if (DOM.btnSubmitAssignCourses) DOM.btnSubmitAssignCourses.addEventListener('click', submitCourseAssignment);
   
@@ -1420,6 +1475,9 @@ async function loadStudentDashboard() {
     }
     
     DOM.studentCoursesGrid.innerHTML = html;
+
+    // Sincronizar sesiones en vivo y calendario
+    refreshLiveSessionsData();
   } catch (error) {
     console.error(error);
     alert('Error en loadStudentDashboard: ' + error.message);
@@ -3372,17 +3430,26 @@ async function loadInstructorDashboard() {
 let allInstructorStudents = [];
 
 function switchInstructorTab(tab) {
+  // Remover active de todas las pestañas y secciones
+  if (DOM.btnInsCoursesTab) DOM.btnInsCoursesTab.classList.remove('active');
+  if (DOM.btnInsStudentsTab) DOM.btnInsStudentsTab.classList.remove('active');
+  if (DOM.btnInsLiveTab) DOM.btnInsLiveTab.classList.remove('active');
+
+  if (DOM.insCoursesSection) DOM.insCoursesSection.classList.remove('active');
+  if (DOM.insStudentsSection) DOM.insStudentsSection.classList.remove('active');
+  if (DOM.insLiveSection) DOM.insLiveSection.classList.remove('active');
+
   if (tab === 'courses') {
     if (DOM.btnInsCoursesTab) DOM.btnInsCoursesTab.classList.add('active');
-    if (DOM.btnInsStudentsTab) DOM.btnInsStudentsTab.classList.remove('active');
     if (DOM.insCoursesSection) DOM.insCoursesSection.classList.add('active');
-    if (DOM.insStudentsSection) DOM.insStudentsSection.classList.remove('active');
-  } else {
+  } else if (tab === 'students') {
     if (DOM.btnInsStudentsTab) DOM.btnInsStudentsTab.classList.add('active');
-    if (DOM.btnInsCoursesTab) DOM.btnInsCoursesTab.classList.remove('active');
     if (DOM.insStudentsSection) DOM.insStudentsSection.classList.add('active');
-    if (DOM.insCoursesSection) DOM.insCoursesSection.classList.remove('active');
     loadInstructorStudentsTable();
+  } else if (tab === 'live') {
+    if (DOM.btnInsLiveTab) DOM.btnInsLiveTab.classList.add('active');
+    if (DOM.insLiveSection) DOM.insLiveSection.classList.add('active');
+    loadInstructorLiveSessions();
   }
 }
 
@@ -4543,3 +4610,611 @@ function showGlobalError(message) {
   }
   container.innerHTML = `<i class="fas fa-exclamation-triangle"></i> <span>${message}</span> <button onclick="this.parentElement.remove()" style="background:none;border:none;color:#fff;cursor:pointer;font-weight:bold;margin-left:10px;">&times;</button>`;
 }
+
+// =========================================================================
+// === MÓDULO DE CLASES EN VIVO & CALENDARIO INTERACTIVO (ZOOM) =============
+// =========================================================================
+
+let calCurrentDate = new Date();
+let calSelectedDate = null;
+let currentAgendaFilter = 'upcoming';
+let cachedLiveSessions = [];
+
+// Cambiar subtab del estudiante (Mis Cursos vs Clases en Vivo & Calendario)
+function switchStudentSubtab(subtab) {
+  if (DOM.btnSubtabCourses) DOM.btnSubtabCourses.classList.remove('active');
+  if (DOM.btnSubtabCalendar) DOM.btnSubtabCalendar.classList.remove('active');
+  if (DOM.subviewStudentCourses) DOM.subviewStudentCourses.style.display = 'none';
+  if (DOM.subviewStudentCalendar) DOM.subviewStudentCalendar.style.display = 'none';
+
+  if (subtab === 'courses') {
+    if (DOM.btnSubtabCourses) DOM.btnSubtabCourses.classList.add('active');
+    if (DOM.subviewStudentCourses) DOM.subviewStudentCourses.style.display = 'block';
+  } else if (subtab === 'calendar') {
+    if (DOM.btnSubtabCalendar) DOM.btnSubtabCalendar.classList.add('active');
+    if (DOM.subviewStudentCalendar) DOM.subviewStudentCalendar.style.display = 'block';
+    refreshLiveSessionsData();
+  }
+}
+
+// Cargar sesiones de la BD y actualizar vistas
+async function refreshLiveSessionsData() {
+  try {
+    cachedLiveSessions = await db.getLiveSessions();
+  } catch (e) {
+    console.warn('Error al cargar sesiones en vivo:', e);
+    cachedLiveSessions = [];
+  }
+  checkActiveLiveBanner();
+  renderCalendar();
+  renderStudentLiveSessions();
+}
+
+// Banner de Alerta para clases que están ocurriendo AHORA MISMO
+function checkActiveLiveBanner() {
+  const now = new Date();
+  const activeSession = cachedLiveSessions.find(s => {
+    const start = new Date(s.start_time);
+    const end = new Date(start.getTime() + (s.duration_minutes || 60) * 60000);
+    return now >= start && now <= end;
+  });
+
+  if (activeSession) {
+    if (DOM.studentCalendarLiveDot) DOM.studentCalendarLiveDot.style.display = 'inline-block';
+    if (DOM.studentLiveAlertBanner) {
+      DOM.studentLiveAlertBanner.style.display = 'flex';
+      DOM.studentLiveAlertBanner.innerHTML = `
+        <div class="live-alert-content">
+          <div class="live-indicator-pulsing"></div>
+          <div>
+            <div style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: #ef4444; letter-spacing: 0.5px;">
+              🔴 Sesión en Vivo Activa Ahora Mismo
+            </div>
+            <strong style="color: var(--text-primary); font-size: 1.05rem;">${activeSession.title}</strong>
+            <div style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 2px;">
+              <i class="fas fa-book"></i> ${activeSession.course_title || 'Clase General'} &bull; <i class="fas fa-user-tie"></i> ${activeSession.instructor_name}
+            </div>
+          </div>
+        </div>
+        <a href="${activeSession.zoom_url}" target="_blank" rel="noopener noreferrer" class="btn-zoom-join">
+          <i class="fas fa-video"></i> Entrar a Zoom Ahora
+        </a>
+      `;
+    }
+  } else {
+    if (DOM.studentCalendarLiveDot) DOM.studentCalendarLiveDot.style.display = 'none';
+    if (DOM.studentLiveAlertBanner) DOM.studentLiveAlertBanner.style.display = 'none';
+  }
+}
+
+// --- CALENDARIO MENSUAL ---
+
+function changeCalendarMonth(delta) {
+  calCurrentDate.setMonth(calCurrentDate.getMonth() + delta);
+  renderCalendar();
+}
+
+function goToCalendarToday() {
+  calCurrentDate = new Date();
+  calSelectedDate = new Date();
+  renderCalendar();
+  renderStudentLiveSessions();
+}
+
+function renderCalendar() {
+  if (!DOM.calendarDaysGrid || !DOM.calendarMonthLabel) return;
+
+  const year = calCurrentDate.getFullYear();
+  const month = calCurrentDate.getMonth();
+
+  const monthNames = [
+    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+  ];
+  DOM.calendarMonthLabel.textContent = `${monthNames[month]} ${year}`;
+
+  const firstDayIndex = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const prevMonthDays = new Date(year, month, 0).getDate();
+
+  const today = new Date();
+  const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
+
+  let daysHtml = '';
+
+  for (let i = firstDayIndex - 1; i >= 0; i--) {
+    daysHtml += `<div class="cal-day-cell other-month">${prevMonthDays - i}</div>`;
+  }
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const isToday = isCurrentMonth && today.getDate() === day;
+    const isSelected = calSelectedDate &&
+      calSelectedDate.getFullYear() === year &&
+      calSelectedDate.getMonth() === month &&
+      calSelectedDate.getDate() === day;
+
+    const sessionsOnDay = cachedLiveSessions.filter(s => {
+      const sDate = new Date(s.start_time);
+      return sDate.getFullYear() === year && sDate.getMonth() === month && sDate.getDate() === day;
+    });
+
+    const hasSession = sessionsOnDay.length > 0;
+    const hasLiveNow = sessionsOnDay.some(s => {
+      const start = new Date(s.start_time);
+      const end = new Date(start.getTime() + (s.duration_minutes || 60) * 60000);
+      return today >= start && today <= end;
+    });
+
+    let cellClasses = ['cal-day-cell'];
+    if (isToday) cellClasses.push('is-today');
+    if (isSelected) cellClasses.push('is-selected');
+    if (hasSession) cellClasses.push('has-session');
+    if (hasLiveNow) cellClasses.push('has-live-now');
+
+    daysHtml += `
+      <div class="${cellClasses.join(' ')}" onclick="selectCalendarDate(${year}, ${month}, ${day})">
+        ${day}
+      </div>
+    `;
+  }
+
+  const totalSlots = firstDayIndex + daysInMonth;
+  const remainingSlots = (7 - (totalSlots % 7)) % 7;
+  for (let i = 1; i <= remainingSlots; i++) {
+    daysHtml += `<div class="cal-day-cell other-month">${i}</div>`;
+  }
+
+  DOM.calendarDaysGrid.innerHTML = daysHtml;
+}
+
+window.selectCalendarDate = function(year, month, day) {
+  calSelectedDate = new Date(year, month, day);
+  currentAgendaFilter = 'all';
+  if (DOM.btnFilterUpcoming) DOM.btnFilterUpcoming.classList.remove('active');
+  if (DOM.btnFilterAll) DOM.btnFilterAll.classList.add('active');
+  renderCalendar();
+  renderStudentLiveSessions();
+};
+
+function setAgendaFilter(filter) {
+  currentAgendaFilter = filter;
+  if (filter === 'upcoming') {
+    calSelectedDate = null;
+    if (DOM.btnFilterUpcoming) DOM.btnFilterUpcoming.classList.add('active');
+    if (DOM.btnFilterAll) DOM.btnFilterAll.classList.remove('active');
+  } else {
+    if (DOM.btnFilterAll) DOM.btnFilterAll.classList.add('active');
+    if (DOM.btnFilterUpcoming) DOM.btnFilterUpcoming.classList.remove('active');
+  }
+  renderCalendar();
+  renderStudentLiveSessions();
+}
+
+// Renderizar la lista de Clases en Vivo en el Portal de Estudiantes
+function renderStudentLiveSessions() {
+  if (!DOM.studentLiveSessionsList) return;
+
+  const now = new Date();
+  let list = [...cachedLiveSessions];
+
+  if (calSelectedDate) {
+    list = list.filter(s => {
+      const sDate = new Date(s.start_time);
+      return sDate.getFullYear() === calSelectedDate.getFullYear() &&
+             sDate.getMonth() === calSelectedDate.getMonth() &&
+             sDate.getDate() === calSelectedDate.getDate();
+    });
+  } else if (currentAgendaFilter === 'upcoming') {
+    list = list.filter(s => {
+      const end = new Date(new Date(s.start_time).getTime() + (s.duration_minutes || 60) * 60000);
+      return end >= now;
+    });
+  }
+
+  if (list.length === 0) {
+    const emptyMsg = calSelectedDate
+      ? `No hay clases programadas para el ${calSelectedDate.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })}.`
+      : 'No hay clases en vivo programadas próximamente.';
+
+    DOM.studentLiveSessionsList.innerHTML = `
+      <div style="text-align: center; padding: 40px 20px; color: var(--text-secondary);">
+        <i class="fas fa-calendar-times fa-3x" style="opacity: 0.3; margin-bottom: 12px;"></i>
+        <p style="font-size: 0.95rem;">${emptyMsg}</p>
+        ${calSelectedDate ? '<button class="btn btn-outline-sm" onclick="setAgendaFilter(\'upcoming\')" style="margin-top: 10px;">Ver todas las próximas</button>' : ''}
+      </div>
+    `;
+    return;
+  }
+
+  let html = '';
+  list.forEach(s => {
+    const start = new Date(s.start_time);
+    const end = new Date(start.getTime() + (s.duration_minutes || 60) * 60000);
+    const isLiveNow = now >= start && now <= end;
+    const isPast = now > end;
+
+    let statusPill = '';
+    let countdownText = '';
+
+    if (isLiveNow) {
+      statusPill = '<span class="live-status-pill status-live"><span class="live-indicator-pulsing" style="width:8px;height:8px;"></span> EN VIVO AHORA</span>';
+    } else if (isPast) {
+      statusPill = '<span class="live-status-pill status-past"><i class="fas fa-check"></i> Finalizada</span>';
+    } else {
+      const diffMs = start - now;
+      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+      const diffDays = Math.floor(diffHours / 24);
+      if (diffDays > 0) {
+        countdownText = `En ${diffDays} día${diffDays > 1 ? 's' : ''}`;
+      } else if (diffHours > 0) {
+        countdownText = `En ${diffHours} hora${diffHours > 1 ? 's' : ''}`;
+      } else {
+        const diffMins = Math.floor(diffMs / (1000 * 60));
+        countdownText = `En ${diffMins} min`;
+      }
+      statusPill = `<span class="live-status-pill status-upcoming"><i class="far fa-clock"></i> ${countdownText}</span>`;
+    }
+
+    const dateFormatted = start.toLocaleDateString('es-MX', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    const gcalUrl = generateGoogleCalendarUrl(s);
+
+    html += `
+      <div class="live-session-card ${isLiveNow ? 'is-live-card' : ''}">
+        <div class="live-session-card-top">
+          <div>
+            <div class="live-session-course-tag"><i class="fas fa-book"></i> ${s.course_title || 'Curso General'}</div>
+            <h4 class="live-session-title">${s.title}</h4>
+          </div>
+          ${statusPill}
+        </div>
+
+        <div class="live-session-meta-row">
+          <div class="live-session-meta-item"><i class="fas fa-calendar-alt" style="color: var(--accent-color);"></i> ${dateFormatted}</div>
+          <div class="live-session-meta-item"><i class="fas fa-stopwatch" style="color: var(--accent-color);"></i> ${s.duration_minutes || 60} minutos</div>
+          <div class="live-session-meta-item"><i class="fas fa-chalkboard-teacher" style="color: var(--accent-color);"></i> ${s.instructor_name}</div>
+        </div>
+
+        ${s.description ? `<div class="live-session-desc"><i class="fas fa-info-circle"></i> ${s.description}</div>` : ''}
+
+        <div class="live-session-actions-bar">
+          <div class="live-credentials-box">
+            ${s.meeting_id ? `<span class="credential-chip"><strong>ID:</strong> ${s.meeting_id}</span>` : ''}
+            ${s.passcode ? `<span class="credential-chip"><strong>Código:</strong> ${s.passcode}</span>` : ''}
+          </div>
+          
+          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <a href="${gcalUrl}" target="_blank" rel="noopener noreferrer" class="btn-gcal-sync" title="Agregar recordatorio a Google Calendar">
+              <i class="fab fa-google"></i> Calendario
+            </a>
+            <a href="${s.zoom_url}" target="_blank" rel="noopener noreferrer" class="btn-zoom-join">
+              <i class="fas fa-video"></i> ${isLiveNow ? 'Entrar a Zoom Ahora' : 'Unirse a Zoom'}
+            </a>
+          </div>
+        </div>
+      </div>
+    `;
+  });
+
+  DOM.studentLiveSessionsList.innerHTML = html;
+}
+
+// Generador de Enlace para Google Calendar
+function generateGoogleCalendarUrl(session) {
+  const start = new Date(session.start_time);
+  const end = new Date(start.getTime() + (session.duration_minutes || 60) * 60000);
+
+  const formatGCalDate = (d) => d.toISOString().replace(/-|:|\.\d+/g, '');
+
+  const text = encodeURIComponent(session.title + ' - Clase en Vivo EduTrack');
+  const dates = `${formatGCalDate(start)}/${formatGCalDate(end)}`;
+  const details = encodeURIComponent(
+    (session.description ? session.description + '\n\n' : '') +
+    'Enlace de Zoom: ' + session.zoom_url +
+    (session.meeting_id ? '\nID de Reunión: ' + session.meeting_id : '') +
+    (session.passcode ? '\nCódigo de Acceso: ' + session.passcode : '')
+  );
+  const location = encodeURIComponent(session.zoom_url);
+
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${text}&dates=${dates}&details=${details}&location=${location}`;
+}
+
+// --- GESTIÓN DE SESIONES EN VIVO POR EL INSTRUCTOR ---
+
+async function loadInstructorLiveSessions() {
+  if (!DOM.insLiveSessionsTableBody) return;
+  DOM.insLiveSessionsTableBody.innerHTML = `
+    <tr>
+      <td colspan="6" style="text-align: center; padding: 25px; color: var(--text-secondary);">
+        <i class="fas fa-spinner fa-spin"></i> Cargando clases programadas...
+      </td>
+    </tr>
+  `;
+
+  try {
+    cachedLiveSessions = await db.getLiveSessions();
+  } catch (e) {
+    cachedLiveSessions = [];
+  }
+
+  const tbody = DOM.insLiveSessionsTableBody;
+  const cardsMobile = DOM.insLiveCardsMobile;
+
+  if (cachedLiveSessions.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" style="text-align: center; padding: 30px; color: var(--text-secondary);">
+          No tienes ninguna clase en vivo programada aún. Haz clic en <strong>"Programar Clase en Vivo"</strong> para crear la primera.
+        </td>
+      </tr>
+    `;
+    if (cardsMobile) {
+      cardsMobile.innerHTML = `
+        <div style="text-align: center; padding: 25px; color: var(--text-secondary);">
+          No hay clases en vivo programadas aún.
+        </div>
+      `;
+    }
+    return;
+  }
+
+  let rowsHtml = '';
+  let cardsHtml = '';
+
+  cachedLiveSessions.forEach(s => {
+    const start = new Date(s.start_time);
+    const dateFormatted = start.toLocaleDateString('es-MX', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    const safeTitle = (s.title || '').replace(/'/g, "\\'");
+
+    rowsHtml += `
+      <tr>
+        <td><strong>${dateFormatted}</strong></td>
+        <td>
+          <strong>${s.title}</strong>
+          ${s.description ? `<div style="font-size: 0.78rem; color: var(--text-secondary); max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${s.description}</div>` : ''}
+        </td>
+        <td><span class="badge" style="background: rgba(99, 102, 241, 0.15); color: var(--accent-color); border: 1px solid rgba(99, 102, 241, 0.3); font-size: 0.75rem;">${s.course_title || 'General'}</span></td>
+        <td>${s.duration_minutes || 60} min</td>
+        <td>
+          <a href="${s.zoom_url}" target="_blank" rel="noopener noreferrer" style="color: #2D8CFF; text-decoration: underline; font-size: 0.82rem;">
+            <i class="fas fa-external-link-alt"></i> Probar Zoom
+          </a>
+        </td>
+        <td style="text-align: center; white-space: nowrap;">
+          <button class="btn btn-secondary btn-sm" onclick="copyZoomInvite('${s.id}')" title="Copiar invitación completa para WhatsApp / Correo" style="padding: 4px 8px; font-size: 0.75rem; margin-right: 4px;">
+            <i class="fas fa-copy"></i>
+          </button>
+          <button class="btn btn-secondary btn-sm" onclick="openLiveSessionModal('${s.id}')" title="Editar" style="padding: 4px 8px; font-size: 0.75rem; margin-right: 4px;">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button class="btn btn-danger btn-sm" onclick="deleteLiveSessionHandler('${s.id}', '${safeTitle}')" title="Eliminar" style="padding: 4px 8px; font-size: 0.75rem;">
+            <i class="fas fa-trash"></i>
+          </button>
+        </td>
+      </tr>
+    `;
+
+    cardsHtml += `
+      <div class="ins-live-card">
+        <div class="ins-live-card-title">${s.title}</div>
+        <div class="ins-live-card-meta"><i class="fas fa-calendar-alt" style="color: var(--accent-color);"></i> ${dateFormatted} (${s.duration_minutes || 60} min)</div>
+        <div class="ins-live-card-meta"><i class="fas fa-book" style="color: var(--accent-color);"></i> ${s.course_title || 'General'}</div>
+        ${s.meeting_id ? `<div class="ins-live-card-meta"><i class="fas fa-id-card"></i> ID: ${s.meeting_id} &bull; Clave: ${s.passcode || 'N/A'}</div>` : ''}
+        
+        <div class="ins-live-card-actions">
+          <a href="${s.zoom_url}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm" style="background:#2D8CFF;border-color:#2D8CFF;font-size:0.78rem;">
+            <i class="fas fa-video"></i> Abrir Zoom
+          </a>
+          <button class="btn btn-secondary btn-sm" onclick="copyZoomInvite('${s.id}')" style="font-size:0.78rem;">
+            <i class="fas fa-copy"></i> Copiar
+          </button>
+          <button class="btn btn-secondary btn-sm" onclick="openLiveSessionModal('${s.id}')" style="font-size:0.78rem;">
+            <i class="fas fa-edit"></i> Editar
+          </button>
+          <button class="btn btn-danger btn-sm" onclick="deleteLiveSessionHandler('${s.id}', '${safeTitle}')" style="font-size:0.78rem;">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+      </div>
+    `;
+  });
+
+  tbody.innerHTML = rowsHtml;
+  if (cardsMobile) cardsMobile.innerHTML = cardsHtml;
+}
+
+// Modal de Crear / Editar Sesión en Vivo
+async function openLiveSessionModal(sessionId = null) {
+  if (!DOM.modalLiveSession) return;
+
+  if (DOM.liveSessionCourse) {
+    try {
+      const courses = await db.getCourses();
+      let options = '<option value="">-- Sin curso específico (General) --</option>';
+      courses.forEach(c => {
+        options += `<option value="${c.id}">${c.title}</option>`;
+      });
+      DOM.liveSessionCourse.innerHTML = options;
+    } catch (e) {
+      console.warn('Error al cargar cursos para selector:', e);
+    }
+  }
+
+  if (sessionId) {
+    const session = cachedLiveSessions.find(s => s.id === sessionId);
+    if (session) {
+      if (DOM.modalLiveSessionTitle) DOM.modalLiveSessionTitle.innerHTML = '<i class="fas fa-edit" style="color: #2D8CFF;"></i> Editar Clase en Vivo';
+      if (DOM.liveSessionId) DOM.liveSessionId.value = session.id;
+      if (DOM.liveSessionTitle) DOM.liveSessionTitle.value = session.title || '';
+      if (DOM.liveSessionCourse) DOM.liveSessionCourse.value = session.course_id || '';
+      
+      if (DOM.liveSessionDatetime && session.start_time) {
+        const d = new Date(session.start_time);
+        const localIso = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+        DOM.liveSessionDatetime.value = localIso;
+      }
+      if (DOM.liveSessionDuration) DOM.liveSessionDuration.value = session.duration_minutes || 60;
+      if (DOM.liveSessionZoomUrl) DOM.liveSessionZoomUrl.value = session.zoom_url || '';
+      if (DOM.liveSessionMeetingId) DOM.liveSessionMeetingId.value = session.meeting_id || '';
+      if (DOM.liveSessionPasscode) DOM.liveSessionPasscode.value = session.passcode || '';
+      if (DOM.liveSessionDesc) DOM.liveSessionDesc.value = session.description || '';
+    }
+  } else {
+    if (DOM.modalLiveSessionTitle) DOM.modalLiveSessionTitle.innerHTML = '<i class="fas fa-video" style="color: #2D8CFF;"></i> Programar Clase en Vivo';
+    if (DOM.liveSessionId) DOM.liveSessionId.value = '';
+    if (DOM.liveSessionTitle) DOM.liveSessionTitle.value = '';
+    if (DOM.liveSessionCourse) DOM.liveSessionCourse.selectedIndex = 0;
+    
+    if (DOM.liveSessionDatetime) {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(19, 0, 0, 0);
+      const localIso = new Date(tomorrow.getTime() - tomorrow.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+      DOM.liveSessionDatetime.value = localIso;
+    }
+    if (DOM.liveSessionDuration) DOM.liveSessionDuration.value = 60;
+    if (DOM.liveSessionZoomUrl) DOM.liveSessionZoomUrl.value = '';
+    if (DOM.liveSessionMeetingId) DOM.liveSessionMeetingId.value = '';
+    if (DOM.liveSessionPasscode) DOM.liveSessionPasscode.value = '';
+    if (DOM.liveSessionDesc) DOM.liveSessionDesc.value = '';
+  }
+
+  DOM.modalLiveSession.classList.add('active');
+}
+
+function closeLiveSessionModal() {
+  if (DOM.modalLiveSession) DOM.modalLiveSession.classList.remove('active');
+}
+
+// Guardar sesión en vivo
+async function submitLiveSession() {
+  const title = (DOM.liveSessionTitle ? DOM.liveSessionTitle.value : '').trim();
+  const courseId = DOM.liveSessionCourse ? DOM.liveSessionCourse.value : '';
+  const datetimeVal = DOM.liveSessionDatetime ? DOM.liveSessionDatetime.value : '';
+  const duration = parseInt(DOM.liveSessionDuration ? DOM.liveSessionDuration.value : 60, 10);
+  const zoomUrl = (DOM.liveSessionZoomUrl ? DOM.liveSessionZoomUrl.value : '').trim();
+  const meetingId = (DOM.liveSessionMeetingId ? DOM.liveSessionMeetingId.value : '').trim();
+  const passcode = (DOM.liveSessionPasscode ? DOM.liveSessionPasscode.value : '').trim();
+  const desc = (DOM.liveSessionDesc ? DOM.liveSessionDesc.value : '').trim();
+  const editId = DOM.liveSessionId ? DOM.liveSessionId.value : '';
+
+  if (!title) {
+    alert('Por favor ingresa el título de la clase.');
+    return;
+  }
+  if (!datetimeVal) {
+    alert('Por favor selecciona la fecha y hora de inicio.');
+    return;
+  }
+  if (!zoomUrl) {
+    alert('Por favor ingresa el enlace de la reunión de Zoom.');
+    return;
+  }
+
+  let courseTitle = 'Clase General';
+  if (DOM.liveSessionCourse && DOM.liveSessionCourse.selectedIndex >= 0) {
+    courseTitle = DOM.liveSessionCourse.options[DOM.liveSessionCourse.selectedIndex].text;
+  }
+
+  const sessionData = {
+    id: editId || undefined,
+    title,
+    course_id: courseId,
+    course_title: courseTitle,
+    instructor_name: currentUser ? (currentUser.fullName || currentUser.username) : 'Instructor',
+    start_time: new Date(datetimeVal).toISOString(),
+    duration_minutes: duration,
+    zoom_url: zoomUrl,
+    meeting_id: meetingId,
+    passcode,
+    description: desc
+  };
+
+  try {
+    if (DOM.btnSubmitLiveSession) {
+      DOM.btnSubmitLiveSession.disabled = true;
+      DOM.btnSubmitLiveSession.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+    }
+
+    await db.saveLiveSession(sessionData);
+    closeLiveSessionModal();
+    alert('¡Clase en vivo guardada exitosamente!');
+    await refreshLiveSessionsData();
+    loadInstructorLiveSessions();
+  } catch (err) {
+    console.error('Error al guardar sesión en vivo:', err);
+    alert('Error al guardar la clase: ' + err.message);
+  } finally {
+    if (DOM.btnSubmitLiveSession) {
+      DOM.btnSubmitLiveSession.disabled = false;
+      DOM.btnSubmitLiveSession.innerHTML = '<i class="fas fa-save"></i> Guardar Clase en Vivo';
+    }
+  }
+}
+
+// Eliminar sesión en vivo
+window.deleteLiveSessionHandler = async function(id, title) {
+  if (!confirm(`¿Estás seguro de que deseas eliminar la clase en vivo "${title}"?`)) {
+    return;
+  }
+  try {
+    await db.deleteLiveSession(id);
+    await refreshLiveSessionsData();
+    loadInstructorLiveSessions();
+  } catch (err) {
+    alert('Error al eliminar la sesión: ' + err.message);
+  }
+};
+
+// Copiar enlace de invitación para WhatsApp / Redes
+window.copyZoomInvite = function(sessionId) {
+  const session = cachedLiveSessions.find(s => s.id === sessionId);
+  if (!session) return;
+
+  const start = new Date(session.start_time);
+  const dateFormatted = start.toLocaleDateString('es-MX', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
+  const inviteText = `🎓 *EduTrack LMS - Invitación a Clase en Vivo*\n\n` +
+    `📌 *Tema:* ${session.title}\n` +
+    `📚 *Curso:* ${session.course_title || 'General'}\n` +
+    `🗓️ *Fecha:* ${dateFormatted}\n` +
+    `⏱️ *Duración:* ${session.duration_minutes || 60} minutos\n\n` +
+    `🎥 *Unirse a Zoom:* ${session.zoom_url}\n` +
+    (session.meeting_id ? `🆔 *ID de Reunión:* ${session.meeting_id}\n` : '') +
+    (session.passcode ? `🔑 *Código de Acceso:* ${session.passcode}\n` : '') +
+    (session.description ? `\n📝 *Notas:* ${session.description}\n` : '') +
+    `\n¡Te esperamos puntualmente!`;
+
+  navigator.clipboard.writeText(inviteText)
+    .then(() => alert('¡Invitación copiada al portapapeles! Ya puedes pegarla en WhatsApp, Telegram o enviarla por correo.'))
+    .catch(() => {
+      prompt('Copia el texto de invitación:', inviteText);
+    });
+};
+
+window.switchStudentSubtab = switchStudentSubtab;
+window.changeCalendarMonth = changeCalendarMonth;
+window.goToCalendarToday = goToCalendarToday;
+window.setAgendaFilter = setAgendaFilter;
+window.openLiveSessionModal = openLiveSessionModal;
+window.closeLiveSessionModal = closeLiveSessionModal;
+

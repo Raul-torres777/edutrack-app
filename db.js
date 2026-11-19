@@ -1111,5 +1111,135 @@ export const db = {
     
     await initDB();
     return true;
+  },
+
+  // --- CLASES EN VIVO / CALENDARIO (ZOOM) ---
+
+  async getLiveSessions() {
+    try {
+      const { data, error } = await supabase
+        .from('live_sessions')
+        .select('*')
+        .order('start_time', { ascending: true });
+      if (!error && data && data.length > 0) {
+        localStorage.setItem('edutrack_live_sessions_cache', JSON.stringify(data));
+        return data;
+      }
+    } catch (e) {
+      console.warn('Consulta a Supabase live_sessions falló o tabla pendiente, usando caché local:', e);
+    }
+
+    // Fallback con localStorage
+    try {
+      const local = localStorage.getItem('edutrack_live_sessions_cache');
+      if (local) {
+        const parsed = JSON.parse(local);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+
+    // Sesiones iniciales de ejemplo si no hay nada guardado
+    const defaultDate = new Date();
+    defaultDate.setDate(defaultDate.getDate() + 1);
+    defaultDate.setHours(19, 0, 0, 0);
+
+    const nextWeekDate = new Date();
+    nextWeekDate.setDate(nextWeekDate.getDate() + 4);
+    nextWeekDate.setHours(18, 30, 0, 0);
+
+    const initialSessions = [
+      {
+        id: 'live-sample-1',
+        title: 'Masterclass: Preguntas y Respuestas en Vivo',
+        course_id: 'course-1787333637515',
+        course_title: 'Principios del creyente',
+        instructor_name: 'Profesor Titular',
+        start_time: defaultDate.toISOString(),
+        duration_minutes: 60,
+        zoom_url: 'https://zoom.us/join',
+        meeting_id: '824 5910 4321',
+        passcode: 'EDU2026',
+        description: 'Sesión interactiva en vivo por Zoom para resolver dudas del Módulo 1 y casos prácticos.',
+        created_at: new Date().toISOString()
+      },
+      {
+        id: 'live-sample-2',
+        title: 'Taller de Profundización y Aplicación Práctica',
+        course_id: 'course-1784909522025',
+        course_title: 'Seminario Principios Basicos para la vida',
+        instructor_name: 'Profesor Titular',
+        start_time: nextWeekDate.toISOString(),
+        duration_minutes: 90,
+        zoom_url: 'https://zoom.us/join',
+        meeting_id: '915 2043 8812',
+        passcode: 'VIDA77',
+        description: 'Revisión grupal en vivo con ejercicios y retroalimentación directa.',
+        created_at: new Date().toISOString()
+      }
+    ];
+
+    localStorage.setItem('edutrack_live_sessions_cache', JSON.stringify(initialSessions));
+    return initialSessions;
+  },
+
+  async saveLiveSession(session) {
+    const record = {
+      id: session.id || ('live-' + Date.now()),
+      title: session.title.trim(),
+      course_id: session.courseId || session.course_id || '',
+      course_title: session.courseTitle || session.course_title || '',
+      instructor_name: session.instructorName || session.instructor_name || 'Instructor',
+      start_time: session.startTime || session.start_time,
+      duration_minutes: parseInt(session.durationMinutes || session.duration_minutes || 60, 10),
+      zoom_url: (session.zoomUrl || session.zoom_url || '').trim(),
+      meeting_id: (session.meetingId || session.meeting_id || '').trim(),
+      passcode: (session.passcode || '').trim(),
+      description: (session.description || '').trim(),
+      created_at: session.createdAt || session.created_at || new Date().toISOString()
+    };
+
+    // 1. Guardar en caché local
+    try {
+      const local = localStorage.getItem('edutrack_live_sessions_cache');
+      let list = local ? JSON.parse(local) : [];
+      const idx = list.findIndex(s => s.id === record.id);
+      if (idx >= 0) list[idx] = record;
+      else list.push(record);
+      // Ordenar por fecha de inicio
+      list.sort((a, b) => new Date(a.start_time) - new Date(b.start_time));
+      localStorage.setItem('edutrack_live_sessions_cache', JSON.stringify(list));
+    } catch (e) {
+      console.warn('Error al persistir sesión en localStorage:', e);
+    }
+
+    // 2. Intentar guardar en Supabase
+    try {
+      const { error } = await supabase.from('live_sessions').upsert(record);
+      if (error) {
+        console.warn('Aviso Supabase live_sessions:', error.message);
+      }
+    } catch (e) {
+      console.warn('Excepción al conectar con Supabase live_sessions:', e);
+    }
+
+    return record;
+  },
+
+  async deleteLiveSession(id) {
+    // 1. Local
+    try {
+      const local = localStorage.getItem('edutrack_live_sessions_cache');
+      if (local) {
+        const list = JSON.parse(local).filter(s => s.id !== id);
+        localStorage.setItem('edutrack_live_sessions_cache', JSON.stringify(list));
+      }
+    } catch (e) {}
+
+    // 2. Supabase
+    try {
+      await supabase.from('live_sessions').delete().eq('id', id);
+    } catch (e) {}
+
+    return true;
   }
 };

@@ -77,13 +77,95 @@
           </div>
         </div>
 
-        <div class="section-header" style="flex-direction: column; align-items: flex-start; gap: 15px; margin-bottom: 25px;">
-          <h2>Tus Cursos</h2>
-          <div class="category-filters-container" id="student-category-filters"></div>
+        <!-- Banner animado si hay una clase en vivo activa AHORA MISMO -->
+        <div id="student-live-alert-banner" class="live-alert-banner" style="display: none;"></div>
+
+        <!-- Subtabs del Portal Estudiante -->
+        <div class="student-subtabs">
+          <button class="student-subtab active" id="btn-subtab-courses">
+            <i class="fas fa-book-open"></i> Mis Cursos
+          </button>
+          <button class="student-subtab" id="btn-subtab-calendar">
+            <i class="fas fa-calendar-alt"></i> Clases en Vivo & Calendario
+            <span class="live-pill-dot" id="student-calendar-live-dot" style="display: none;">● EN VIVO</span>
+          </button>
         </div>
 
-        <div class="courses-grid" id="student-courses-grid">
-          <!-- Dinámico: Cursos cargados desde base de datos -->
+        <!-- Subsección 1: Cursos del Estudiante -->
+        <div id="subview-student-courses" class="student-subview active">
+          <div class="section-header" style="flex-direction: column; align-items: flex-start; gap: 15px; margin-bottom: 25px;">
+            <h2>Tus Cursos</h2>
+            <div class="category-filters-container" id="student-category-filters"></div>
+          </div>
+
+          <div class="courses-grid" id="student-courses-grid">
+            <!-- Dinámico: Cursos cargados desde base de datos -->
+          </div>
+        </div>
+
+        <!-- Subsección 2: Calendario y Clases en Vivo -->
+        <div id="subview-student-calendar" class="student-subview" style="display: none;">
+          <div class="live-calendar-layout">
+            
+            <!-- Columna Izquierda: Calendario Mensual Interactivo -->
+            <div class="calendar-card-container">
+              <div class="calendar-header-nav">
+                <button class="btn btn-secondary btn-sm" id="btn-cal-prev" title="Mes anterior">
+                  <i class="fas fa-chevron-left"></i>
+                </button>
+                <h3 id="calendar-month-label" class="calendar-month-title">Mes Año</h3>
+                <button class="btn btn-secondary btn-sm" id="btn-cal-next" title="Mes siguiente">
+                  <i class="fas fa-chevron-right"></i>
+                </button>
+                <button class="btn btn-outline-sm" id="btn-cal-today" style="margin-left: auto;">
+                  Hoy
+                </button>
+              </div>
+
+              <!-- Días de la semana -->
+              <div class="calendar-weekdays-grid">
+                <div>Dom</div>
+                <div>Lun</div>
+                <div>Mar</div>
+                <div>Mié</div>
+                <div>Jue</div>
+                <div>Vie</div>
+                <div>Sáb</div>
+              </div>
+
+              <!-- Cuadrícula de días -->
+              <div class="calendar-days-grid" id="calendar-days-grid">
+                <!-- Generado dinámicamente con JS -->
+              </div>
+
+              <div class="calendar-legend">
+                <span><span class="legend-dot live-dot"></span> Clase en Vivo (Zoom)</span>
+                <span><span class="legend-dot today-dot"></span> Día actual</span>
+              </div>
+            </div>
+
+            <!-- Columna Derecha: Agenda de Clases y Enlaces de Zoom -->
+            <div class="live-agenda-container">
+              <div class="agenda-header">
+                <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                  <h3 id="agenda-section-title"><i class="fas fa-video" style="color: #2D8CFF;"></i> Próximas Clases en Vivo</h3>
+                  <div class="agenda-filter-buttons">
+                    <button class="filter-pill active" data-agenda-filter="upcoming" id="btn-filter-upcoming">Próximas</button>
+                    <button class="filter-pill" data-agenda-filter="all" id="btn-filter-all">Todas</button>
+                  </div>
+                </div>
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 5px;">
+                  Conéctate puntualmente a las videoconferencias por Zoom con tus profesores y compañeros.
+                </p>
+              </div>
+
+              <!-- Lista dinámica de tarjetas de sesiones -->
+              <div class="live-sessions-list" id="student-live-sessions-list">
+                <!-- Se poblará dinámicamente -->
+              </div>
+            </div>
+
+          </div>
         </div>
       </section>
 
@@ -413,6 +495,9 @@
           <button class="instructor-tab" id="btn-ins-students-tab">
             <i class="fas fa-users"></i> Control de Estudiantes
           </button>
+          <button class="instructor-tab" id="btn-ins-live-tab">
+            <i class="fas fa-video"></i> Clases en Vivo (Zoom)
+          </button>
         </div>
 
         <!-- Sección 1: Cursos Administrados y Estadísticas -->
@@ -507,6 +592,44 @@
           </div>
           <!-- Cards móvil: estudiantes -->
           <div class="instructor-cards-mobile" id="students-cards-mobile"></div>
+        </div>
+
+        <!-- Sección 3: Clases en Vivo (Zoom) del Instructor -->
+        <div id="ins-live-section" class="instructor-section">
+          <div class="section-header instructor-panel-header" style="margin-bottom: 25px;">
+            <div>
+              <h3>Gestión de Clases en Vivo y Videoconferencias</h3>
+              <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 4px;">
+                Programa sesiones de Zoom, comparte las invitaciones y coordina las fechas de tus clases en vivo.
+              </p>
+            </div>
+            <button class="btn btn-primary" id="btn-new-live-session" style="background: #2D8CFF; border-color: #2D8CFF;">
+              <i class="fas fa-video"></i> Programar Clase en Vivo
+            </button>
+          </div>
+
+          <div class="instructor-table-desktop">
+            <div class="table-container">
+              <table class="custom-table">
+                <thead>
+                  <tr>
+                    <th>Fecha y Hora</th>
+                    <th>Título de la Clase</th>
+                    <th>Curso Asociado</th>
+                    <th>Duración</th>
+                    <th>Enlace de Zoom</th>
+                    <th style="text-align: center;">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="ins-live-sessions-table-body">
+                  <!-- Se poblará dinámicamente -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Cards móvil: sesiones en vivo instructor -->
+          <div class="instructor-cards-mobile" id="ins-live-cards-mobile"></div>
         </div>
       </section>
 
@@ -908,6 +1031,77 @@
           <div id="profile-certificates-list" style="display: flex; flex-direction: column; gap: 10px; max-height: 220px; overflow-y: auto; padding-right: 5px;">
             <!-- Dinámico: Certificados emitidos -->
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: PROGRAMAR / EDITAR CLASE EN VIVO (ZOOM) -->
+  <div class="modal-overlay" id="modal-live-session">
+    <div class="modal-card" style="max-width: 580px; width: 92%;">
+      <div class="modal-header">
+        <h3 id="modal-live-session-title"><i class="fas fa-video" style="color: #2D8CFF;"></i> Programar Clase en Vivo</h3>
+        <button class="modal-close-btn" id="btn-close-modal-live">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 22px;">
+        <input type="hidden" id="live-session-id">
+        
+        <div class="form-group">
+          <label for="live-session-title"><i class="fas fa-heading"></i> Título de la Clase / Tema</label>
+          <input type="text" class="form-control" id="live-session-title" placeholder="Ej: Masterclass: Principios Básicos y Preguntas en Vivo" required>
+        </div>
+
+        <div class="form-group">
+          <label for="live-session-course"><i class="fas fa-book"></i> Curso Asociado</label>
+          <select class="form-control" id="live-session-course">
+            <!-- Dinámico: Cursos del sistema -->
+          </select>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+          <div class="form-group">
+            <label for="live-session-datetime"><i class="fas fa-calendar-day"></i> Fecha y Hora de Inicio</label>
+            <input type="datetime-local" class="form-control" id="live-session-datetime" required>
+          </div>
+          <div class="form-group">
+            <label for="live-session-duration"><i class="fas fa-clock"></i> Duración Estimada</label>
+            <select class="form-control" id="live-session-duration">
+              <option value="30">30 minutos</option>
+              <option value="45">45 minutos</option>
+              <option value="60" selected>60 minutos (1 hora)</option>
+              <option value="90">90 minutos (1.5 horas)</option>
+              <option value="120">120 minutos (2 horas)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="live-session-zoom-url"><i class="fas fa-link" style="color: #2D8CFF;"></i> Enlace de la Reunión de Zoom</label>
+          <input type="url" class="form-control" id="live-session-zoom-url" placeholder="https://us05web.zoom.us/j/1234567890?pwd=..." required>
+          <small style="color: var(--text-secondary); font-size: 0.78rem;">Pega aquí el enlace de invitación generado desde tu cuenta de Zoom.</small>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+          <div class="form-group">
+            <label for="live-session-meeting-id"><i class="fas fa-id-badge"></i> ID de Reunión (Opcional)</label>
+            <input type="text" class="form-control" id="live-session-meeting-id" placeholder="Ej: 824 5910 4321">
+          </div>
+          <div class="form-group">
+            <label for="live-session-passcode"><i class="fas fa-key"></i> Código de Acceso (Opcional)</label>
+            <input type="text" class="form-control" id="live-session-passcode" placeholder="Ej: EDU2026">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="live-session-desc"><i class="fas fa-align-left"></i> Agenda / Notas para los Estudiantes</label>
+          <textarea class="form-control" id="live-session-desc" rows="3" placeholder="Describe los puntos clave que se abordarán, materiales necesarios, etc."></textarea>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 25px;">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-live-session">Cancelar</button>
+          <button type="button" class="btn btn-primary" id="btn-submit-live-session" style="background: #2D8CFF; border-color: #2D8CFF;">
+            <i class="fas fa-save"></i> Guardar Clase en Vivo
+          </button>
         </div>
       </div>
     </div>
