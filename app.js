@@ -88,6 +88,127 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+// === GESTOR DE INSTALACIÓN PWA (APP NATIVA) ===
+let deferredInstallPrompt = null;
+
+function isRunningStandalone() {
+  return window.matchMedia('(display-mode: standalone)').matches ||
+         window.navigator.standalone === true ||
+         document.referrer.includes('android-app://');
+}
+
+function isIosDevice() {
+  const userAgent = (window.navigator.userAgent || '').toLowerCase();
+  return /iphone|ipad|ipod/.test(userAgent);
+}
+
+function showInstallPromotion() {
+  if (isRunningStandalone()) return;
+
+  const btnHeader = document.getElementById('btn-install-pwa');
+  const promoAuth = document.getElementById('auth-install-promo');
+  const banner = document.getElementById('pwa-install-banner');
+
+  if (btnHeader) btnHeader.style.display = 'inline-flex';
+  if (promoAuth) promoAuth.style.display = 'block';
+
+  // Mostrar el banner flotante sólo si el usuario no lo ha descartado en esta sesión
+  const isDismissed = sessionStorage.getItem('edutrack_pwa_banner_dismissed') === 'true';
+  if (banner && !isDismissed) {
+    banner.style.display = 'block';
+    setTimeout(() => {
+      if (banner) banner.classList.add('show');
+    }, 100);
+  }
+}
+
+function hideInstallPromotion() {
+  const btnHeader = document.getElementById('btn-install-pwa');
+  const promoAuth = document.getElementById('auth-install-promo');
+  const banner = document.getElementById('pwa-install-banner');
+
+  if (btnHeader) btnHeader.style.display = 'none';
+  if (promoAuth) promoAuth.style.display = 'none';
+  if (banner) {
+    banner.classList.remove('show');
+    setTimeout(() => {
+      if (banner) banner.style.display = 'none';
+    }, 400);
+  }
+}
+
+async function triggerPwaInstall() {
+  if (deferredInstallPrompt) {
+    try {
+      deferredInstallPrompt.prompt();
+      const choiceResult = await deferredInstallPrompt.userChoice;
+      console.log('Resultado de instalación:', choiceResult.outcome);
+      if (choiceResult.outcome === 'accepted') {
+        hideInstallPromotion();
+      }
+      deferredInstallPrompt = null;
+    } catch (err) {
+      console.warn('Error al activar el prompt de instalación:', err);
+    }
+    return;
+  }
+
+  // Fallback si no está el prompt nativo
+  if (isIosDevice()) {
+    const modalIos = document.getElementById('modal-ios-install');
+    if (modalIos) modalIos.classList.add('active');
+  } else {
+    const modalGeneric = document.getElementById('modal-generic-install');
+    if (modalGeneric) modalGeneric.classList.add('active');
+  }
+}
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  console.log('📱 PWA beforeinstallprompt detectado y listo para invocar.');
+  showInstallPromotion();
+});
+
+window.addEventListener('appinstalled', () => {
+  console.log('🎉 EduTrack fue instalada exitosamente como App.');
+  deferredInstallPrompt = null;
+  hideInstallPromotion();
+  localStorage.setItem('edutrack_pwa_installed', 'true');
+});
+
+// Inicialización de escuchadores de instalación PWA
+window.addEventListener('DOMContentLoaded', () => {
+  const btnHeader = document.getElementById('btn-install-pwa');
+  const btnPromo = document.getElementById('btn-auth-install-pwa');
+  const btnBanner = document.getElementById('pwa-banner-install-btn');
+  const btnDismiss = document.getElementById('pwa-banner-close-btn');
+
+  if (btnHeader) btnHeader.addEventListener('click', triggerPwaInstall);
+  if (btnPromo) btnPromo.addEventListener('click', triggerPwaInstall);
+  if (btnBanner) btnBanner.addEventListener('click', triggerPwaInstall);
+
+  if (btnDismiss) {
+    btnDismiss.addEventListener('click', () => {
+      const banner = document.getElementById('pwa-install-banner');
+      if (banner) {
+        banner.classList.remove('show');
+        setTimeout(() => {
+          if (banner) banner.style.display = 'none';
+        }, 400);
+      }
+      sessionStorage.setItem('edutrack_pwa_banner_dismissed', 'true');
+    });
+  }
+
+  // Si no está en standalone, mostrar promoción tras breve delay
+  if (!isRunningStandalone()) {
+    setTimeout(() => {
+      showInstallPromotion();
+    }, 1200);
+  }
+});
+
 // === ESTADO GLOBAL DE LA APP ===
 let currentUser = null; // Almacenará el usuario logueado en la sesión
 let currentRole = 'student'; // 'student' o 'instructor'
@@ -4582,6 +4703,10 @@ function closeAllModals() {
   if (DOM.modalAddLesson) DOM.modalAddLesson.classList.remove('active');
   if (DOM.modalAssignCourses) DOM.modalAssignCourses.classList.remove('active');
   if (DOM.modalStudentProfile) DOM.modalStudentProfile.classList.remove('active');
+  const modalIos = document.getElementById('modal-ios-install');
+  if (modalIos) modalIos.classList.remove('active');
+  const modalGeneric = document.getElementById('modal-generic-install');
+  if (modalGeneric) modalGeneric.classList.remove('active');
 }
 window.closeAllModals = closeAllModals;
 

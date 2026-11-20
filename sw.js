@@ -1,4 +1,4 @@
-const CACHE_NAME = 'edutrack-pwa-v2';
+const CACHE_NAME = 'edutrack-pwa-v4';
 const ASSETS = [
   './',
   './index.html',
@@ -43,6 +43,7 @@ self.addEventListener('activate', event => {
 // Estrategia Network-First con fallback a Caché
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
+  if (!event.request.url.startsWith('http')) return;
   
   event.respondWith(
     fetch(event.request)
@@ -56,12 +57,12 @@ self.addEventListener('fetch', event => {
         return networkResponse;
       })
       .catch(() => {
-        return caches.match(event.request).then(cachedResponse => {
+        return caches.match(event.request, { ignoreSearch: true }).then(cachedResponse => {
           if (cachedResponse) {
             return cachedResponse;
           }
           if (event.request.headers.get('accept')?.includes('text/html')) {
-            return caches.match('./index.html');
+            return caches.match('./index.html', { ignoreSearch: true });
           }
         });
       })
