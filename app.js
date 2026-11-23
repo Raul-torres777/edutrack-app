@@ -614,6 +614,29 @@ function populateDOM() {
   DOM.btnSubmitLiveSession = document.getElementById('btn-submit-live-session');
   DOM.btnCancelLiveSession = document.getElementById('btn-cancel-live-session');
   DOM.btnCloseModalLive = document.getElementById('btn-close-modal-live');
+
+  // Elementos de Anuncios y Noticias
+  DOM.btnSubtabAnnouncements = document.getElementById('btn-subtab-announcements');
+  DOM.subviewStudentAnnouncements = document.getElementById('subview-student-announcements');
+  DOM.studentAnnouncementsBadge = document.getElementById('student-announcements-badge');
+  DOM.studentRecentAnnouncementBanner = document.getElementById('student-recent-announcement-banner');
+  DOM.studentAnnouncementsGrid = document.getElementById('student-announcements-grid');
+
+  DOM.btnInsAnnouncementsTab = document.getElementById('btn-ins-announcements-tab');
+  DOM.insAnnouncementsSection = document.getElementById('ins-announcements-section');
+  DOM.insAnnouncementsTableBody = document.getElementById('ins-announcements-table-body');
+  DOM.insAnnouncementsCardsMobile = document.getElementById('ins-announcements-cards-mobile');
+
+  DOM.modalAnnouncement = document.getElementById('modal-announcement');
+  DOM.modalAnnouncementTitle = document.getElementById('modal-announcement-title');
+  DOM.announcementId = document.getElementById('announcement-id');
+  DOM.announcementTitle = document.getElementById('announcement-title');
+  DOM.announcementCategory = document.getElementById('announcement-category');
+  DOM.announcementIsPinned = document.getElementById('announcement-is-pinned');
+  DOM.announcementContent = document.getElementById('announcement-content');
+  DOM.announcementActionUrl = document.getElementById('announcement-action-url');
+  DOM.announcementActionLabel = document.getElementById('announcement-action-label');
+  DOM.btnSubmitAnnouncement = document.getElementById('btn-submit-announcement');
 }
 
 // === EVENT LISTENERS INICIALES ===
@@ -675,14 +698,16 @@ function initApp() {
   if (DOM.btnInsCoursesTab) DOM.btnInsCoursesTab.addEventListener('click', () => switchInstructorTab('courses'));
   if (DOM.btnInsStudentsTab) DOM.btnInsStudentsTab.addEventListener('click', () => switchInstructorTab('students'));
   if (DOM.btnInsLiveTab) DOM.btnInsLiveTab.addEventListener('click', () => switchInstructorTab('live'));
+  if (DOM.btnInsAnnouncementsTab) DOM.btnInsAnnouncementsTab.addEventListener('click', () => switchInstructorTab('announcements'));
   if (DOM.btnNewLiveSession) DOM.btnNewLiveSession.addEventListener('click', () => openLiveSessionModal());
   if (DOM.btnSubmitLiveSession) DOM.btnSubmitLiveSession.addEventListener('click', submitLiveSession);
   if (DOM.btnCancelLiveSession) DOM.btnCancelLiveSession.addEventListener('click', closeLiveSessionModal);
   if (DOM.btnCloseModalLive) DOM.btnCloseModalLive.addEventListener('click', closeLiveSessionModal);
 
-  // Subtabs del Estudiante (Mis Cursos vs Clases en Vivo & Calendario)
+  // Subtabs del Estudiante (Mis Cursos vs Clases en Vivo & Calendario vs Anuncios)
   if (DOM.btnSubtabCourses) DOM.btnSubtabCourses.addEventListener('click', () => switchStudentSubtab('courses'));
   if (DOM.btnSubtabCalendar) DOM.btnSubtabCalendar.addEventListener('click', () => switchStudentSubtab('calendar'));
+  if (DOM.btnSubtabAnnouncements) DOM.btnSubtabAnnouncements.addEventListener('click', () => switchStudentSubtab('announcements'));
 
   // Controles del Calendario y Filtros de Agenda
   if (DOM.btnCalPrev) DOM.btnCalPrev.addEventListener('click', () => changeCalendarMonth(-1));
@@ -1739,8 +1764,9 @@ async function loadStudentDashboard() {
     
     DOM.studentCoursesGrid.innerHTML = html;
 
-    // Sincronizar sesiones en vivo y calendario
+    // Sincronizar sesiones en vivo, calendario y anuncios
     refreshLiveSessionsData();
+    refreshStudentAnnouncements();
   } catch (error) {
     console.error(error);
     alert('Error en loadStudentDashboard: ' + error.message);
@@ -3716,10 +3742,12 @@ function switchInstructorTab(tab) {
   if (DOM.btnInsCoursesTab) DOM.btnInsCoursesTab.classList.remove('active');
   if (DOM.btnInsStudentsTab) DOM.btnInsStudentsTab.classList.remove('active');
   if (DOM.btnInsLiveTab) DOM.btnInsLiveTab.classList.remove('active');
+  if (DOM.btnInsAnnouncementsTab) DOM.btnInsAnnouncementsTab.classList.remove('active');
 
   if (DOM.insCoursesSection) DOM.insCoursesSection.classList.remove('active');
   if (DOM.insStudentsSection) DOM.insStudentsSection.classList.remove('active');
   if (DOM.insLiveSection) DOM.insLiveSection.classList.remove('active');
+  if (DOM.insAnnouncementsSection) DOM.insAnnouncementsSection.classList.remove('active');
 
   if (tab === 'courses') {
     if (DOM.btnInsCoursesTab) DOM.btnInsCoursesTab.classList.add('active');
@@ -3732,6 +3760,10 @@ function switchInstructorTab(tab) {
     if (DOM.btnInsLiveTab) DOM.btnInsLiveTab.classList.add('active');
     if (DOM.insLiveSection) DOM.insLiveSection.classList.add('active');
     loadInstructorLiveSessions();
+  } else if (tab === 'announcements') {
+    if (DOM.btnInsAnnouncementsTab) DOM.btnInsAnnouncementsTab.classList.add('active');
+    if (DOM.insAnnouncementsSection) DOM.insAnnouncementsSection.classList.add('active');
+    loadInstructorAnnouncements();
   }
 }
 
@@ -4707,6 +4739,7 @@ function closeAllModals() {
   if (modalIos) modalIos.classList.remove('active');
   const modalGeneric = document.getElementById('modal-generic-install');
   if (modalGeneric) modalGeneric.classList.remove('active');
+  if (DOM.modalAnnouncement) DOM.modalAnnouncement.classList.remove('active');
 }
 window.closeAllModals = closeAllModals;
 
@@ -4918,12 +4951,15 @@ let calSelectedDate = null;
 let currentAgendaFilter = 'upcoming';
 let cachedLiveSessions = [];
 
-// Cambiar subtab del estudiante (Mis Cursos vs Clases en Vivo & Calendario)
+// Cambiar subtab del estudiante (Mis Cursos vs Clases en Vivo & Calendario vs Anuncios)
 function switchStudentSubtab(subtab) {
   if (DOM.btnSubtabCourses) DOM.btnSubtabCourses.classList.remove('active');
   if (DOM.btnSubtabCalendar) DOM.btnSubtabCalendar.classList.remove('active');
+  if (DOM.btnSubtabAnnouncements) DOM.btnSubtabAnnouncements.classList.remove('active');
+
   if (DOM.subviewStudentCourses) DOM.subviewStudentCourses.style.display = 'none';
   if (DOM.subviewStudentCalendar) DOM.subviewStudentCalendar.style.display = 'none';
+  if (DOM.subviewStudentAnnouncements) DOM.subviewStudentAnnouncements.style.display = 'none';
 
   if (subtab === 'courses') {
     if (DOM.btnSubtabCourses) DOM.btnSubtabCourses.classList.add('active');
@@ -4932,6 +4968,10 @@ function switchStudentSubtab(subtab) {
     if (DOM.btnSubtabCalendar) DOM.btnSubtabCalendar.classList.add('active');
     if (DOM.subviewStudentCalendar) DOM.subviewStudentCalendar.style.display = 'block';
     refreshLiveSessionsData();
+  } else if (subtab === 'announcements') {
+    if (DOM.btnSubtabAnnouncements) DOM.btnSubtabAnnouncements.classList.add('active');
+    if (DOM.subviewStudentAnnouncements) DOM.subviewStudentAnnouncements.style.display = 'block';
+    refreshStudentAnnouncements();
   }
 }
 
@@ -5517,4 +5557,356 @@ window.openLiveSessionModal = openLiveSessionModal;
 window.closeLiveSessionModal = closeLiveSessionModal;
 window.switchInstructorTab = switchInstructorTab;
 window.loadInstructorLiveSessions = loadInstructorLiveSessions;
+
+// ==================== TABLÓN DE ANUNCIOS Y NOTICIAS ====================
+let cachedAnnouncements = [];
+
+function getAnnouncementCategoryInfo(cat) {
+  const c = (cat || 'General').toLowerCase();
+  if (c.includes('vivo') || c.includes('zoom')) {
+    return { name: 'Clase en Vivo', icon: 'fas fa-video', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.15)', border: 'rgba(239, 68, 68, 0.35)' };
+  }
+  if (c.includes('curso')) {
+    return { name: 'Nuevo Curso', icon: 'fas fa-rocket', color: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.15)', border: 'rgba(139, 92, 246, 0.35)' };
+  }
+  if (c.includes('material') || c.includes('recurso')) {
+    return { name: 'Material de Estudio', icon: 'fas fa-folder-open', color: '#10b981', bg: 'rgba(16, 185, 129, 0.15)', border: 'rgba(16, 185, 129, 0.35)' };
+  }
+  if (c.includes('importante') || c.includes('urgente')) {
+    return { name: 'Importante', icon: 'fas fa-exclamation-triangle', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)', border: 'rgba(245, 158, 11, 0.35)' };
+  }
+  return { name: 'General', icon: 'fas fa-bullhorn', color: '#38bdf8', bg: 'rgba(56, 189, 248, 0.15)', border: 'rgba(56, 189, 248, 0.35)' };
+}
+
+function formatAnnouncementDate(iso) {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  } catch (e) {
+    return iso || '';
+  }
+}
+
+async function refreshStudentAnnouncements() {
+  try {
+    cachedAnnouncements = await db.getAnnouncements();
+  } catch (e) {
+    console.warn('Error al cargar anuncios:', e);
+    cachedAnnouncements = [];
+  }
+
+  // 1. Actualizar badge de conteo en la pestaña
+  if (DOM.studentAnnouncementsBadge) {
+    if (cachedAnnouncements.length > 0) {
+      DOM.studentAnnouncementsBadge.textContent = cachedAnnouncements.length;
+      DOM.studentAnnouncementsBadge.style.display = 'inline-block';
+    } else {
+      DOM.studentAnnouncementsBadge.style.display = 'none';
+    }
+  }
+
+  // 2. Banner de anuncio reciente / fijado en "Mis Cursos"
+  if (DOM.studentRecentAnnouncementBanner) {
+    const dismissedId = sessionStorage.getItem('edutrack_dismissed_announcement_id');
+    const topAnnouncement = cachedAnnouncements.find(a => a.id !== dismissedId);
+
+    if (topAnnouncement) {
+      const catInfo = getAnnouncementCategoryInfo(topAnnouncement.category);
+      const isPinnedBadge = topAnnouncement.is_pinned ? `<span class="pinned-badge"><i class="fas fa-thumbtack"></i> Fijado</span>` : '';
+      const actionBtn = topAnnouncement.action_url ? `
+        <a href="${topAnnouncement.action_url}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm" style="padding: 6px 14px; font-size: 0.82rem; white-space: nowrap; margin-top: 8px;">
+          ${topAnnouncement.action_label || 'Ver más'} <i class="fas fa-external-link-alt" style="margin-left: 4px;"></i>
+        </a>
+      ` : '';
+
+      DOM.studentRecentAnnouncementBanner.style.display = 'block';
+      DOM.studentRecentAnnouncementBanner.innerHTML = `
+        <div class="student-recent-announcement-card">
+          <div class="announcement-icon-bubble" style="background: ${catInfo.bg}; color: ${catInfo.color}; border: 1px solid ${catInfo.border};">
+            <i class="${catInfo.icon}"></i>
+          </div>
+          <div style="flex: 1; min-width: 0;">
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px;">
+              <span class="announcement-badge" style="background: ${catInfo.bg}; color: ${catInfo.color}; border: 1px solid ${catInfo.border};">
+                <i class="${catInfo.icon}"></i> ${catInfo.name}
+              </span>
+              ${isPinnedBadge}
+              <span style="font-size: 0.78rem; color: var(--text-secondary); margin-left: auto;">
+                <i class="far fa-clock"></i> ${formatAnnouncementDate(topAnnouncement.created_at)}
+              </span>
+            </div>
+            <strong style="color: var(--text-primary); font-size: 1rem; display: block; margin-bottom: 4px;">${topAnnouncement.title}</strong>
+            <p style="color: var(--text-secondary); font-size: 0.88rem; margin: 0; line-height: 1.45; max-height: 4.5em; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;">
+              ${topAnnouncement.content}
+            </p>
+            <div style="display: flex; align-items: center; gap: 12px; margin-top: 8px; flex-wrap: wrap;">
+              ${actionBtn}
+              <button class="btn btn-secondary btn-sm" onclick="switchStudentSubtab('announcements')" style="padding: 6px 12px; font-size: 0.82rem;">
+                <i class="fas fa-bullhorn"></i> Ver todos los comunicados
+              </button>
+            </div>
+          </div>
+          <button class="btn-icon" onclick="dismissRecentAnnouncementBanner('${topAnnouncement.id}')" title="Descartar este aviso" style="color: var(--text-secondary); margin-left: 8px;">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      `;
+    } else {
+      DOM.studentRecentAnnouncementBanner.style.display = 'none';
+      DOM.studentRecentAnnouncementBanner.innerHTML = '';
+    }
+  }
+
+  // 3. Grid completo de anuncios en la subvista "Anuncios & Noticias"
+  if (DOM.studentAnnouncementsGrid) {
+    if (cachedAnnouncements.length === 0) {
+      DOM.studentAnnouncementsGrid.innerHTML = `
+        <div class="empty-state" style="grid-column: 1/-1; padding: 50px 20px;">
+          <i class="fas fa-bullhorn" style="font-size: 3rem; color: var(--text-secondary); opacity: 0.5; margin-bottom: 15px;"></i>
+          <h3>No hay anuncios por ahora</h3>
+          <p>Tu instructor publicará aquí las novedades, avisos de clases en vivo y avisos importantes.</p>
+        </div>
+      `;
+      return;
+    }
+
+    DOM.studentAnnouncementsGrid.innerHTML = cachedAnnouncements.map(ann => {
+      const catInfo = getAnnouncementCategoryInfo(ann.category);
+      const isPinnedBadge = ann.is_pinned ? `<span class="pinned-badge"><i class="fas fa-thumbtack"></i> Fijado</span>` : '';
+      const actionBtn = ann.action_url ? `
+        <a href="${ann.action_url}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm" style="align-self: flex-start; margin-top: auto; padding: 8px 16px; font-size: 0.85rem;">
+          ${ann.action_label || 'Ver más detalles'} <i class="fas fa-external-link-alt" style="margin-left: 4px;"></i>
+        </a>
+      ` : '';
+
+      return `
+        <div class="announcement-card ${ann.is_pinned ? 'is-pinned' : ''}">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="announcement-badge" style="background: ${catInfo.bg}; color: ${catInfo.color}; border: 1px solid ${catInfo.border};">
+                <i class="${catInfo.icon}"></i> ${catInfo.name}
+              </span>
+              ${isPinnedBadge}
+            </div>
+            <span style="font-size: 0.78rem; color: var(--text-secondary);">
+              <i class="far fa-clock"></i> ${formatAnnouncementDate(ann.created_at)}
+            </span>
+          </div>
+          <h3 style="color: var(--text-primary); font-size: 1.15rem; margin-bottom: 6px; font-weight: 700;">${ann.title}</h3>
+          <div style="font-size: 0.78rem; color: var(--accent-color); margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
+            <i class="fas fa-user-tie"></i> Publicado por: ${ann.instructor_name || 'Instructor'}
+          </div>
+          <p class="announcement-content-text">${ann.content}</p>
+          ${actionBtn}
+        </div>
+      `;
+    }).join('');
+  }
+}
+
+function dismissRecentAnnouncementBanner(annId) {
+  sessionStorage.setItem('edutrack_dismissed_announcement_id', annId);
+  if (DOM.studentRecentAnnouncementBanner) {
+    DOM.studentRecentAnnouncementBanner.style.display = 'none';
+  }
+}
+window.dismissRecentAnnouncementBanner = dismissRecentAnnouncementBanner;
+window.refreshStudentAnnouncements = refreshStudentAnnouncements;
+
+async function loadInstructorAnnouncements() {
+  if (!DOM.insAnnouncementsTableBody) return;
+
+  DOM.insAnnouncementsTableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 25px;"><i class="fas fa-circle-notch fa-spin"></i> Cargando anuncios...</td></tr>';
+  if (DOM.insAnnouncementsCardsMobile) {
+    DOM.insAnnouncementsCardsMobile.innerHTML = '<div style="text-align:center; padding: 20px;"><i class="fas fa-circle-notch fa-spin"></i> Cargando anuncios...</div>';
+  }
+
+  let list = [];
+  try {
+    list = await db.getAnnouncements();
+  } catch (e) {
+    console.warn('Error al cargar anuncios para instructor:', e);
+    list = [];
+  }
+
+  if (list.length === 0) {
+    DOM.insAnnouncementsTableBody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: var(--text-secondary); padding: 35px;">No has publicado ningún anuncio aún. Haz clic en <strong>"+ Publicar Nuevo Anuncio"</strong> para empezar.</td></tr>';
+    if (DOM.insAnnouncementsCardsMobile) {
+      DOM.insAnnouncementsCardsMobile.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 25px;">No has publicado ningún anuncio aún.</div>';
+    }
+    return;
+  }
+
+  let tableHtml = '';
+  let cardsHtml = '';
+
+  list.forEach(ann => {
+    const catInfo = getAnnouncementCategoryInfo(ann.category);
+    const dateFormatted = formatAnnouncementDate(ann.created_at);
+    const isPinnedHtml = ann.is_pinned 
+      ? '<span class="pinned-badge"><i class="fas fa-thumbtack"></i> Sí</span>' 
+      : '<span style="color: var(--text-secondary); font-size: 0.8rem;">No</span>';
+    const safeTitle = (ann.title || '').replace(/'/g, "\\'");
+
+    tableHtml += `
+      <tr>
+        <td style="white-space: nowrap; font-size: 0.85rem; color: var(--text-secondary);">${dateFormatted}</td>
+        <td>
+          <span class="announcement-badge" style="background: ${catInfo.bg}; color: ${catInfo.color}; border: 1px solid ${catInfo.border};">
+            <i class="${catInfo.icon}"></i> ${catInfo.name}
+          </span>
+        </td>
+        <td>
+          <strong style="color: var(--text-primary); font-size: 0.95rem;">${ann.title}</strong>
+          <p style="color: var(--text-secondary); font-size: 0.82rem; margin: 4px 0 0 0; max-height: 2.8em; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
+            ${ann.content}
+          </p>
+          ${ann.action_url ? `<span style="font-size: 0.75rem; color: var(--accent-color); margin-top: 4px; display: inline-block;"><i class="fas fa-link"></i> ${ann.action_label || ann.action_url}</span>` : ''}
+        </td>
+        <td style="text-align: center;">${isPinnedHtml}</td>
+        <td style="text-align: right; white-space: nowrap;">
+          <button class="btn btn-secondary btn-sm" onclick="openAnnouncementModal('${ann.id}')" title="Editar Anuncio" style="padding: 4px 10px; font-size: 0.78rem; margin-right: 5px;">
+            <i class="fas fa-edit"></i> Editar
+          </button>
+          <button class="btn btn-danger btn-sm" onclick="deleteAnnouncementHandler('${ann.id}', '${safeTitle}')" title="Eliminar Anuncio" style="padding: 4px 10px; font-size: 0.78rem;">
+            <i class="fas fa-trash-alt"></i>
+          </button>
+        </td>
+      </tr>
+    `;
+
+    cardsHtml += `
+      <div class="ins-live-card">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px;">
+          <span class="announcement-badge" style="background: ${catInfo.bg}; color: ${catInfo.color}; border: 1px solid ${catInfo.border};">
+            <i class="${catInfo.icon}"></i> ${catInfo.name}
+          </span>
+          ${ann.is_pinned ? '<span class="pinned-badge"><i class="fas fa-thumbtack"></i> Fijado</span>' : ''}
+          <span style="font-size: 0.78rem; color: var(--text-secondary); margin-left: auto;">${dateFormatted}</span>
+        </div>
+        <div class="ins-live-card-title">${ann.title}</div>
+        <p style="color: var(--text-secondary); font-size: 0.85rem; margin: 6px 0; line-height: 1.4;">${ann.content}</p>
+        ${ann.action_url ? `<div style="font-size: 0.8rem; color: var(--accent-color); margin-bottom: 8px;"><i class="fas fa-link"></i> ${ann.action_label || 'Enlace adjunto'}</div>` : ''}
+        <div class="ins-live-card-actions">
+          <button class="btn btn-secondary btn-sm" onclick="openAnnouncementModal('${ann.id}')" style="flex: 1;">
+            <i class="fas fa-edit"></i> Editar
+          </button>
+          <button class="btn btn-danger btn-sm" onclick="deleteAnnouncementHandler('${ann.id}', '${safeTitle}')" style="padding: 6px 12px;">
+            <i class="fas fa-trash-alt"></i>
+          </button>
+        </div>
+      </div>
+    `;
+  });
+
+  DOM.insAnnouncementsTableBody.innerHTML = tableHtml;
+  if (DOM.insAnnouncementsCardsMobile) {
+    DOM.insAnnouncementsCardsMobile.innerHTML = cardsHtml;
+  }
+}
+window.loadInstructorAnnouncements = loadInstructorAnnouncements;
+
+function openAnnouncementModal(editId) {
+  if (!DOM.modalAnnouncement) return;
+
+  if (editId) {
+    const ann = cachedAnnouncements.find(a => a.id === editId);
+    if (ann) {
+      if (DOM.modalAnnouncementTitle) DOM.modalAnnouncementTitle.innerHTML = '<i class="fas fa-edit" style="color: var(--accent-color);"></i> Editar Anuncio';
+      if (DOM.announcementId) DOM.announcementId.value = ann.id;
+      if (DOM.announcementTitle) DOM.announcementTitle.value = ann.title || '';
+      if (DOM.announcementCategory) DOM.announcementCategory.value = ann.category || 'General';
+      if (DOM.announcementIsPinned) DOM.announcementIsPinned.checked = Boolean(ann.is_pinned);
+      if (DOM.announcementContent) DOM.announcementContent.value = ann.content || '';
+      if (DOM.announcementActionUrl) DOM.announcementActionUrl.value = ann.action_url || '';
+      if (DOM.announcementActionLabel) DOM.announcementActionLabel.value = ann.action_label || '';
+    }
+  } else {
+    if (DOM.modalAnnouncementTitle) DOM.modalAnnouncementTitle.innerHTML = '<i class="fas fa-bullhorn" style="color: var(--accent-color);"></i> Publicar Nuevo Anuncio';
+    if (DOM.announcementId) DOM.announcementId.value = '';
+    if (DOM.announcementTitle) DOM.announcementTitle.value = '';
+    if (DOM.announcementCategory) DOM.announcementCategory.value = 'General';
+    if (DOM.announcementIsPinned) DOM.announcementIsPinned.checked = false;
+    if (DOM.announcementContent) DOM.announcementContent.value = '';
+    if (DOM.announcementActionUrl) DOM.announcementActionUrl.value = '';
+    if (DOM.announcementActionLabel) DOM.announcementActionLabel.value = '';
+  }
+
+  DOM.modalAnnouncement.classList.add('active');
+}
+window.openAnnouncementModal = openAnnouncementModal;
+
+function closeAnnouncementModal() {
+  if (DOM.modalAnnouncement) DOM.modalAnnouncement.classList.remove('active');
+}
+window.closeAnnouncementModal = closeAnnouncementModal;
+
+async function submitAnnouncement() {
+  const title = (DOM.announcementTitle ? DOM.announcementTitle.value : '').trim();
+  const category = DOM.announcementCategory ? DOM.announcementCategory.value : 'General';
+  const isPinned = DOM.announcementIsPinned ? DOM.announcementIsPinned.checked : false;
+  const content = (DOM.announcementContent ? DOM.announcementContent.value : '').trim();
+  const actionUrl = (DOM.announcementActionUrl ? DOM.announcementActionUrl.value : '').trim();
+  const actionLabel = (DOM.announcementActionLabel ? DOM.announcementActionLabel.value : '').trim();
+  const editId = DOM.announcementId ? DOM.announcementId.value : '';
+
+  if (!title) {
+    alert('Por favor escribe el título del anuncio.');
+    return;
+  }
+  if (!content) {
+    alert('Por favor escribe el mensaje o contenido del anuncio.');
+    return;
+  }
+
+  const instructorName = currentUser ? (currentUser.fullName || currentUser.username) : 'Instructor';
+
+  const data = {
+    id: editId || undefined,
+    title,
+    category,
+    content,
+    action_url: actionUrl,
+    action_label: actionLabel,
+    is_pinned: isPinned,
+    instructor_name: instructorName
+  };
+
+  try {
+    if (DOM.btnSubmitAnnouncement) {
+      DOM.btnSubmitAnnouncement.disabled = true;
+      DOM.btnSubmitAnnouncement.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Publicando...';
+    }
+
+    await db.saveAnnouncement(data);
+    closeAnnouncementModal();
+    alert('¡Anuncio publicado con éxito para todos tus alumnos!');
+    await refreshStudentAnnouncements();
+    await loadInstructorAnnouncements();
+  } catch (err) {
+    console.error('Error al guardar anuncio:', err);
+    alert('Error al publicar el anuncio: ' + err.message);
+  } finally {
+    if (DOM.btnSubmitAnnouncement) {
+      DOM.btnSubmitAnnouncement.disabled = false;
+      DOM.btnSubmitAnnouncement.innerHTML = '<i class="fas fa-paper-plane"></i> Publicar Anuncio';
+    }
+  }
+}
+window.submitAnnouncement = submitAnnouncement;
+
+async function deleteAnnouncementHandler(id, title) {
+  if (!confirm(`¿Estás seguro de que deseas eliminar el anuncio "${title}"?`)) return;
+
+  try {
+    await db.deleteAnnouncement(id);
+    alert('Anuncio eliminado correctamente.');
+    await refreshStudentAnnouncements();
+    await loadInstructorAnnouncements();
+  } catch (err) {
+    console.error('Error al eliminar anuncio:', err);
+    alert('Error al eliminar el anuncio: ' + err.message);
+  }
+}
+window.deleteAnnouncementHandler = deleteAnnouncementHandler;
 

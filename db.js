@@ -1200,5 +1200,91 @@ export const db = {
     } catch (e) {}
 
     return true;
+  },
+
+  // ==================== TABLÓN DE ANUNCIOS Y NOTICIAS ====================
+  async getAnnouncements() {
+    try {
+      const { data, error } = await supabase
+        .from('announcements')
+        .select('*')
+        .order('is_pinned', { ascending: false })
+        .order('created_at', { ascending: false });
+
+      if (!error && data && Array.isArray(data)) {
+        localStorage.setItem('edutrack_announcements_cache', JSON.stringify(data));
+        return data;
+      }
+    } catch (e) {
+      console.warn('Fallo al conectar con Supabase announcements, recurriendo a local:', e);
+    }
+
+    try {
+      const local = localStorage.getItem('edutrack_announcements_cache');
+      if (local) {
+        const parsed = JSON.parse(local);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {}
+
+    return [];
+  },
+
+  async saveAnnouncement(announcement) {
+    const record = {
+      id: announcement.id || ('ann-' + Date.now()),
+      title: (announcement.title || '').trim(),
+      category: announcement.category || 'General',
+      content: (announcement.content || '').trim(),
+      action_url: (announcement.action_url || announcement.actionUrl || '').trim(),
+      action_label: (announcement.action_label || announcement.actionLabel || '').trim(),
+      is_pinned: Boolean(announcement.is_pinned ?? announcement.isPinned ?? false),
+      instructor_name: announcement.instructor_name || announcement.instructorName || 'Instructor',
+      created_at: announcement.created_at || announcement.createdAt || new Date().toISOString()
+    };
+
+    // 1. Guardar en local
+    try {
+      const local = localStorage.getItem('edutrack_announcements_cache');
+      let list = local ? JSON.parse(local) : [];
+      const idx = list.findIndex(a => a.id === record.id);
+      if (idx >= 0) list[idx] = record;
+      else list.unshift(record);
+      // Ordenar por fijados y luego por fecha
+      list.sort((a, b) => (b.is_pinned ? 1 : 0) - (a.is_pinned ? 1 : 0) || new Date(b.created_at) - new Date(a.created_at));
+      localStorage.setItem('edutrack_announcements_cache', JSON.stringify(list));
+    } catch (e) {
+      console.warn('Error al guardar anuncio en localStorage:', e);
+    }
+
+    // 2. Guardar en Supabase
+    try {
+      const { error } = await supabase.from('announcements').upsert(record);
+      if (error) {
+        console.warn('Aviso Supabase announcements:', error.message);
+      }
+    } catch (e) {
+      console.warn('Excepción al conectar con Supabase announcements:', e);
+    }
+
+    return record;
+  },
+
+  async deleteAnnouncement(id) {
+    // 1. Local
+    try {
+      const local = localStorage.getItem('edutrack_announcements_cache');
+      if (local) {
+        const list = JSON.parse(local).filter(a => a.id !== id);
+        localStorage.setItem('edutrack_announcements_cache', JSON.stringify(list));
+      }
+    } catch (e) {}
+
+    // 2. Supabase
+    try {
+      await supabase.from('announcements').delete().eq('id', id);
+    } catch (e) {}
+
+    return true;
   }
 };

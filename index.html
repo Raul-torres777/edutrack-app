@@ -18,7 +18,7 @@
   <link rel="apple-touch-icon" href="icon-192.png">
 
   <!-- Custom Styling -->
-  <link rel="stylesheet" href="style.css?v=11">
+  <link rel="stylesheet" href="style.css?v=12">
 </head>
 <body>
 
@@ -93,10 +93,17 @@
             <i class="fas fa-calendar-alt"></i> Clases en Vivo & Calendario
             <span class="live-pill-dot" id="student-calendar-live-dot" style="display: none;">● EN VIVO</span>
           </button>
+          <button class="student-subtab" id="btn-subtab-announcements" onclick="switchStudentSubtab('announcements')">
+            <i class="fas fa-bullhorn"></i> Anuncios & Noticias
+            <span class="announcement-pill-badge" id="student-announcements-badge" style="display: none;">0</span>
+          </button>
         </div>
 
         <!-- Subsección 1: Cursos del Estudiante -->
         <div id="subview-student-courses" class="student-subview active">
+          <!-- Banner destacado de Anuncio Reciente / Fijado -->
+          <div id="student-recent-announcement-banner" style="display: none; margin-bottom: 25px;"></div>
+
           <div class="section-header" style="flex-direction: column; align-items: flex-start; gap: 15px; margin-bottom: 25px;">
             <h2>Tus Cursos</h2>
             <div class="category-filters-container" id="student-category-filters"></div>
@@ -169,6 +176,17 @@
               </div>
             </div>
 
+          </div>
+        </div>
+
+        <!-- Subsección 3: Anuncios y Noticias para Alumnos -->
+        <div id="subview-student-announcements" class="student-subview" style="display: none;">
+          <div class="section-header" style="flex-direction: column; align-items: flex-start; gap: 6px; margin-bottom: 25px;">
+            <h2>Tablón de Anuncios y Comunicados</h2>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; margin: 0;">Mantente al día con las últimas noticias, avisos importantes y novedades de la academia.</p>
+          </div>
+          <div id="student-announcements-grid" class="announcements-grid">
+            <!-- Dinámico -->
           </div>
         </div>
       </section>
@@ -502,6 +520,9 @@
           <button class="instructor-tab" id="btn-ins-live-tab" onclick="switchInstructorTab('live')">
             <i class="fas fa-video"></i> Clases en Vivo (Zoom)
           </button>
+          <button class="instructor-tab" id="btn-ins-announcements-tab" onclick="switchInstructorTab('announcements')">
+            <i class="fas fa-bullhorn"></i> Anuncios y Noticias
+          </button>
         </div>
 
         <!-- Sección 1: Cursos Administrados y Estadísticas -->
@@ -634,6 +655,40 @@
 
           <!-- Cards móvil: sesiones en vivo instructor -->
           <div class="instructor-cards-mobile" id="ins-live-cards-mobile"></div>
+        </div>
+
+        <!-- Sección 4: Anuncios y Noticias (Instructor) -->
+        <div id="ins-announcements-section" class="instructor-section" style="display: none;">
+          <div class="section-header" style="margin-bottom: 20px;">
+            <div>
+              <h3>Tablón de Anuncios y Comunicados</h3>
+              <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 4px;">Publica noticias, recordatorios o avisos importantes que verán todos tus estudiantes.</p>
+            </div>
+            <button class="btn btn-primary" id="btn-new-announcement" onclick="openAnnouncementModal()">
+              <i class="fas fa-plus"></i> Publicar Nuevo Anuncio
+            </button>
+          </div>
+
+          <div class="instructor-table-desktop">
+            <div class="table-container">
+              <table class="custom-table">
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Tipo</th>
+                    <th>Título y Contenido</th>
+                    <th style="text-align: center;">Fijado</th>
+                    <th style="text-align: right;">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="ins-announcements-table-body">
+                  <!-- Se poblará dinámicamente -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <!-- Cards móvil: anuncios instructor -->
+          <div class="instructor-cards-mobile" id="ins-announcements-cards-mobile"></div>
         </div>
       </section>
 
@@ -1222,10 +1277,71 @@
     </div>
   </div>
 
+  <!-- MODAL: CREAR / EDITAR ANUNCIO -->
+  <div class="modal-overlay" id="modal-announcement">
+    <div class="modal-box" style="max-width: 580px;">
+      <div class="modal-header">
+        <h3 id="modal-announcement-title"><i class="fas fa-bullhorn" style="color: var(--accent-color);"></i> Publicar Nuevo Anuncio</h3>
+        <button class="btn-icon modal-close-btn"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="modal-body" style="padding: 20px;">
+        <input type="hidden" id="announcement-id">
+        
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label for="announcement-title"><strong>Título del Anuncio *</strong></label>
+          <input type="text" class="form-control" id="announcement-title" placeholder="Ej: Recordatorio: Clase en vivo este jueves a las 7:00 PM" required>
+        </div>
+
+        <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 16px;">
+          <div class="form-group">
+            <label for="announcement-category"><strong>Tipo de Anuncio</strong></label>
+            <select class="form-control" id="announcement-category">
+              <option value="General">📢 General</option>
+              <option value="Clase en Vivo">🔴 Clase en Vivo</option>
+              <option value="Nuevo Curso">🚀 Nuevo Curso</option>
+              <option value="Material de Estudio">📁 Material / Recursos</option>
+              <option value="Importante">⚠️ Importante / Urgente</option>
+            </select>
+          </div>
+          <div class="form-group" style="display: flex; flex-direction: column; justify-content: flex-end;">
+            <label class="custom-checkbox" style="display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 10px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 8px;">
+              <input type="checkbox" id="announcement-is-pinned" style="width: 18px; height: 18px; accent-color: var(--accent-color);">
+              <span style="font-size: 0.88rem; color: var(--text-primary); font-weight: 500;">
+                <i class="fas fa-thumbtack" style="color: #f59e0b; margin-right: 4px;"></i> Fijar al inicio
+              </span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label for="announcement-content"><strong>Mensaje / Detalle del Anuncio *</strong></label>
+          <textarea class="form-control" id="announcement-content" rows="4" placeholder="Escribe el mensaje completo para tus alumnos..." required></textarea>
+        </div>
+
+        <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+          <div class="form-group">
+            <label for="announcement-action-url"><strong>Enlace de Acción (Opcional)</strong></label>
+            <input type="url" class="form-control" id="announcement-action-url" placeholder="https://zoom.us/... o enlace a archivo">
+          </div>
+          <div class="form-group">
+            <label for="announcement-action-label"><strong>Texto del Botón (Opcional)</strong></label>
+            <input type="text" class="form-control" id="announcement-action-label" placeholder="Ej: Unirse a la Clase, Ver Material">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button type="button" class="btn btn-secondary modal-close-btn">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="btn-submit-announcement" onclick="submitAnnouncement()">
+          <i class="fas fa-paper-plane"></i> Publicar Anuncio
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- HTML5 Canvas Oculto para exportación del certificado en alta definición -->
   <canvas id="cert-canvas" style="display: none;" width="2000" height="1414"></canvas>
 
   <!-- Custom App Logic -->
-  <script type="module" src="app.js?v=2005"></script>
+  <script type="module" src="app.js?v=2006"></script>
 </body>
 </html>
