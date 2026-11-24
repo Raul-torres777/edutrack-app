@@ -3744,25 +3744,49 @@ function switchInstructorTab(tab) {
   if (DOM.btnInsLiveTab) DOM.btnInsLiveTab.classList.remove('active');
   if (DOM.btnInsAnnouncementsTab) DOM.btnInsAnnouncementsTab.classList.remove('active');
 
-  if (DOM.insCoursesSection) DOM.insCoursesSection.classList.remove('active');
-  if (DOM.insStudentsSection) DOM.insStudentsSection.classList.remove('active');
-  if (DOM.insLiveSection) DOM.insLiveSection.classList.remove('active');
-  if (DOM.insAnnouncementsSection) DOM.insAnnouncementsSection.classList.remove('active');
+  if (DOM.insCoursesSection) {
+    DOM.insCoursesSection.classList.remove('active');
+    DOM.insCoursesSection.style.display = 'none';
+  }
+  if (DOM.insStudentsSection) {
+    DOM.insStudentsSection.classList.remove('active');
+    DOM.insStudentsSection.style.display = 'none';
+  }
+  if (DOM.insLiveSection) {
+    DOM.insLiveSection.classList.remove('active');
+    DOM.insLiveSection.style.display = 'none';
+  }
+  if (DOM.insAnnouncementsSection) {
+    DOM.insAnnouncementsSection.classList.remove('active');
+    DOM.insAnnouncementsSection.style.display = 'none';
+  }
 
   if (tab === 'courses') {
     if (DOM.btnInsCoursesTab) DOM.btnInsCoursesTab.classList.add('active');
-    if (DOM.insCoursesSection) DOM.insCoursesSection.classList.add('active');
+    if (DOM.insCoursesSection) {
+      DOM.insCoursesSection.classList.add('active');
+      DOM.insCoursesSection.style.display = 'block';
+    }
   } else if (tab === 'students') {
     if (DOM.btnInsStudentsTab) DOM.btnInsStudentsTab.classList.add('active');
-    if (DOM.insStudentsSection) DOM.insStudentsSection.classList.add('active');
+    if (DOM.insStudentsSection) {
+      DOM.insStudentsSection.classList.add('active');
+      DOM.insStudentsSection.style.display = 'block';
+    }
     loadInstructorStudentsTable();
   } else if (tab === 'live') {
     if (DOM.btnInsLiveTab) DOM.btnInsLiveTab.classList.add('active');
-    if (DOM.insLiveSection) DOM.insLiveSection.classList.add('active');
+    if (DOM.insLiveSection) {
+      DOM.insLiveSection.classList.add('active');
+      DOM.insLiveSection.style.display = 'block';
+    }
     loadInstructorLiveSessions();
   } else if (tab === 'announcements') {
     if (DOM.btnInsAnnouncementsTab) DOM.btnInsAnnouncementsTab.classList.add('active');
-    if (DOM.insAnnouncementsSection) DOM.insAnnouncementsSection.classList.add('active');
+    if (DOM.insAnnouncementsSection) {
+      DOM.insAnnouncementsSection.classList.add('active');
+      DOM.insAnnouncementsSection.style.display = 'block';
+    }
     loadInstructorAnnouncements();
   }
 }

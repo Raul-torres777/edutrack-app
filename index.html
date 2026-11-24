@@ -504,9 +504,14 @@
       <section class="view-panel" id="view-instructor-dashboard">
         <div class="section-header instructor-panel-header">
           <h2>Panel del Instructor</h2>
-          <button class="btn btn-primary" id="btn-new-course">
-            <i class="fas fa-plus"></i> Crear Nuevo Curso
-          </button>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button class="btn btn-secondary" onclick="switchInstructorTab('announcements'); openAnnouncementModal();" title="Publicar Anuncio">
+              <i class="fas fa-bullhorn" style="color: var(--accent-color);"></i> Publicar Anuncio
+            </button>
+            <button class="btn btn-primary" id="btn-new-course">
+              <i class="fas fa-plus"></i> Crear Nuevo Curso
+            </button>
+          </div>
         </div>
 
         <!-- Pestañas de Navegación del Panel de Instructor -->
@@ -658,14 +663,14 @@
         </div>
 
         <!-- Sección 4: Anuncios y Noticias (Instructor) -->
-        <div id="ins-announcements-section" class="instructor-section" style="display: none;">
-          <div class="section-header" style="margin-bottom: 20px;">
+        <div id="ins-announcements-section" class="instructor-section">
+          <div class="section-header instructor-panel-header" style="margin-bottom: 25px;">
             <div>
               <h3>Tablón de Anuncios y Comunicados</h3>
               <p style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 4px;">Publica noticias, recordatorios o avisos importantes que verán todos tus estudiantes.</p>
             </div>
-            <button class="btn btn-primary" id="btn-new-announcement" onclick="openAnnouncementModal()">
-              <i class="fas fa-plus"></i> Publicar Nuevo Anuncio
+            <button class="btn btn-primary" id="btn-new-announcement" onclick="openAnnouncementModal()" style="display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; font-weight: 600;">
+              <i class="fas fa-bullhorn"></i> Publicar Nuevo Anuncio
             </button>
           </div>
 
@@ -1342,6 +1347,6 @@
   <canvas id="cert-canvas" style="display: none;" width="2000" height="1414"></canvas>
 
   <!-- Custom App Logic -->
-  <script type="module" src="app.js?v=2006"></script>
+  <script type="module" src="app.js?v=2007"></script>
 </body>
 </html>
