@@ -504,14 +504,9 @@
       <section class="view-panel" id="view-instructor-dashboard">
         <div class="section-header instructor-panel-header">
           <h2>Panel del Instructor</h2>
-          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <button class="btn btn-secondary" onclick="switchInstructorTab('announcements'); openAnnouncementModal();" title="Publicar Anuncio">
-              <i class="fas fa-bullhorn" style="color: var(--accent-color);"></i> Publicar Anuncio
-            </button>
-            <button class="btn btn-primary" id="btn-new-course">
-              <i class="fas fa-plus"></i> Crear Nuevo Curso
-            </button>
-          </div>
+          <button class="btn btn-primary" id="btn-new-course">
+            <i class="fas fa-plus"></i> Crear Nuevo Curso
+          </button>
         </div>
 
         <!-- Pestañas de Navegación del Panel de Instructor -->
@@ -1347,6 +1342,6 @@
   <canvas id="cert-canvas" style="display: none;" width="2000" height="1414"></canvas>
 
   <!-- Custom App Logic -->
-  <script type="module" src="app.js?v=2007"></script>
+  <script type="module" src="app.js?v=2008"></script>
 </body>
 </html>
