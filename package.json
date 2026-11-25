@@ -1,0 +1,20 @@
+{
+  "name": "edutrack-app",
+  "version": "1.0.0",
+  "description": "EduTrack LMS - Plataforma de Cursos Premium y Gestión Escolar",
+  "main": "app.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "serve": "npx serve -l 3000 ."
+  },
+  "keywords": [
+    "edutrack",
+    "lms",
+    "pwa",
+    "courses"
+  ],
+  "author": "Raul",
+  "license": "ISC"
+}

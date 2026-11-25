@@ -1,0 +1,14 @@
+{
+  "editor.tabSize": 2,
+  "editor.formatOnSave": true,
+  "editor.wordWrap": "on",
+  "files.associations": {
+    "*.js": "javascript",
+    "*.json": "json",
+    "*.html": "html",
+    "*.css": "css"
+  },
+  "liveServer.settings.port": 3000,
+  "liveServer.settings.root": "/",
+  "liveServer.settings.CustomBrowser": "chrome"
+}
