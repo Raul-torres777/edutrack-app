@@ -191,9 +191,9 @@ body.light-theme .nav-tab.active {
 }
 
 .btn-icon:hover {
-  background: var(--accent-color);
+  background: var(--accent-gradient);
   color: #fff;
-  border-color: var(--accent-color);
+  border-color: rgba(255, 255, 255, 0.25);
   transform: translateY(-2px);
 }
 
@@ -991,9 +991,9 @@ body.light-theme .lesson-item.active {
 }
 
 .option-btn.selected .option-letter {
-  background: var(--accent-color);
+  background: var(--accent-gradient);
   color: white;
-  border-color: var(--accent-color);
+  border-color: rgba(255, 255, 255, 0.25);
 }
 
 .quiz-footer {
@@ -1921,14 +1921,15 @@ body.light-theme .auth-card {
 
 .instructor-tab.active {
   color: #fff;
-  background: var(--accent-color);
-  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.25);
+  background: var(--accent-gradient);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: var(--card-shadow);
 }
 
 body.light-theme .instructor-tab.active {
   color: #fff;
-  background: var(--accent-color);
-  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.15);
+  background: var(--accent-gradient);
+  box-shadow: var(--card-shadow);
 }
 
 .instructor-section {
@@ -2965,9 +2966,9 @@ video::-webkit-media-controls {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: transparent;
-  border: none;
-  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: rgba(255, 255, 255, 0.85);
   padding: 10px 18px;
   font-size: 0.9rem;
   font-weight: 600;
@@ -2977,14 +2978,15 @@ video::-webkit-media-controls {
 }
 
 .student-subtab:hover {
-  color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.05);
+  color: #ffffff;
+  background: var(--bg-tertiary);
 }
 
 .student-subtab.active {
-  color: #fff;
-  background: var(--accent-color);
-  box-shadow: 0 4px 14px rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+  background: var(--accent-gradient);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: var(--card-shadow);
 }
 
 .live-pill-dot {
@@ -3138,9 +3140,10 @@ video::-webkit-media-controls {
 }
 
 .cal-day-cell.is-selected {
-  background: var(--accent-color) !important;
+  background: var(--accent-gradient) !important;
   color: #fff !important;
-  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: var(--card-shadow);
 }
 
 .cal-day-cell.has-session::after {
@@ -3465,10 +3468,10 @@ video::-webkit-media-controls {
 }
 
 .btn-install-header:hover {
-  background: var(--accent-color);
+  background: var(--accent-gradient);
   color: #ffffff;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 .auth-install-promo {
