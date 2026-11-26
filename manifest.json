@@ -1,7 +1,7 @@
 {
   "id": "edutrack-pwa",
-  "name": "EduTrack LMS - Plataforma Premium",
-  "short_name": "EduTrack",
+  "name": "CentralEdu LMS - Plataforma Premium",
+  "short_name": "CentralEdu",
   "description": "Tu portal de aprendizaje interactivo y gestión de cursos premium",
   "start_url": "./index.html",
   "scope": "./",
