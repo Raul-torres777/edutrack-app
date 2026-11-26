@@ -114,10 +114,13 @@ body.admin-mode-active .app-shell {
   font-size: 1.5rem;
   font-weight: 800;
   font-family: var(--font-heading);
-  background: var(--accent-gradient);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #ffffff;
   cursor: pointer;
+}
+
+body.light-theme .logo-area,
+body.light-theme .auth-logo {
+  color: var(--text-primary);
 }
 
 .logo-area i {
@@ -1775,9 +1778,7 @@ body.light-theme .auth-card {
   font-size: 2.2rem;
   font-weight: 800;
   font-family: var(--font-heading);
-  background: var(--accent-gradient);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #ffffff;
   margin-bottom: 10px;
 }
 
