@@ -10,7 +10,7 @@
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- PWA Manifest & Mobile App Capabilities -->
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#6366f1">
+  <meta name="theme-color" content="#000000">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -18,9 +18,33 @@
   <link rel="apple-touch-icon" href="icon-192.png">
 
   <!-- Custom Styling -->
-  <link rel="stylesheet" href="style.css?v=12">
+  <link rel="stylesheet" href="style.css?v=13">
 </head>
 <body>
+  <!-- Splash Screen de Inicio -->
+  <div id="app-splash-screen" class="app-splash-screen" style="position:fixed;inset:0;z-index:99999;background:#000000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;transition:opacity 0.45s ease,visibility 0.45s ease;">
+    <img src="icon-512.png" alt="EduTrack" class="splash-logo" style="width:150px;height:150px;object-fit:contain;">
+    <span class="splash-subtitle" style="color:#ffffff;font-family:system-ui,-apple-system,sans-serif;font-size:1.15rem;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;opacity:0.9;">EduTrack</span>
+  </div>
+  <script>
+    (function () {
+      const splash = document.getElementById('app-splash-screen');
+      if (!splash) return;
+      let hidden = false;
+      const hide = () => {
+        if (hidden) return;
+        hidden = true;
+        splash.classList.add('hidden');
+        setTimeout(() => splash.remove(), 500);
+      };
+      const start = Date.now();
+      window.addEventListener('load', () => {
+        const elapsed = Date.now() - start;
+        setTimeout(hide, Math.max(0, 1200 - elapsed));
+      });
+      setTimeout(hide, 3000);
+    })();
+  </script>
 
   <div class="app-shell">
     

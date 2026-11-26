@@ -3687,3 +3687,25 @@ video::-webkit-media-controls {
   white-space: pre-line;
   word-break: break-word;
 }
+
+/* === SPLASH SCREEN DE INICIO === */
+.app-splash-screen.hidden {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+.splash-logo {
+  animation: splashPulse 1.6s ease-in-out infinite;
+}
+
+@keyframes splashPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.95;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+}

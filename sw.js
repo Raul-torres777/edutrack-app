@@ -1,4 +1,4 @@
-const CACHE_NAME = 'edutrack-pwa-v5';
+const CACHE_NAME = 'edutrack-pwa-v6';
 const NETWORK_TIMEOUT_MS = 4000;
 const ASSETS = [
   './',
