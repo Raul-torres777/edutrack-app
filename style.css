@@ -2,19 +2,19 @@
 
 :root {
   /* Dark Theme Variables (Default) */
-  --bg-primary: #0b0f19;
-  --bg-secondary: #131b2e;
-  --bg-tertiary: #1f293d;
+  --bg-primary: #000000;
+  --bg-secondary: #0f0f12;
+  --bg-tertiary: #1a1a1f;
   --text-primary: #f8fafc;
   --text-secondary: #94a3b8;
-  --accent-color: #6366f1;
-  --accent-hover: #4f46e5;
-  --accent-gradient: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+  --accent-color: #e4e4e7;
+  --accent-hover: #a1a1aa;
+  --accent-gradient: linear-gradient(135deg, #27272a 0%, #09090b 100%);
   --success-color: #10b981;
   --warning-color: #f59e0b;
   --danger-color: #ef4444;
   --border-color: rgba(255, 255, 255, 0.06);
-  --glass-bg: rgba(19, 27, 46, 0.7);
+  --glass-bg: rgba(15, 15, 18, 0.85);
   --glass-border: rgba(255, 255, 255, 0.04);
   --card-shadow: 0 12px 40px -12px rgba(0, 0, 0, 0.5);
   --sidebar-width: 280px;
@@ -30,9 +30,9 @@ body.light-theme {
   --bg-tertiary: #f1f5f9;
   --text-primary: #0f172a;
   --text-secondary: #64748b;
-  --accent-color: #4f46e5;
-  --accent-hover: #3730a3;
-  --accent-gradient: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+  --accent-color: #18181b;
+  --accent-hover: #000000;
+  --accent-gradient: linear-gradient(135deg, #27272a 0%, #09090b 100%);
   --border-color: rgba(0, 0, 0, 0.08);
   --glass-bg: rgba(255, 255, 255, 0.8);
   --glass-border: rgba(0, 0, 0, 0.05);
@@ -323,7 +323,7 @@ body.light-theme .nav-tab.active {
 .course-card:hover {
   transform: translateY(-8px);
   border-color: var(--accent-color);
-  box-shadow: 0 20px 40px -15px rgba(99, 102, 241, 0.15);
+  box-shadow: 0 20px 40px -15px rgba(255, 255, 255, 0.15);
 }
 
 .course-card-header {
@@ -484,13 +484,14 @@ body.light-theme .nav-tab.active {
 .btn-primary {
   background: var(--accent-gradient);
   color: white;
-  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 0 4px 15px rgba(255, 255, 255, 0.1);
 }
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
-  background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+  box-shadow: 0 6px 20px rgba(255, 255, 255, 0.18);
+  background: linear-gradient(135deg, #27272a 0%, #09090b 100%);
 }
 
 .btn-secondary {
@@ -728,7 +729,7 @@ body.light-theme .nav-tab.active {
 .resource-icon {
   width: 40px;
   height: 40px;
-  background: rgba(99, 102, 241, 0.1);
+  background: rgba(255, 255, 255, 0.1);
   color: var(--accent-color);
   display: flex;
   justify-content: center;
@@ -738,7 +739,7 @@ body.light-theme .nav-tab.active {
 }
 
 body.light-theme .resource-icon {
-  background: rgba(99, 102, 241, 0.05);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .resource-details h4 {
@@ -810,12 +811,12 @@ body.light-theme .resource-icon {
 }
 
 .lesson-item.active {
-  background: rgba(99, 102, 241, 0.08);
-  border-color: rgba(99, 102, 241, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 body.light-theme .lesson-item.active {
-  background: rgba(99, 102, 241, 0.04);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .lesson-item.locked {
@@ -963,12 +964,12 @@ body.light-theme .lesson-item.active {
 
 .option-btn:hover {
   border-color: var(--accent-color);
-  background: rgba(99, 102, 241, 0.04);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .option-btn.selected {
   border-color: var(--accent-color);
-  background: rgba(99, 102, 241, 0.1);
+  background: rgba(255, 255, 255, 0.1);
   box-shadow: 0 0 0 2px var(--accent-color);
 }
 
@@ -1092,13 +1093,13 @@ body.light-theme .lesson-item.active {
   font-family: var(--font-heading);
   font-weight: 800;
   font-size: 1.6rem;
-  color: #4f46e5;
+  color: #18181b;
   letter-spacing: -0.02em;
   margin-bottom: 5px;
 }
 
 .cert-logo i {
-  color: #6366f1;
+  color: #18181b;
 }
 
 .cert-title {
@@ -1178,7 +1179,7 @@ body.light-theme .lesson-item.active {
   font-family: var(--font-serif);
   font-size: 1.4rem;
   font-style: italic;
-  color: #4f46e5;
+  color: #18181b;
   height: 40px;
   display: flex;
   justify-content: center;
@@ -1243,7 +1244,7 @@ body.light-theme .lesson-item.active {
   width: 50px;
   height: 50px;
   border-radius: 12px;
-  background: rgba(99, 102, 241, 0.1);
+  background: rgba(255, 255, 255, 0.1);
   color: var(--accent-color);
   display: flex;
   justify-content: center;
@@ -1252,7 +1253,7 @@ body.light-theme .lesson-item.active {
 }
 
 body.light-theme .stat-icon {
-  background: rgba(99, 102, 241, 0.05);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .stat-details h3 {
@@ -1396,7 +1397,7 @@ body.light-theme .stat-icon {
 .form-control:focus {
   outline: none;
   border-color: var(--accent-color);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.15);
 }
 
 textarea.form-control {
@@ -1443,7 +1444,7 @@ textarea.form-control {
 
 .file-upload-wrapper:hover .file-upload-btn {
   border-color: var(--accent-color);
-  background: rgba(99, 102, 241, 0.02);
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .file-upload-btn i {
@@ -1530,7 +1531,7 @@ body.light-theme .students-table tbody tr:hover td {
 }
 
 .badge-info {
-  background: rgba(99, 102, 241, 0.1);
+  background: rgba(255, 255, 255, 0.1);
   color: var(--accent-color);
 }
 
@@ -1723,7 +1724,7 @@ body.light-theme .students-table tbody tr:hover td {
   left: -10%;
   width: 50%;
   height: 50%;
-  background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
   z-index: 1;
 }
 
@@ -1734,7 +1735,7 @@ body.light-theme .students-table tbody tr:hover td {
   right: -10%;
   width: 50%;
   height: 50%;
-  background: radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
   z-index: 1;
 }
 
@@ -1920,13 +1921,13 @@ body.light-theme .auth-card {
 .instructor-tab.active {
   color: #fff;
   background: var(--accent-color);
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.25);
 }
 
 body.light-theme .instructor-tab.active {
   color: #fff;
   background: var(--accent-color);
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.15);
 }
 
 .instructor-section {
@@ -1969,7 +1970,7 @@ body.light-theme .instructor-tab.active {
   outline: none;
   border-color: var(--accent-color);
   background: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.15);
 }
 
 /* Badges de Cursos Asignados */
@@ -1977,19 +1978,19 @@ body.light-theme .instructor-tab.active {
   display: inline-block;
   padding: 3px 8px;
   border-radius: 6px;
-  background: rgba(99, 102, 241, 0.12);
-  color: #818cf8;
+  background: rgba(255, 255, 255, 0.12);
+  color: #e4e4e7;
   font-size: 0.75rem;
   font-weight: 600;
   margin-right: 5px;
   margin-bottom: 5px;
-  border: 1px solid rgba(99, 102, 241, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.18);
 }
 
 body.light-theme .assigned-course-badge {
-  background: rgba(99, 102, 241, 0.08);
+  background: rgba(255, 255, 255, 0.08);
   color: var(--accent-color);
-  border: 1px solid rgba(99, 102, 241, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 .assigned-course-badge.empty {
@@ -2063,7 +2064,7 @@ body.light-theme .assigned-course-badge {
   background: var(--primary-color);
   color: #ffffff;
   border-color: var(--primary-color);
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.35);
 }
 
 /* --- DROPDOWN DE CATEGORÍAS PERSONALIZADO --- */
@@ -2146,7 +2147,7 @@ body.light-theme .assigned-course-badge {
 
 .custom-dropdown-item .item-actions i.fa-pencil-alt:hover {
   color: var(--primary-color);
-  background: rgba(99, 102, 241, 0.15);
+  background: rgba(255, 255, 255, 0.15);
 }
 
 .custom-dropdown-item .item-actions i.fa-trash {
@@ -2168,7 +2169,7 @@ body.light-theme .assigned-course-badge {
 }
 
 .custom-dropdown-item.create-new-item:hover {
-  background: rgba(99, 102, 241, 0.05);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 /* ==================== DISPOSITIVOS MÓVILES (RESPONSIVE DESIGN) ==================== */
@@ -2982,7 +2983,7 @@ video::-webkit-media-controls {
 .student-subtab.active {
   color: #fff;
   background: var(--accent-color);
-  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+  box-shadow: 0 4px 14px rgba(255, 255, 255, 0.35);
 }
 
 .live-pill-dot {
@@ -3138,7 +3139,7 @@ video::-webkit-media-controls {
 .cal-day-cell.is-selected {
   background: var(--accent-color) !important;
   color: #fff !important;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.35);
 }
 
 .cal-day-cell.has-session::after {
@@ -3214,7 +3215,7 @@ video::-webkit-media-controls {
 }
 
 .filter-pill.active {
-  background: rgba(99, 102, 241, 0.15);
+  background: rgba(255, 255, 255, 0.15);
   color: var(--accent-color);
   border-color: var(--accent-color);
 }
@@ -3232,7 +3233,7 @@ video::-webkit-media-controls {
 }
 
 .live-session-card:hover {
-  border-color: rgba(99, 102, 241, 0.4);
+  border-color: rgba(255, 255, 255, 0.4);
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
 }
@@ -3454,9 +3455,9 @@ video::-webkit-media-controls {
   padding: 6px 14px;
   font-size: 0.8rem;
   font-weight: 600;
-  background: rgba(99, 102, 241, 0.15);
+  background: rgba(255, 255, 255, 0.15);
   color: var(--accent-color);
-  border: 1px solid rgba(99, 102, 241, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.35);
   border-radius: 20px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -3466,15 +3467,15 @@ video::-webkit-media-controls {
   background: var(--accent-color);
   color: #ffffff;
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);
 }
 
 .auth-install-promo {
   display: none;
   margin-top: 20px;
   padding: 14px 16px;
-  background: rgba(99, 102, 241, 0.08);
-  border: 1px dashed rgba(99, 102, 241, 0.35);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px dashed rgba(255, 255, 255, 0.35);
   border-radius: 12px;
   text-align: center;
 }
@@ -3485,8 +3486,8 @@ video::-webkit-media-controls {
   font-size: 0.82rem;
   font-weight: 600;
   padding: 8px 12px;
-  background: rgba(99, 102, 241, 0.2);
-  border: 1px solid rgba(99, 102, 241, 0.4);
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.4);
   color: #ffffff;
   border-radius: 8px;
   cursor: pointer;
@@ -3528,10 +3529,10 @@ video::-webkit-media-controls {
   background: rgba(15, 23, 42, 0.95);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(99, 102, 241, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.4);
   border-radius: 16px;
   padding: 12px 16px;
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5), 0 0 25px rgba(99, 102, 241, 0.25);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5), 0 0 25px rgba(255, 255, 255, 0.25);
 }
 
 .pwa-banner-icon {
@@ -3539,13 +3540,13 @@ video::-webkit-media-controls {
   height: 42px;
   min-width: 42px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+  background: linear-gradient(135deg, #18181b 0%, #18181b 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
   font-size: 1.25rem;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.35);
 }
 
 .pwa-banner-info {
@@ -3597,8 +3598,8 @@ video::-webkit-media-controls {
   display: flex;
   align-items: flex-start;
   gap: 15px;
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.12) 0%, rgba(168, 85, 247, 0.12) 100%);
-  border: 1px solid rgba(99, 102, 241, 0.35);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, rgba(168, 85, 247, 0.12) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.35);
   border-radius: 16px;
   padding: 16px 20px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
@@ -3607,7 +3608,7 @@ video::-webkit-media-controls {
 }
 
 .student-recent-announcement-card:hover {
-  border-color: rgba(99, 102, 241, 0.5);
+  border-color: rgba(255, 255, 255, 0.5);
 }
 
 .announcement-icon-bubble {
@@ -3646,7 +3647,7 @@ video::-webkit-media-controls {
 
 .announcement-card:hover {
   transform: translateY(-2px);
-  border-color: rgba(99, 102, 241, 0.4);
+  border-color: rgba(255, 255, 255, 0.4);
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
 }
 
