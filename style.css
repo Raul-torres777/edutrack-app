@@ -317,9 +317,9 @@ body.light-theme .nav-tab.active {
 }
 
 body.light-theme .welcome-banner {
-  background: #ffffff;
+  background: #e4e4e7;
   color: #09090b;
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  border: 1px solid #d4d4d8;
 }
 
 body.light-theme .welcome-banner::before {
@@ -3030,20 +3030,20 @@ video::-webkit-media-controls {
 
 body.light-theme .student-subtab {
   background: #f4f4f5;
-  border-color: rgba(0, 0, 0, 0.1);
-  color: rgba(9, 9, 11, 0.68);
+  border-color: rgba(0, 0, 0, 0.08);
+  color: #52525b;
 }
 
 body.light-theme .student-subtab:hover {
-  background: #ffffff;
+  background: #e4e4e7;
   color: #09090b;
 }
 
 body.light-theme .student-subtab.active {
-  background: #ffffff;
-  color: #09090b;
-  border: 1px solid rgba(0, 0, 0, 0.22);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+  background: #71717a;
+  color: #ffffff;
+  border: 1px solid #52525b;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
 .live-pill-dot {
