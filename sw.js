@@ -1,4 +1,5 @@
-const CACHE_NAME = 'edutrack-pwa-v4';
+const CACHE_NAME = 'edutrack-pwa-v5';
+const NETWORK_TIMEOUT_MS = 4000;
 const ASSETS = [
   './',
   './index.html',
@@ -40,14 +41,18 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Estrategia Network-First con fallback a Caché
+// Estrategia Network-First con timeout y fallback a Caché
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
   if (!event.request.url.startsWith('http')) return;
-  
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), NETWORK_TIMEOUT_MS);
+
   event.respondWith(
-    fetch(event.request)
+    fetch(event.request, { signal: controller.signal })
       .then(networkResponse => {
+        clearTimeout(timeoutId);
         if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
           const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME).then(cache => {
@@ -57,6 +62,7 @@ self.addEventListener('fetch', event => {
         return networkResponse;
       })
       .catch(() => {
+        clearTimeout(timeoutId);
         return caches.match(event.request, { ignoreSearch: true }).then(cachedResponse => {
           if (cachedResponse) {
             return cachedResponse;
