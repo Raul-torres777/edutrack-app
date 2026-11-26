@@ -1,4 +1,4 @@
-const CACHE_NAME = 'edutrack-pwa-v6';
+const CACHE_NAME = 'edutrack-pwa-v7';
 const NETWORK_TIMEOUT_MS = 4000;
 const ASSETS = [
   './',
@@ -9,8 +9,8 @@ const ASSETS = [
   './mock_data.js',
   './supabase.js',
   './manifest.json',
-  './icon-192.png',
-  './icon-512.png'
+  './icon-192.png?v=2',
+  './icon-512.png?v=2'
 ];
 
 // Instalación del Service Worker
