@@ -5514,8 +5514,30 @@ async function submitLiveSession() {
     }
 
     await db.saveLiveSession(sessionData);
+
+    let pushStatusMsg = '';
+    if (!editId) {
+      try {
+        const startFormatted = new Date(sessionData.start_time).toLocaleString('es-MX', {
+          dateStyle: 'medium',
+          timeStyle: 'short'
+        });
+        const pushRes = await sendAnnouncementPushNotification({
+          title,
+          content: `${courseTitle} · ${startFormatted}`,
+          category: 'Clase en Vivo',
+          action_url: zoomUrl
+        });
+        if (pushRes && pushRes.sent > 0) {
+          pushStatusMsg = `\n🔔 Notificación push enviada a ${pushRes.sent} dispositivo(s).`;
+        }
+      } catch (pushErr) {
+        console.warn('No se pudo enviar push de clase en vivo:', pushErr);
+      }
+    }
+
     closeLiveSessionModal();
-    alert('¡Clase en vivo guardada exitosamente!');
+    alert('¡Clase en vivo guardada exitosamente!' + pushStatusMsg);
     await refreshLiveSessionsData();
     loadInstructorLiveSessions();
   } catch (err) {
