@@ -1,4 +1,4 @@
-const CACHE_NAME = 'edutrack-pwa-v20';
+const CACHE_NAME = 'edutrack-pwa-v21';
 const NETWORK_TIMEOUT_MS = 4000;
 const ASSETS = [
   './',
@@ -10,7 +10,8 @@ const ASSETS = [
   './supabase.js',
   './manifest.json',
   './icon-192.png?v=2',
-  './icon-512.png?v=2'
+  './icon-512.png?v=2',
+  './badge-bell.png'
 ];
 
 // Instalación del Service Worker
@@ -96,7 +97,7 @@ self.addEventListener('push', event => {
     self.registration.showNotification(payload.title, {
       body: payload.body,
       icon: './icon-192.png?v=2',
-      badge: './icon-192.png?v=2',
+      badge: './badge-bell.png',
       vibrate: [200, 100, 200],
       data: { url: payload.url || './' }
     })
