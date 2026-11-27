@@ -633,6 +633,7 @@ function populateDOM() {
   DOM.announcementTitle = document.getElementById('announcement-title');
   DOM.announcementCategory = document.getElementById('announcement-category');
   DOM.announcementIsPinned = document.getElementById('announcement-is-pinned');
+  DOM.announcementNotifyEmail = document.getElementById('announcement-notify-email');
   DOM.announcementContent = document.getElementById('announcement-content');
   DOM.announcementActionUrl = document.getElementById('announcement-action-url');
   DOM.announcementActionLabel = document.getElementById('announcement-action-label');
@@ -5841,6 +5842,7 @@ function openAnnouncementModal(editId) {
       if (DOM.announcementTitle) DOM.announcementTitle.value = ann.title || '';
       if (DOM.announcementCategory) DOM.announcementCategory.value = ann.category || 'General';
       if (DOM.announcementIsPinned) DOM.announcementIsPinned.checked = Boolean(ann.is_pinned);
+      if (DOM.announcementNotifyEmail) DOM.announcementNotifyEmail.checked = false;
       if (DOM.announcementContent) DOM.announcementContent.value = ann.content || '';
       if (DOM.announcementActionUrl) DOM.announcementActionUrl.value = ann.action_url || '';
       if (DOM.announcementActionLabel) DOM.announcementActionLabel.value = ann.action_label || '';
@@ -5851,6 +5853,7 @@ function openAnnouncementModal(editId) {
     if (DOM.announcementTitle) DOM.announcementTitle.value = '';
     if (DOM.announcementCategory) DOM.announcementCategory.value = 'General';
     if (DOM.announcementIsPinned) DOM.announcementIsPinned.checked = false;
+    if (DOM.announcementNotifyEmail) DOM.announcementNotifyEmail.checked = true;
     if (DOM.announcementContent) DOM.announcementContent.value = '';
     if (DOM.announcementActionUrl) DOM.announcementActionUrl.value = '';
     if (DOM.announcementActionLabel) DOM.announcementActionLabel.value = '';
@@ -5865,10 +5868,57 @@ function closeAnnouncementModal() {
 }
 window.closeAnnouncementModal = closeAnnouncementModal;
 
+const ANNOUNCEMENT_EMAIL_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbx5PgOikS3ABSbtd3HxxenWgSgkVK-kmdRJ3NsMXdr-jxgQxMbEZ9qh1ZStHur4Vltr/exec';
+const ANNOUNCEMENT_EMAIL_TOKEN = 'centraledu-avisos-2026';
+
+/**
+ * Envía notificación por correo electrónico a todos los alumnos registrados
+ * usando el Web App de Google Apps Script (centraledu.avisos@gmail.com).
+ */
+async function sendAnnouncementEmailNotification(announcementData) {
+  const users = await db.getUsers();
+  const recipients = Array.from(
+    new Set(
+      (users || [])
+        .filter(u => u && u.role === 'student' && typeof u.email === 'string' && u.email.includes('@'))
+        .map(u => u.email.trim().toLowerCase())
+    )
+  );
+
+  if (recipients.length === 0) {
+    return { sent: 0 };
+  }
+
+  const fallbackUrl = (typeof window !== 'undefined' && window.location)
+    ? (window.location.origin + window.location.pathname)
+    : 'https://raul-torres777.github.io/edutrack-app/';
+
+  const payload = {
+    token: ANNOUNCEMENT_EMAIL_TOKEN,
+    title: announcementData.title,
+    category: announcementData.category,
+    content: announcementData.content,
+    action_url: announcementData.action_url || fallbackUrl,
+    action_label: announcementData.action_label || 'Ir a CentralEdu',
+    instructor_name: announcementData.instructor_name || 'CentralEdu',
+    recipients
+  };
+
+  await fetch(ANNOUNCEMENT_EMAIL_WEBHOOK_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload)
+  });
+
+  return { sent: recipients.length };
+}
+
 async function submitAnnouncement() {
   const title = (DOM.announcementTitle ? DOM.announcementTitle.value : '').trim();
   const category = DOM.announcementCategory ? DOM.announcementCategory.value : 'General';
   const isPinned = DOM.announcementIsPinned ? DOM.announcementIsPinned.checked : false;
+  const notifyEmail = DOM.announcementNotifyEmail ? DOM.announcementNotifyEmail.checked : false;
   const content = (DOM.announcementContent ? DOM.announcementContent.value : '').trim();
   const actionUrl = (DOM.announcementActionUrl ? DOM.announcementActionUrl.value : '').trim();
   const actionLabel = (DOM.announcementActionLabel ? DOM.announcementActionLabel.value : '').trim();
@@ -5903,8 +5953,24 @@ async function submitAnnouncement() {
     }
 
     await db.saveAnnouncement(data);
+
+    let emailStatusMsg = '';
+    if (notifyEmail) {
+      try {
+        const res = await sendAnnouncementEmailNotification(data);
+        if (res.sent > 0) {
+          emailStatusMsg = `\n\n📧 Se envió notificación por correo a ${res.sent} alumno(s).`;
+        } else {
+          emailStatusMsg = '\n\n(No se encontraron alumnos con correo registrado para notificar.)';
+        }
+      } catch (emailErr) {
+        console.warn('No se pudo enviar la notificación por correo:', emailErr);
+        emailStatusMsg = '\n\n⚠️ El anuncio se publicó, pero hubo un problema al enviar los correos.';
+      }
+    }
+
     closeAnnouncementModal();
-    alert('¡Anuncio publicado con éxito para todos tus alumnos!');
+    alert('¡Anuncio publicado con éxito para todos tus alumnos!' + emailStatusMsg);
     await refreshStudentAnnouncements();
     await loadInstructorAnnouncements();
   } catch (err) {
