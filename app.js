@@ -5882,6 +5882,7 @@ async function sendAnnouncementEmailNotification(announcementData) {
       (users || [])
         .filter(u => u && u.role === 'student' && typeof u.email === 'string' && u.email.includes('@'))
         .map(u => u.email.trim().toLowerCase())
+        .filter(email => email !== 'test@edutrack.com' && !email.endsWith('@edutrack.com'))
     )
   );
 
