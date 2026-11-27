@@ -659,6 +659,7 @@ function initApp() {
   }
   
   if (DOM.themeToggle) DOM.themeToggle.addEventListener('click', toggleTheme);
+  initPushButton();
   if (DOM.btnResetDb) DOM.btnResetDb.addEventListener('click', resetDatabase);
   if (DOM.btnLogout) DOM.btnLogout.addEventListener('click', logoutUser);
   
@@ -5870,6 +5871,116 @@ window.closeAnnouncementModal = closeAnnouncementModal;
 
 const ANNOUNCEMENT_EMAIL_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbx5PgOikS3ABSbtd3HxxenWgSgkVK-kmdRJ3NsMXdr-jxgQxMbEZ9qh1ZStHur4Vltr/exec';
 const ANNOUNCEMENT_EMAIL_TOKEN = 'centraledu-avisos-2026';
+const VAPID_PUBLIC_KEY = 'BNSsTNs24vq6sXgWRt1wpr8OYqLx_VoV-Vk00te7B-o--2AHHeHa7qt1EbO1jWg4Kv9uD6tzl1O40D5AKxYLzwU';
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
+function updatePushButtonUI(btn) {
+  if (!btn || !('Notification' in window)) return;
+  if (Notification.permission === 'granted') {
+    btn.style.color = '#34d399';
+    btn.title = 'Notificaciones activadas en este dispositivo';
+  } else if (Notification.permission === 'denied') {
+    btn.style.color = 'var(--text-secondary)';
+    btn.title = 'Notificaciones bloqueadas en el navegador';
+  } else {
+    btn.style.color = '';
+    btn.title = 'Activar notificaciones en este dispositivo';
+  }
+}
+
+function initPushButton() {
+  const btn = document.getElementById('btn-enable-push');
+  if (!btn) return;
+  if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+    return;
+  }
+  btn.style.display = 'inline-flex';
+  updatePushButtonUI(btn);
+  btn.addEventListener('click', () => enablePushNotifications(btn));
+}
+
+async function enablePushNotifications(btn) {
+  try {
+    if (!('Notification' in window) || !('serviceWorker' in navigator)) {
+      alert('Tu navegador no soporta notificaciones push.');
+      return;
+    }
+
+    const permission = await Notification.requestPermission();
+    updatePushButtonUI(btn);
+
+    if (permission !== 'granted') {
+      alert('No se otorgó permiso para notificaciones. Puedes activarlo desde los ajustes del navegador.');
+      return;
+    }
+
+    const registration = await navigator.serviceWorker.ready;
+    let subscription = await registration.pushManager.getSubscription();
+    if (!subscription) {
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+      });
+    }
+
+    const subJson = subscription.toJSON();
+    const userId = (typeof currentUser !== 'undefined' && currentUser && currentUser.id)
+      ? String(currentUser.id)
+      : 'anon';
+
+    const { error } = await db.supabase.from('push_subscriptions').upsert(
+      {
+        user_id: userId,
+        endpoint: subJson.endpoint,
+        p256dh: subJson.keys?.p256dh || '',
+        auth: subJson.keys?.auth || '',
+        user_agent: navigator.userAgent.slice(0, 180),
+        updated_at: new Date().toISOString()
+      },
+      { onConflict: 'endpoint' }
+    );
+
+    if (error) {
+      console.warn('Error guardando suscripción push:', error.message);
+      alert('Permiso activado, pero falta crear la tabla push_subscriptions en Supabase.');
+      return;
+    }
+
+    updatePushButtonUI(btn);
+    alert('¡Notificaciones activadas! Recibirás los avisos de CentralEdu en este dispositivo.');
+  } catch (err) {
+    console.error('Error al activar notificaciones push:', err);
+    alert('No se pudieron activar las notificaciones: ' + (err.message || err));
+  }
+}
+
+async function sendAnnouncementPushNotification(announcementData) {
+  if (!db.supabase || !db.supabase.functions) return { sent: 0 };
+  const fallbackUrl = (typeof window !== 'undefined' && window.location)
+    ? (window.location.origin + window.location.pathname)
+    : 'https://raul-torres777.github.io/edutrack-app/';
+
+  const { data, error } = await db.supabase.functions.invoke('send-push', {
+    body: {
+      title: announcementData.title,
+      body: announcementData.content,
+      category: announcementData.category,
+      url: announcementData.action_url || fallbackUrl
+    }
+  });
+  if (error) throw error;
+  return data || { sent: 0 };
+}
 
 /**
  * Envía notificación por correo electrónico a todos los alumnos registrados
@@ -5970,8 +6081,18 @@ async function submitAnnouncement() {
       }
     }
 
+    let pushStatusMsg = '';
+    try {
+      const pushRes = await sendAnnouncementPushNotification(data);
+      if (pushRes && pushRes.sent > 0) {
+        pushStatusMsg = `\n🔔 Notificación push enviada a ${pushRes.sent} dispositivo(s).`;
+      }
+    } catch (pushErr) {
+      console.warn('No se pudo enviar push notification:', pushErr);
+    }
+
     closeAnnouncementModal();
-    alert('¡Anuncio publicado con éxito para todos tus alumnos!' + emailStatusMsg);
+    alert('¡Anuncio publicado con éxito para todos tus alumnos!' + emailStatusMsg + pushStatusMsg);
     await refreshStudentAnnouncements();
     await loadInstructorAnnouncements();
   } catch (err) {

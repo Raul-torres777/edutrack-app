@@ -1,4 +1,4 @@
-const CACHE_NAME = 'edutrack-pwa-v17';
+const CACHE_NAME = 'edutrack-pwa-v18';
 const NETWORK_TIMEOUT_MS = 4000;
 const ASSETS = [
   './',
@@ -72,5 +72,52 @@ self.addEventListener('fetch', event => {
           }
         });
       })
+  );
+});
+
+// Recibir Notificaciones Push (pantalla bloqueada / segundo plano)
+self.addEventListener('push', event => {
+  let payload = {
+    title: 'CentralEdu',
+    body: 'Tienes un nuevo anuncio publicado.',
+    url: './'
+  };
+
+  if (event.data) {
+    try {
+      const parsed = event.data.json();
+      payload = { ...payload, ...parsed };
+    } catch {
+      payload.body = event.data.text() || payload.body;
+    }
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(payload.title, {
+      body: payload.body,
+      icon: './icon-192.png?v=2',
+      badge: './icon-192.png?v=2',
+      vibrate: [200, 100, 200],
+      data: { url: payload.url || './' }
+    })
+  );
+});
+
+// Al tocar la notificación, abrir o enfocar CentralEdu
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const targetUrl = (event.notification.data && event.notification.data.url) || './';
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clientList => {
+      for (const client of clientList) {
+        if ('focus' in client) {
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl);
+      }
+    })
   );
 });
