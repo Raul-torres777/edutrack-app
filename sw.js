@@ -1,4 +1,4 @@
-const CACHE_NAME = 'edutrack-pwa-v21';
+const CACHE_NAME = 'edutrack-pwa-v22';
 const NETWORK_TIMEOUT_MS = 4000;
 const ASSETS = [
   './',
@@ -96,7 +96,7 @@ self.addEventListener('push', event => {
   event.waitUntil(
     self.registration.showNotification(payload.title, {
       body: payload.body,
-      icon: './icon-192.png?v=2',
+      icon: './badge-bell.png',
       badge: './badge-bell.png',
       vibrate: [200, 100, 200],
       data: { url: payload.url || './' }
