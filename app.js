@@ -5516,12 +5516,39 @@ async function submitLiveSession() {
     await db.saveLiveSession(sessionData);
 
     let pushStatusMsg = '';
+    let emailStatusMsg = '';
     if (!editId) {
+      const startFormatted = new Date(sessionData.start_time).toLocaleString('es-MX', {
+        dateStyle: 'medium',
+        timeStyle: 'short'
+      });
+
+      const emailLines = [
+        `Curso: ${courseTitle}`,
+        `Fecha y hora: ${startFormatted}`,
+        `Duración: ${duration} minutos`
+      ];
+      if (meetingId) emailLines.push(`ID de reunión: ${meetingId}`);
+      if (passcode) emailLines.push(`Código de acceso: ${passcode}`);
+      if (desc) emailLines.push(`\n${desc}`);
+
       try {
-        const startFormatted = new Date(sessionData.start_time).toLocaleString('es-MX', {
-          dateStyle: 'medium',
-          timeStyle: 'short'
+        const emailRes = await sendAnnouncementEmailNotification({
+          title,
+          content: emailLines.join('\n'),
+          category: 'Clase en Vivo',
+          action_url: zoomUrl,
+          action_label: 'Unirse a la Clase en Vivo',
+          instructor_name: sessionData.instructor_name
         });
+        if (emailRes && emailRes.sent > 0) {
+          emailStatusMsg = `\n📧 Correo enviado a ${emailRes.sent} alumno(s).`;
+        }
+      } catch (emailErr) {
+        console.warn('No se pudo enviar correo de clase en vivo:', emailErr);
+      }
+
+      try {
         const pushRes = await sendAnnouncementPushNotification({
           title,
           content: `${courseTitle} · ${startFormatted}`,
@@ -5537,7 +5564,7 @@ async function submitLiveSession() {
     }
 
     closeLiveSessionModal();
-    alert('¡Clase en vivo guardada exitosamente!' + pushStatusMsg);
+    alert('¡Clase en vivo guardada exitosamente!' + emailStatusMsg + pushStatusMsg);
     await refreshLiveSessionsData();
     loadInstructorLiveSessions();
   } catch (err) {
